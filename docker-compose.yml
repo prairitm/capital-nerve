@@ -1,0 +1,61 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: capitalnerve
+      POSTGRES_PASSWORD: capitalnerve
+      POSTGRES_DB: capitalnerve
+    ports:
+      - "5432:5432"
+    volumes:
+      - capitalnerve_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U capitalnerve -d capitalnerve"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build:
+      context: ./backend
+    environment:
+      DATABASE_URL: postgresql+psycopg://capitalnerve:capitalnerve@db:5432/capitalnerve
+      JWT_SECRET: ${JWT_SECRET:-dev-secret-change-me-in-prod-please-use-a-long-random-string}
+      JWT_ALGORITHM: HS256
+      JWT_EXPIRE_MINUTES: 10080
+      CORS_ORIGINS: http://localhost:5173,http://localhost:8080
+      APP_ENV: ${APP_ENV:-dev}
+      LLM_PROVIDER: ${LLM_PROVIDER:-mock}
+      LLM_MODEL: ${LLM_MODEL:-claude-sonnet-4-5-20250929}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      AUTO_PUBLISH_CONFIDENCE: ${AUTO_PUBLISH_CONFIDENCE:-80.0}
+      WORKER_INPROCESS: ${WORKER_INPROCESS:-true}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
+      ADMIN_FULL_NAME: ${ADMIN_FULL_NAME:-}
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+
+  frontend:
+    image: node:20-alpine
+    working_dir: /app
+    environment:
+      VITE_API_BASE: http://localhost:8000
+    command: sh -c "npm install && npm run dev -- --host 0.0.0.0"
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend:/app
+      - capitalnerve_node_modules:/app/node_modules
+    depends_on:
+      - backend
+
+volumes:
+  capitalnerve_pgdata:
+  capitalnerve_node_modules:

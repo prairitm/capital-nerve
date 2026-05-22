@@ -1,0 +1,95 @@
+import enum
+
+
+class ExchangeCode(str, enum.Enum):
+    NSE = "NSE"
+    BSE = "BSE"
+
+
+class CompanyStatus(str, enum.Enum):
+    ACTIVE = "ACTIVE"
+    INACTIVE = "INACTIVE"
+    DELISTED = "DELISTED"
+
+
+class EventType(str, enum.Enum):
+    QUARTERLY_RESULT = "QUARTERLY_RESULT"
+    CONCALL_TRANSCRIPT = "CONCALL_TRANSCRIPT"
+    INVESTOR_PRESENTATION = "INVESTOR_PRESENTATION"
+    PRESS_RELEASE = "PRESS_RELEASE"
+    EXCHANGE_FILING = "EXCHANGE_FILING"
+    SHAREHOLDING_PATTERN = "SHAREHOLDING_PATTERN"
+    ANNUAL_REPORT = "ANNUAL_REPORT"
+    CREDIT_RATING = "CREDIT_RATING"
+
+
+class DocumentType(str, enum.Enum):
+    FINANCIAL_RESULT = "FINANCIAL_RESULT"
+    CONCALL_TRANSCRIPT = "CONCALL_TRANSCRIPT"
+    INVESTOR_PRESENTATION = "INVESTOR_PRESENTATION"
+    PRESS_RELEASE = "PRESS_RELEASE"
+    EXCHANGE_FILING = "EXCHANGE_FILING"
+    ANNUAL_REPORT = "ANNUAL_REPORT"
+    CREDIT_RATING_REPORT = "CREDIT_RATING_REPORT"
+
+
+class StatementType(str, enum.Enum):
+    PROFIT_AND_LOSS = "PROFIT_AND_LOSS"
+    BALANCE_SHEET = "BALANCE_SHEET"
+    CASH_FLOW = "CASH_FLOW"
+    SEGMENT = "SEGMENT"
+    NOTES = "NOTES"
+
+
+class PeriodType(str, enum.Enum):
+    QUARTERLY = "QUARTERLY"
+    HALF_YEARLY = "HALF_YEARLY"
+    ANNUAL = "ANNUAL"
+
+
+class ConsolidationType(str, enum.Enum):
+    STANDALONE = "STANDALONE"
+    CONSOLIDATED = "CONSOLIDATED"
+
+
+class AuditStatus(str, enum.Enum):
+    AUDITED = "AUDITED"
+    UNAUDITED = "UNAUDITED"
+    LIMITED_REVIEWED = "LIMITED_REVIEWED"
+    UNKNOWN = "UNKNOWN"
+
+
+class SignalDirection(str, enum.Enum):
+    POSITIVE = "POSITIVE"
+    NEGATIVE = "NEGATIVE"
+    MIXED = "MIXED"
+    NEUTRAL = "NEUTRAL"
+
+
+class SeverityLevel(str, enum.Enum):
+    LOW = "LOW"
+    MEDIUM = "MEDIUM"
+    HIGH = "HIGH"
+    CRITICAL = "CRITICAL"
+
+
+class ConfidenceLevel(str, enum.Enum):
+    HIGH = "HIGH"
+    MEDIUM = "MEDIUM"
+    LOW = "LOW"
+    NEEDS_REVIEW = "NEEDS_REVIEW"
+
+
+class ExtractionStatus(str, enum.Enum):
+    PENDING = "PENDING"
+    PROCESSING = "PROCESSING"
+    COMPLETED = "COMPLETED"
+    FAILED = "FAILED"
+    NEEDS_REVIEW = "NEEDS_REVIEW"
+
+
+class UserType(str, enum.Enum):
+    RETAIL = "RETAIL"
+    ANALYST = "ANALYST"
+    INSTITUTION = "INSTITUTION"
+    ADMIN = "ADMIN"

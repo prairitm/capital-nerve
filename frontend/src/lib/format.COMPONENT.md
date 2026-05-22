@@ -1,0 +1,47 @@
+# lib/format
+
+> Inherits: [./_BASE.md](./_BASE.md)
+
+## Purpose
+
+Indian-locale formatters for numbers, currency in Crores, percentages, signed deltas, dates, and label strings used by feed surfaces.
+
+## Source
+
+- Path: `frontend/src/lib/format.ts`
+- Layer: frontend-lib
+
+## Contract
+
+- Exports:
+  - `formatNumber(n, fractionDigits = 0)` — `en-IN` locale.
+  - `formatSigned(n, fractionDigits = 1, suffix = "")` — adds a `+` for positives.
+  - `formatCr(value)` — switches to `L Cr` (`value / 100000`) when `|value| >= 100000`.
+  - `formatPct(value, fractionDigits = 1)` — appends `%`.
+  - `formatEvidenceValue(value)` — preserves pre-formatted evidence strings; strips float noise like `37146.000000` → `37,146`.
+  - `evidenceHighlightPatterns(evidence)` / `highlightMatchInText(text, patterns)` — PDF and text-layer highlighting for mapped evidence values.
+  - `formatDate(d)` — `dd MMM yyyy` in `en-IN`.
+  - `relativeDate(d)` — `today / yesterday / Nd / Nw / Nmo / Ny ago`.
+  - `eventTypeLabel(type)` — lower-cases and replaces `_` with space.
+  - `timelineDateKey(d)` — ISO `YYYY-MM-DD` for grouping (validates format).
+  - `mainIssueLabel(overallSignal)` — `"Key risk" | "Main concern" | "Key concern" | "Key focus"`.
+  - `cardTypeLabel(type)` — explicit map, falls back to Title Case.
+
+## Dependencies
+
+- Imports `SignalDirection` type only.
+- No React, router, or API calls.
+
+## Patterns (symmetry)
+
+- Null / undefined / `NaN` inputs return `"—"` (em dash). Components depend on this.
+- All locale strings use `"en-IN"` to match the seeded Indian context.
+- `mainIssueLabel` is the only place that decides the contextual label for an event/card's main issue — components call it instead of hard-coding the label.
+- `cardTypeLabel` maintains an explicit dictionary; when you introduce a new card type, add it here.
+
+## Verification checklist
+
+- [ ] All numeric helpers return `"—"` for null / undefined / `NaN`
+- [ ] Locale is `"en-IN"` everywhere
+- [ ] `cardTypeLabel` covers every new card type
+- [ ] `mainIssueLabel` callers never inline the label string
