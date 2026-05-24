@@ -23,7 +23,7 @@ The persistent chrome around every authenticated route: left nav sidebar, top ba
 ## Patterns (symmetry)
 
 - The `NAV` array drives the left desktop sidebar and the mobile bottom nav. Utility routes live in `UTILITY_NAV` inside the header dropdown ([`UtilitySidebar.tsx`](./UtilitySidebar.tsx)).
-- Admin-only `Review Queue` link renders only when `user?.user_type === "ADMIN"`. This is the only place that branches navigation on user type.
+- `ADMIN_NAV` (`Ingest`, `Review Queue`) renders in the desktop sidebar and mobile bottom nav only when `user?.user_type === "ADMIN"`. This is the only place that branches navigation on user type.
 - Left sidebar is `hidden lg:flex` with `sticky top-0 h-screen`. Top bar is `sticky top-0 z-30`. No right layout column.
 - The local `Logo` subcomponent is intentionally private to this file — do not extract it into `common/`.
 
@@ -36,7 +36,7 @@ The persistent chrome around every authenticated route: left nav sidebar, top ba
 ## Verification checklist
 
 - [ ] `NAV` drives left sidebar and bottom nav
-- [ ] Admin gating only on the optional `Review Queue` entry
+- [ ] `ADMIN_NAV` (Ingest + Review Queue) gated on `ADMIN`, shown on desktop sidebar and mobile bottom nav
 - [ ] Top bar contains `TopSearch` and `UtilityMenuToggle` — no right sidebar
 - [ ] Logout uses shared `signOut()` passed into `UtilityMenu`
 - [ ] No data fetching in AppShell

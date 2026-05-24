@@ -24,7 +24,7 @@ Drill-down for one event at `/company/:symbol/event/:eventId`. Verdict-first hea
 ## Patterns (symmetry)
 
 - `QUARTERLY_RESULT`: key numbers table; signals in sidebar when present.
-- `CONCALL_TRANSCRIPT`: commentary above grid; heatmap in sidebar.
+- `CONCALL_TRANSCRIPT` / `INVESTOR_PRESENTATION` (or a linked transcript or presentation document): **Management tone intelligence** section for `management_tone`, `guidance_tracker`, and `analyst_concern` cards; concall commentary and heatmap when transcript data exists.
 - Title row: period + `FileText` icon inline on the left; `SignalBadge` (overall signal) aligned right. Event date (plain text) below title; severity/confidence chips below that.
 - Source documents: `EventDocumentIcons` tooltip carries title, type, values, and confidence — not a separate source block.
 - Empty cards copy uses `ingestion_status` (draft cards, extraction without cards, etc.).
@@ -36,4 +36,5 @@ Drill-down for one event at `/company/:symbol/event/:eventId`. Verdict-first hea
 - [ ] `financial_snapshot` renders for quarterly results when rows exist
 - [ ] Contextual empty state when no published cards
 - [ ] `SaveWatchItemDialog` still works from card bookmark action
+- [ ] Concall transcript and investor presentation events show a dedicated **Management tone intelligence** section
 - [ ] Document icon beside title links to `/documents/:id` when documents exist

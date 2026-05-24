@@ -59,6 +59,13 @@ _FIELDS: list[_OrderField] = [
         "top_customer_orders", "Top-Customer Orders", "crore",
         re.compile(rf"top\s+customer[^\d-]{{0,40}}{_AMOUNT}", re.IGNORECASE),
     ),
+    _OrderField(
+        "new_order_value", "New Order Value", "crore",
+        re.compile(
+            rf"(?:order\s+worth|order\s+value|new\s+order|bagged\s+order)[^\d-]{{0,40}}{_AMOUNT}",
+            re.IGNORECASE,
+        ),
+    ),
 ]
 
 

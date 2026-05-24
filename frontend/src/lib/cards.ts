@@ -1,9 +1,77 @@
 import type {
   CardBrief,
+  DocumentBrief,
+  EventType,
   IntelligenceObject,
   IntelligenceObjectBrief,
   TimelineEvent,
 } from "@/api/types";
+
+/**
+ * Narrative intelligence card types (concall / presentation). Keep in sync with
+ * `CONCALL_CARD_TYPES` in `backend/app/services/card_context.py`.
+ */
+export const MANAGEMENT_TONE_CARD_TYPES = new Set([
+  "management_tone",
+  "guidance_tracker",
+  "analyst_concern",
+]);
+
+/** @deprecated Use `MANAGEMENT_TONE_CARD_TYPES`. */
+export const CONCALL_CARD_TYPES = MANAGEMENT_TONE_CARD_TYPES;
+
+const MANAGEMENT_TONE_EVENT_TYPES = new Set<EventType>([
+  "CONCALL_TRANSCRIPT",
+  "INVESTOR_PRESENTATION",
+]);
+
+const MANAGEMENT_TONE_DOCUMENT_TYPES = new Set([
+  "CONCALL_TRANSCRIPT",
+  "INVESTOR_PRESENTATION",
+]);
+
+/** True when the event or any linked document is a concall transcript or investor presentation. */
+export function showsManagementToneIntelligence(
+  eventType: EventType,
+  documents: Pick<DocumentBrief, "document_type">[],
+): boolean {
+  return (
+    MANAGEMENT_TONE_EVENT_TYPES.has(eventType) ||
+    documents.some((d) => MANAGEMENT_TONE_DOCUMENT_TYPES.has(d.document_type))
+  );
+}
+
+/** @deprecated Use `showsManagementToneIntelligence`. */
+export function isConcallOrTranscriptEvent(
+  eventType: EventType,
+  documents: Pick<DocumentBrief, "document_type">[],
+): boolean {
+  return showsManagementToneIntelligence(eventType, documents);
+}
+
+export function partitionManagementToneCards(cards: CardBrief[]): {
+  toneCards: CardBrief[];
+  otherCards: CardBrief[];
+} {
+  const toneCards: CardBrief[] = [];
+  const otherCards: CardBrief[] = [];
+  for (const card of cards) {
+    if (MANAGEMENT_TONE_CARD_TYPES.has(card.card_type)) {
+      toneCards.push(card);
+    } else {
+      otherCards.push(card);
+    }
+  }
+  return { toneCards, otherCards };
+}
+
+/** @deprecated Use `partitionManagementToneCards`. */
+export function partitionConcallCards(cards: CardBrief[]): {
+  toneCards: CardBrief[];
+  otherCards: CardBrief[];
+} {
+  return partitionManagementToneCards(cards);
+}
 
 /** Map a v1 feed brief to `CardBrief` for timeline / card components. */
 export function intelligenceObjectBriefToCardBrief(

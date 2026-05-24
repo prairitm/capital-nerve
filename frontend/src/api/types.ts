@@ -395,6 +395,38 @@ export interface SearchResult {
     company_name: string;
     company_symbol: string | null;
   }[];
+  document_hits: DocumentSearchHit[];
+}
+
+export interface DocumentSearchHit {
+  document_id: number;
+  page_number: number;
+  snippet: string;
+  document_type: DocumentType;
+  document_title: string;
+  company_id: number;
+  company_name: string;
+  company_symbol: string | null;
+  rank: number;
+}
+
+export interface AskRequest {
+  q: string;
+  company_id?: number | null;
+  event_id?: number | null;
+}
+
+export interface AskCitation {
+  page_id: number;
+  document_id: number;
+  page_number: number;
+  quote: string;
+}
+
+export interface AskResponse {
+  answer: string;
+  citations: AskCitation[];
+  retrieval_mode: "hybrid" | "fts_only";
 }
 
 export interface DocumentDetail {

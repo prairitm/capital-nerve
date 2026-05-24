@@ -23,12 +23,16 @@ during ingestion. Read-side `/v1` routers must continue to go through
 | [`__init__.py`](__init__.py) | Re-exports `run_pipeline_for_document`. |
 | [`storage.py`](storage.py) | Local-filesystem object store with S3-shaped interface. |
 | [`parsing.py`](parsing.py) | PDF / text bytes → `DocumentPage` rows. |
+| [`indexing.py`](indexing.py) | FTS + pgvector embeddings on `DocumentPage` rows. |
 | [`llm.py`](llm.py) | Pluggable LLM client (`MockProvider`, `AnthropicProvider`, `OpenAIProvider`). |
 | [`extraction.py`](extraction.py) | Stage 1 — pages → `ExtractedValue`. |
 | [`normalization.py`](normalization.py) | Stage 2 — `ExtractedValue` → `FinancialStatementFact`. |
 | [`metrics.py`](metrics.py) | Stage 3 — facts → `CalculatedMetric`. |
 | [`signals.py`](signals.py) | Stage 4 — metrics → `GeneratedSignal` via `signal_definitions.rule_json`. |
 | [`cards.py`](cards.py) | Stage 5 — signals → `IntelligenceCard` + `CardEvidence`. |
+| [`segment.py`](segment.py) | Stage 1f — segment tables → `SegmentFact` + primary segment rollup. |
+| [`announcement.py`](announcement.py) | Stage 1g — press-release order / M&A / dividend / capacity extraction. |
+| [`presentation.py`](presentation.py) | Stage 1h — investor-deck TAM / mix / concentration / targets. |
 | [`runner.py`](runner.py) | Orchestrator + `ExtractionJob` bookkeeping. |
 
 ## Cross-cutting rules

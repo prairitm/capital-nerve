@@ -20,6 +20,11 @@ const NAV = [
   { to: "/search", label: "Search", icon: Search },
 ];
 
+const ADMIN_NAV = [
+  { to: "/admin/ingest", label: "Ingest", mobileLabel: "Ingest", icon: Upload },
+  { to: "/admin/review", label: "Review Queue", mobileLabel: "Review", icon: ShieldAlert },
+] as const;
+
 export function AppShell() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -62,38 +67,25 @@ export function AppShell() {
               {item.label}
             </NavLink>
           ))}
-          {user?.user_type === "ADMIN" && (
-            <>
+          {user?.user_type === "ADMIN" &&
+            ADMIN_NAV.map((item, index) => (
               <NavLink
-                to="/admin/ingest"
-                className={({ isActive }) =>
-                  clsx(
-                    "flex items-center gap-3 px-3 py-2 rounded-xl text-sm transition-colors mt-2",
-                    isActive
-                      ? "bg-surface text-ink border border-line"
-                      : "text-ink-mute hover:text-ink hover:bg-surface/70",
-                  )
-                }
-              >
-                <Upload size={18} />
-                Ingest
-              </NavLink>
-              <NavLink
-                to="/admin/review"
+                key={item.to}
+                to={item.to}
                 className={({ isActive }) =>
                   clsx(
                     "flex items-center gap-3 px-3 py-2 rounded-xl text-sm transition-colors",
+                    index === 0 && "mt-2",
                     isActive
                       ? "bg-surface text-ink border border-line"
                       : "text-ink-mute hover:text-ink hover:bg-surface/70",
                   )
                 }
               >
-                <ShieldAlert size={18} />
-                Review Queue
+                <item.icon size={18} />
+                {item.label}
               </NavLink>
-            </>
-          )}
+            ))}
         </nav>
       </aside>
 
@@ -149,20 +141,23 @@ export function AppShell() {
               </NavLink>
             );
           })}
-          {user?.user_type === "ADMIN" && (
-            <NavLink
-              to="/admin/review"
-              className={clsx(
-                "flex flex-col items-center gap-0.5 px-1.5 py-1.5 rounded-lg text-[10px] sm:text-[11px] flex-1 min-w-0 max-w-[4.5rem]",
-                location.pathname.startsWith("/admin")
-                  ? "text-ink"
-                  : "text-ink-soft",
-              )}
-            >
-              <ShieldAlert size={20} className="shrink-0" />
-              <span className="truncate w-full text-center">Review</span>
-            </NavLink>
-          )}
+          {user?.user_type === "ADMIN" &&
+            ADMIN_NAV.map((item) => {
+              const active = location.pathname.startsWith(item.to);
+              return (
+                <NavLink
+                  key={item.to}
+                  to={item.to}
+                  className={clsx(
+                    "flex flex-col items-center gap-0.5 px-1.5 py-1.5 rounded-lg text-[10px] sm:text-[11px] flex-1 min-w-0 max-w-[4.5rem]",
+                    active ? "text-ink" : "text-ink-soft",
+                  )}
+                >
+                  <item.icon size={20} className="shrink-0" />
+                  <span className="truncate w-full text-center">{item.mobileLabel}</span>
+                </NavLink>
+              );
+            })}
         </div>
       </nav>
     </div>

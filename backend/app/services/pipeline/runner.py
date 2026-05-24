@@ -24,10 +24,14 @@ from app.services.pipeline import cards as cards_stage
 from app.services.pipeline import concall as concall_stage
 from app.services.pipeline import extraction as extraction_stage
 from app.services.pipeline import guidance as guidance_stage
+from app.services.pipeline import indexing as indexing_stage
 from app.services.pipeline import metrics as metrics_stage
 from app.services.pipeline import normalization as normalization_stage
+from app.services.pipeline import announcement as announcement_stage
 from app.services.pipeline import orderbook as orderbook_stage
 from app.services.pipeline import parsing as parsing_stage
+from app.services.pipeline import presentation as presentation_stage
+from app.services.pipeline import segment as segment_stage
 from app.services.pipeline import shareholding as shareholding_stage
 from app.services.pipeline import signals as signals_stage
 from app.services.pipeline.llm import get_provider
@@ -82,6 +86,7 @@ def run_pipeline_for_document(db: Session, *, job_id: int) -> PipelineSummary:
         )
         parsing_stage.persist_pages(db, document, parsed)
         db.flush()
+        indexing_stage.index_document_pages(db, document_id=document.document_id)
 
         # ---- Extraction (LLM) ----
         provider = get_provider()
@@ -108,6 +113,18 @@ def run_pipeline_for_document(db: Session, *, job_id: int) -> PipelineSummary:
             )
         if orderbook_stage.is_order_book_document(document):
             supplemental["order_book"] = orderbook_stage.run_order_book_extraction(
+                db, document=document, event=event
+            )
+        if segment_stage.is_segment_document(document):
+            supplemental["segment"] = segment_stage.run_segment_extraction(
+                db, document=document, event=event
+            )
+        if announcement_stage.is_press_release_document(document):
+            supplemental["announcement"] = announcement_stage.run_announcement_extraction(
+                db, document=document, event=event
+            )
+        if presentation_stage.is_investor_presentation_document(document):
+            supplemental["presentation"] = presentation_stage.run_presentation_extraction(
                 db, document=document, event=event
             )
 

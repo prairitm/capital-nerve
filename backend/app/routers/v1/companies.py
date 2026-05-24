@@ -104,9 +104,11 @@ def company_hub(
     if not company:
         raise HTTPException(status_code=404, detail="Company not found")
 
+    _published = CompanyEvent.is_published.is_(True)
     latest_event = db.scalars(
         select(CompanyEvent)
         .where(CompanyEvent.company_id == company.company_id)
+        .where(_published)
         .where(CompanyEvent.event_type == EventType.QUARTERLY_RESULT)
         .order_by(CompanyEvent.event_date.desc())
         .limit(1)
@@ -115,6 +117,7 @@ def company_hub(
         latest_event = db.scalars(
             select(CompanyEvent)
             .where(CompanyEvent.company_id == company.company_id)
+            .where(_published)
             .order_by(CompanyEvent.event_date.desc())
             .limit(1)
         ).first()
@@ -143,6 +146,7 @@ def company_hub(
     events = db.scalars(
         select(CompanyEvent)
         .where(CompanyEvent.company_id == company.company_id)
+        .where(_published)
         .order_by(CompanyEvent.event_date.desc())
         .limit(30)
     ).all()

@@ -13,6 +13,8 @@ Scores produced:
 - ``concall_demand_score``         — references to demand strength / visibility.
 - ``concall_cost_pressure_score``  — references to inflation / wage / commodity.
 - ``concall_pricing_power_score``  — references to price hikes / pass-through.
+- ``concall_capex_intent_score``   — expansionary capex language.
+- ``concall_margin_tone_score``    — margin confidence / expansion commentary.
 
 Each score is the count of lexicon hits divided by the count of
 hard-coded "page units" (every 1000 characters), capped at 100. The
@@ -66,6 +68,14 @@ _LEX_PRICING_POWER = [
     "price hike", "price increase", "pricing action", "pass through", "pass-through",
     "pricing power", "renewals at higher", "rate hike", "rate revision",
 ]
+_LEX_CAPEX = [
+    "capex", "capital expenditure", "capacity expansion", "greenfield", "brownfield",
+    "new plant", "new facility", "investment cycle", "spend on capacity",
+]
+_LEX_MARGIN_TONE = [
+    "margin expansion", "margin improvement", "margin recovery", "pricing discipline",
+    "cost control", "operating leverage", "ebitda margin improvement", "profitable growth",
+]
 
 
 @dataclass(frozen=True)
@@ -82,6 +92,8 @@ _AXES: list[_Axis] = [
     _Axis("concall_demand_score", "Concall Demand (concall)", _LEX_DEMAND),
     _Axis("concall_cost_pressure_score", "Concall Cost Pressure (concall)", _LEX_COST_PRESSURE),
     _Axis("concall_pricing_power_score", "Concall Pricing Power (concall)", _LEX_PRICING_POWER),
+    _Axis("concall_capex_intent_score", "Concall Capex Intent (concall)", _LEX_CAPEX),
+    _Axis("concall_margin_tone_score", "Concall Margin Tone (concall)", _LEX_MARGIN_TONE),
 ]
 
 

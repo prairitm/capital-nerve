@@ -24,7 +24,8 @@ engine treats them like any other fact.
 - Axes (`normalized_code` written into `ExtractedValue`):
   `concall_confidence_score`, `concall_uncertainty_score`,
   `concall_evasive_score`, `concall_demand_score`,
-  `concall_cost_pressure_score`, `concall_pricing_power_score`.
+  `concall_cost_pressure_score`, `concall_pricing_power_score`,
+  `concall_capex_intent_score`, `concall_margin_tone_score`.
 
 ## Dependencies
 

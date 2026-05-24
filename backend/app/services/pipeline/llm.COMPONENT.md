@@ -28,6 +28,8 @@ and gets back an `ExtractionResult` regardless of provider.
 - `get_provider() -> LLMProvider` — picks the implementation based on
   `LLM_PROVIDER` env var. Falls back to mock when the configured provider's API
   key is missing.
+- `answer_from_context(question, chunks) -> RAGAnswerResult` — cited Q&A over
+  retrieved document passages (read-side; used by `/search/ask`).
 
 ## Providers
 

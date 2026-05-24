@@ -448,6 +448,15 @@ _BY_INPUT_NAME: dict[str, str | None] = {
     "inflow": "order_inflow",
     "cancelled": "cancelled_orders",
     "top": "top_customer_orders",
+    "dps": "dividend_per_share",
+    "order_val": "new_order_value",
+    "deal": "acquisition_value",
+    "new_cap": "new_capacity",
+    "exist_cap": "existing_capacity",
+    "tam": "tam_market_size",
+    "tam_py": "tam_market_size_prior",
+    "rev": "primary_segment_revenue",
+    "ebit_seg": "primary_segment_ebit",
 }
 
 

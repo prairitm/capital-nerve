@@ -13,7 +13,7 @@ The shell, top-bar search, account menu, and alerts that wrap every authenticate
 
 ## Rules
 
-- Layout components are the only place that may read from `useAuthStore()` to derive nav (admin-only `Review Queue` link). Pages should not branch on `user.user_type` for navigation visibility.
+- Layout components are the only place that may read from `useAuthStore()` to derive nav (admin-only `ADMIN_NAV`: Ingest + Review Queue). Pages should not branch on `user.user_type` for navigation visibility.
 - Primary routes use `NAV` in `AppShell.tsx`; utility routes use `UTILITY_NAV` in `UtilitySidebar.tsx`.
 - Click-outside handlers use a `useRef` + `mousedown` listener (pattern in `UtilityMenu`, `HeaderAlerts.tsx` popover, and `TopSearch.tsx`).
 - Hotkey handlers attach on `document` inside `useEffect` and remove on unmount. The Cmd/Ctrl+K binding for search lives in `TopSearch.tsx`.

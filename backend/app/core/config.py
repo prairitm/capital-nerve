@@ -50,6 +50,12 @@ class Settings(BaseSettings):
     # OPEN until an admin approves.
     AUTO_PUBLISH_CONFIDENCE: float = 80.0
 
+    # --- Document search / RAG ---
+    EMBEDDING_PROVIDER: str = "mock"  # one of: "mock", "openai"
+    EMBEDDING_MODEL: str = "text-embedding-3-small"
+    RAG_TOP_K: int = 8
+    RAG_MAX_CHUNK_CHARS: int = 2500
+
     @property
     def cors_origins_list(self) -> list[str]:
         return [origin.strip() for origin in self.CORS_ORIGINS.split(",") if origin.strip()]
@@ -99,6 +105,12 @@ class Settings(BaseSettings):
         if provider == "openai" and not (self.OPENAI_API_KEY or "").strip():
             raise RuntimeError(
                 "LLM_PROVIDER=openai requires OPENAI_API_KEY in production."
+            )
+
+        embedding_provider = (self.EMBEDDING_PROVIDER or "mock").lower()
+        if embedding_provider == "openai" and not (self.OPENAI_API_KEY or "").strip():
+            raise RuntimeError(
+                "EMBEDDING_PROVIDER=openai requires OPENAI_API_KEY in production."
             )
 
 

@@ -1,4 +1,10 @@
-from app.models.events import CompanyEvent, DocumentPage, ExtractionJob, SourceDocument
+from app.models.events import (
+    CompanyEvent,
+    DocumentPage,
+    DocumentPageEmbedding,
+    ExtractionJob,
+    SourceDocument,
+)
 from app.models.facts import (
     AnalystQuestion,
     AnnouncementFact,
@@ -46,6 +52,7 @@ __all__ = [
     "ConcallFact",
     "ConcallSpeaker",
     "DocumentPage",
+    "DocumentPageEmbedding",
     "ExtractedValue",
     "ExtractionJob",
     "FinancialLineItemDefinition",

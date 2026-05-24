@@ -11,7 +11,11 @@ import { PageLoader } from "@/components/common/Spinner";
 import { SeverityBadge } from "@/components/common/SeverityBadge";
 import { SignalBadge } from "@/components/common/SignalBadge";
 import { SourceDocumentLink } from "@/components/common/SourceDocumentLink";
-import { filterInsightListCards } from "@/lib/cards";
+import {
+  filterInsightListCards,
+  partitionManagementToneCards,
+  showsManagementToneIntelligence,
+} from "@/lib/cards";
 import {
   eventTypeLabel,
   formatCr,
@@ -291,10 +295,23 @@ function ManagementCommentary({
   );
 }
 
-function buildCardsEmptyMessage(data: EventDetailV1, publishedCardCount: number): string {
+function buildCardsEmptyMessage(
+  data: EventDetailV1,
+  publishedCardCount: number,
+  options?: { managementTone?: boolean },
+): string {
   const st = data.ingestion_status;
   if (st.unpublished_card_count > 0) {
     return `${st.unpublished_card_count} card${st.unpublished_card_count === 1 ? "" : "s"} awaiting review before they appear here.`;
+  }
+  if (options?.managementTone) {
+    if (st.values_extracted_total > 0 && publishedCardCount === 0) {
+      return "Language was scored but management tone cards have not been published yet.";
+    }
+    if (st.published_signal_count > 0) {
+      return "Tone signals fired — published cards will appear here once ready.";
+    }
+    return "Management tone intelligence will appear here once the transcript or presentation is processed.";
   }
   if (st.values_extracted_total > 0 && publishedCardCount === 0) {
     return "Financial data was extracted but intelligence cards have not been generated yet.";
@@ -306,6 +323,43 @@ function buildCardsEmptyMessage(data: EventDetailV1, publishedCardCount: number)
     return "Signals fired for this event — published cards will appear here once generated.";
   }
   return "No published cards for this event yet.";
+}
+
+function EventIntelligenceSection({
+  title,
+  subtitle,
+  cards,
+  emptyMessage,
+  onSaveWatchItem,
+}: {
+  title: string;
+  subtitle: string;
+  cards: CardBrief[];
+  emptyMessage: string;
+  onSaveWatchItem: (card: CardBrief) => void;
+}) {
+  return (
+    <section className="card rounded-xl overflow-hidden">
+      <div className="px-4 py-4 border-b border-line/60 bg-surface-2/30">
+        <h2 className="text-base font-semibold">{title}</h2>
+        <p className="text-sm text-ink-mute mt-0.5">
+          {cards.length > 0 ? subtitle : emptyMessage}
+        </p>
+      </div>
+      {cards.length > 0 && (
+        <div className="p-4 space-y-3">
+          {cards.map((c) => (
+            <IntelligenceCard
+              key={c.card_id}
+              card={c}
+              showCompany={false}
+              onSaveWatchItem={onSaveWatchItem}
+            />
+          ))}
+        </div>
+      )}
+    </section>
+  );
 }
 
 export function EventDetailPage() {
@@ -327,7 +381,13 @@ export function EventDetailPage() {
     symbol || data.company?.nse_symbol || data.company?.bse_code || undefined;
 
   const cards = filterInsightListCards(data.cards);
-  const isConcallEvent = data.event_type === "CONCALL_TRANSCRIPT";
+  const showManagementTone = showsManagementToneIntelligence(data.event_type, data.documents);
+  const isConcallEvent =
+    data.event_type === "CONCALL_TRANSCRIPT" ||
+    data.documents.some((d) => d.document_type === "CONCALL_TRANSCRIPT");
+  const { toneCards, otherCards } = showManagementTone
+    ? partitionManagementToneCards(cards)
+    : { toneCards: [], otherCards: cards };
   const showFinancialSnapshot = data.financial_snapshot.length > 0;
   const primaryTitle = data.period?.display_label || data.event_title;
   const typeLabel = eventTypeLabel(data.event_type);
@@ -335,6 +395,9 @@ export function EventDetailPage() {
     data,
     data.ingestion_status.published_card_count,
   );
+  const toneCardsEmptyMessage = buildCardsEmptyMessage(data, toneCards.length, {
+    managementTone: true,
+  });
   const summaryText =
     data.summary_text ||
     (data.signals.length > 0
@@ -453,28 +516,34 @@ export function EventDetailPage() {
             <EventSignalsSection signals={data.signals} symbol={companySymbol} />
           )}
 
-          <section className="card rounded-xl overflow-hidden">
-            <div className="px-4 py-4 border-b border-line/60 bg-surface-2/30">
-              <h2 className="text-base font-semibold">Intelligence from this event</h2>
-              <p className="text-sm text-ink-mute mt-0.5">
-                {cards.length > 0
-                  ? "Ordered by materiality — open any card for full detail."
-                  : cardsEmptyMessage}
-              </p>
-            </div>
-            {cards.length > 0 && (
-              <div className="p-4 space-y-3">
-                {cards.map((c) => (
-                  <IntelligenceCard
-                    key={c.card_id}
-                    card={c}
-                    showCompany={false}
-                    onSaveWatchItem={setWatchItemFor}
-                  />
-                ))}
-              </div>
-            )}
-          </section>
+          {showManagementTone ? (
+            <>
+              <EventIntelligenceSection
+                title="Management tone intelligence"
+                subtitle="Tone, guidance, and analyst concern cards from this transcript or presentation."
+                cards={toneCards}
+                emptyMessage={toneCardsEmptyMessage}
+                onSaveWatchItem={setWatchItemFor}
+              />
+              {otherCards.length > 0 && (
+                <EventIntelligenceSection
+                  title="Intelligence from this event"
+                  subtitle="Ordered by materiality — open any card for full detail."
+                  cards={otherCards}
+                  emptyMessage={cardsEmptyMessage}
+                  onSaveWatchItem={setWatchItemFor}
+                />
+              )}
+            </>
+          ) : (
+            <EventIntelligenceSection
+              title="Intelligence from this event"
+              subtitle="Ordered by materiality — open any card for full detail."
+              cards={otherCards}
+              emptyMessage={cardsEmptyMessage}
+              onSaveWatchItem={setWatchItemFor}
+            />
+          )}
 
         </div>
 

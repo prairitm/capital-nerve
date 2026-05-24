@@ -34,6 +34,8 @@ ingested filings the same way it renders seeded ones.
 - Text fallbacks: form-feed (`\f`) splits, otherwise treated as a single page.
 - Empty pages are kept so the page numbering matches the source document
   exactly (evidence row references stay aligned).
+- `indexing.index_document_pages` runs immediately after `persist_pages` in
+  the runner to populate `search_vector` and optional embeddings.
 
 ## Verification checklist
 

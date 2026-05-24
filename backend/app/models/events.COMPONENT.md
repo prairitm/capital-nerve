@@ -15,7 +15,8 @@ Event-side tables: `CompanyEvent` (the canonical "thing happened"), `SourceDocum
 
 - `CompanyEvent` — links a company (and optional period) to a typed event with overall verdict fields (`overall_signal`, `overall_severity`, `overall_confidence`, `summary_text`, `main_issue`, `watch_next`).
 - `SourceDocument` — file metadata + extraction status (`PENDING / PROCESSING / COMPLETED / FAILED / NEEDS_REVIEW`). The `metadata` Python attribute maps to the SQL column name `metadata` (`mapped_column("metadata", JSONB)`).
-- `DocumentPage` — one row per page with `page_text`, `page_markdown`, `layout_json`. Cascade-deleted with the source document.
+- `DocumentPage` — one row per page with `page_text`, `page_markdown`, `search_vector` (FTS), `layout_json`. Cascade-deleted with the source document.
+- `DocumentPageEmbedding` — one pgvector row per indexed page (`page_id` PK, `model_name`, `embedding vector(1536)`). Cascade-deleted with the page.
 - `ExtractionJob` — bookkeeping for the (future) real extraction pipeline.
 
 ## Dependencies

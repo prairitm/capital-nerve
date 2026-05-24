@@ -71,6 +71,40 @@ def test_finance_cost_pressure_fires():
     assert outcome.fired
 
 
+def test_weak_profit_quality_fires_at_tuned_threshold_18():
+    rule = {"metric": "other_income_to_pbt", "operator": ">", "threshold": 18}
+    metrics = metrics_from({"other_income_to_pbt": 18.41})
+    assert _evaluate_rule(rule, metrics).fired
+
+
+def test_elevated_other_income_band_15_to_18():
+    rule = {
+        "all": [
+            {"metric": "other_income_to_pbt", "operator": ">", "threshold": 15},
+            {"metric": "other_income_to_pbt", "operator": "<", "threshold": 18},
+        ]
+    }
+    assert _evaluate_rule(rule, metrics_from({"other_income_to_pbt": 16.0})).fired
+    assert not _evaluate_rule(rule, metrics_from({"other_income_to_pbt": 18.5})).fired
+
+
+def test_strong_cash_conversion_fires():
+    rule = {"metric": "cfo_to_pat", "operator": ">", "threshold": 1.0}
+    metrics = metrics_from({"cfo_to_pat": 1.72}, unit="x")
+    assert _evaluate_rule(rule, metrics).fired
+
+
+def test_modest_revenue_growth_band():
+    rule = {
+        "all": [
+            {"metric": "revenue_yoy_growth", "operator": ">", "threshold": 0},
+            {"metric": "revenue_yoy_growth", "operator": "<", "threshold": 12},
+        ]
+    }
+    assert _evaluate_rule(rule, metrics_from({"revenue_yoy_growth": 6.0})).fired
+    assert not _evaluate_rule(rule, metrics_from({"revenue_yoy_growth": 14.0})).fired
+
+
 # ---------------------------------------------------------------------------
 # Composite rules
 # ---------------------------------------------------------------------------
@@ -162,3 +196,23 @@ def test_low_quality_growth_composite():
         },
     )
     assert _evaluate_rule(rule, metrics).fired
+
+
+def test_eps_growth_fires_above_threshold():
+    rule = {"metric": "eps_growth_yoy", "operator": ">", "threshold": 10}
+    assert _evaluate_rule(rule, metrics_from({"eps_growth_yoy": 14.0})).fired
+
+
+def test_booking_momentum_fires():
+    rule = {"metric": "order_inflow_growth_yoy", "operator": ">", "threshold": 15}
+    assert _evaluate_rule(rule, metrics_from({"order_inflow_growth_yoy": 22.0})).fired
+
+
+def test_demand_tone_positive_fires():
+    rule = {"metric": "concall_demand_score", "operator": ">", "threshold": 45}
+    assert _evaluate_rule(rule, metrics_from({"concall_demand_score": 50.0}, unit="score")).fired
+
+
+def test_material_order_win_fires():
+    rule = {"metric": "new_order_to_ttm_revenue", "operator": ">", "threshold": 0.05}
+    assert _evaluate_rule(rule, metrics_from({"new_order_to_ttm_revenue": 0.08}, unit="x")).fired

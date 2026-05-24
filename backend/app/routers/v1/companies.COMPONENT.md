@@ -40,6 +40,9 @@ endpoints.
 - Top intelligence objects are filtered the same way as the cross-company
   feed (`is_published=True`, `card_type != 'watch_next'`) so the hub and
   the feed never disagree on what the user can see.
+- Latest event resolution and the embedded timeline only include
+  `CompanyEvent.is_published=True`, matching
+  `GET /v1/companies/{symbol}/events`.
 - Badges are derived from the latest event direction plus the card type of
   the top objects — mirrors the legacy logic in
   `app.routers.companies.company_detail`.
@@ -50,6 +53,7 @@ endpoints.
 - [ ] `latest_summary` falls back to the rebuild path when the stored
       summary is the pipeline placeholder.
 - [ ] `top_objects` only contains published, non-`watch_next` cards.
+- [ ] `timeline` and `latest_event_id` omit unpublished events (review queue).
 - [ ] Snapshot rows include a YoY delta only when the prior-year quarter
       fact exists.
 - [ ] `watchlist_status` reflects whether the current user has the company

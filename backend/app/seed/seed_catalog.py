@@ -126,6 +126,24 @@ LINE_ITEMS: list[tuple[str, str, StatementType]] = [
     ("concall_demand_score", "Concall Demand Score", StatementType.NOTES),
     ("concall_cost_pressure_score", "Concall Cost-Pressure Score", StatementType.NOTES),
     ("concall_pricing_power_score", "Concall Pricing-Power Score", StatementType.NOTES),
+    ("concall_capex_intent_score", "Concall Capex Intent Score", StatementType.NOTES),
+    ("concall_margin_tone_score", "Concall Margin Tone Score", StatementType.NOTES),
+    # Press release / investor deck / segment rollup
+    ("dividend_per_share", "Dividend Per Share", StatementType.NOTES),
+    ("new_order_value", "New Order Value", StatementType.NOTES),
+    ("acquisition_value", "Acquisition Value", StatementType.NOTES),
+    ("revenue_contribution_pct", "Revenue Contribution %", StatementType.NOTES),
+    ("new_capacity", "New Capacity", StatementType.NOTES),
+    ("existing_capacity", "Existing Capacity", StatementType.NOTES),
+    ("capacity_utilization_pct", "Capacity Utilization %", StatementType.NOTES),
+    ("tam_market_size", "TAM / Market Size", StatementType.NOTES),
+    ("tam_market_size_prior", "Prior TAM / Market Size", StatementType.NOTES),
+    ("high_margin_revenue_pct", "High-Margin Revenue %", StatementType.NOTES),
+    ("top_client_revenue_pct", "Top Client Revenue %", StatementType.NOTES),
+    ("region_revenue_pct", "Region Revenue %", StatementType.NOTES),
+    ("management_target_value", "Management Target Value", StatementType.NOTES),
+    ("primary_segment_revenue", "Primary Segment Revenue", StatementType.SEGMENT),
+    ("primary_segment_ebit", "Primary Segment EBIT", StatementType.SEGMENT),
     # Market data — ingested via /v1/market-data, stored as facts on the
     # event's period so valuation metrics stay period-keyed.
     ("share_price_close", "Share Price (Close)", StatementType.NOTES),
@@ -218,6 +236,14 @@ METRIC_DEFS: list[dict] = [
         ],
     ),
     _m(
+        "eps_growth_yoy", "EPS Growth YoY", "growth",
+        "(eps - eps_py) / eps_py * 100", "%", is_pct=True,
+        inputs=[
+            _i("eps", "eps_basic", "CURRENT"),
+            _i("eps_py", "eps_basic", "PY"),
+        ],
+    ),
+    _m(
         "ebitda_margin", "EBITDA Margin", "margin",
         "ebitda / revenue * 100", "%", is_pct=True,
         inputs=[
@@ -277,10 +303,9 @@ METRIC_DEFS: list[dict] = [
     ),
     _m(
         "interest_coverage", "Interest Coverage", "debt",
-        "(ebitda - depreciation) / finance_cost", "x",
+        "ebitda / finance_cost", "x",
         inputs=[
             _i("ebitda", "ebitda", "CURRENT"),
-            _i("depreciation", "depreciation", "CURRENT"),
             _i("finance_cost", "finance_cost", "CURRENT"),
         ],
     ),
@@ -557,11 +582,68 @@ METRIC_DEFS: list[dict] = [
         inputs=[_i("s", "concall_evasive_score", "CURRENT")],
     ),
     _m(
+        "concall_demand_score", "Concall Demand Score", "management_tone",
+        "s", "score",
+        inputs=[_i("s", "concall_demand_score", "CURRENT")],
+    ),
+    _m(
+        "concall_cost_pressure_score", "Concall Cost Pressure Score", "management_tone",
+        "s", "score",
+        inputs=[_i("s", "concall_cost_pressure_score", "CURRENT")],
+    ),
+    _m(
+        "concall_pricing_power_score", "Concall Pricing Power Score", "management_tone",
+        "s", "score",
+        inputs=[_i("s", "concall_pricing_power_score", "CURRENT")],
+    ),
+    _m(
         "management_confidence_change_qoq", "Management Confidence Δ QoQ", "management_tone",
         "now - pq", "score",
         inputs=[
             _i("now", "concall_confidence_score", "CURRENT"),
             _i("pq", "concall_confidence_score", "PQ"),
+        ],
+    ),
+    _m(
+        "concall_demand_change_qoq", "Concall Demand Tone Δ QoQ", "management_tone",
+        "now - pq", "score",
+        inputs=[
+            _i("now", "concall_demand_score", "CURRENT"),
+            _i("pq", "concall_demand_score", "PQ"),
+        ],
+    ),
+    _m(
+        "concall_pricing_power_change_qoq", "Pricing Power Tone Δ QoQ", "management_tone",
+        "now - pq", "score",
+        inputs=[
+            _i("now", "concall_pricing_power_score", "CURRENT"),
+            _i("pq", "concall_pricing_power_score", "PQ"),
+        ],
+    ),
+    _m(
+        "concall_cost_pressure_change_qoq", "Cost Pressure Δ QoQ", "management_tone",
+        "now - pq", "score",
+        inputs=[
+            _i("now", "concall_cost_pressure_score", "CURRENT"),
+            _i("pq", "concall_cost_pressure_score", "PQ"),
+        ],
+    ),
+    _m(
+        "concall_capex_intent_score", "Capex Intent (Concall)", "management_tone",
+        "s", "score",
+        inputs=[_i("s", "concall_capex_intent_score", "CURRENT")],
+    ),
+    _m(
+        "concall_margin_tone_score", "Margin Tone (Concall)", "management_tone",
+        "s", "score",
+        inputs=[_i("s", "concall_margin_tone_score", "CURRENT")],
+    ),
+    _m(
+        "capacity_utilization_change", "Capacity Utilization Change", "operations",
+        "now - py", "pp",
+        inputs=[
+            _i("now", "capacity_utilization_pct", "CURRENT"),
+            _i("py", "capacity_utilization_pct", "PY"),
         ],
     ),
     # ---------------- Phase 4e — Order book ----------------
@@ -605,6 +687,120 @@ METRIC_DEFS: list[dict] = [
             _i("inflow", "order_inflow", "CURRENT"),
         ],
     ),
+    _m(
+        "order_inflow_growth_yoy", "Order Inflow Growth YoY", "order_book",
+        "(now - py) / py * 100", "%", is_pct=True,
+        inputs=[
+            _i("now", "order_inflow", "CURRENT"),
+            _i("py", "order_inflow", "PY"),
+        ],
+    ),
+    _m(
+        "order_inflow_growth_qoq", "Order Inflow Growth QoQ", "order_book",
+        "(now - pq) / pq * 100", "%", is_pct=True,
+        inputs=[
+            _i("now", "order_inflow", "CURRENT"),
+            _i("pq", "order_inflow", "PQ"),
+        ],
+    ),
+    _m(
+        "order_book_growth_qoq", "Order Book Growth QoQ", "order_book",
+        "(now - pq) / pq * 100", "%", is_pct=True,
+        inputs=[
+            _i("now", "closing_order_book", "CURRENT"),
+            _i("pq", "closing_order_book", "PQ"),
+        ],
+    ),
+    # ---------------- Phase 4f — Segments (primary segment rollup) ----------------
+    _m(
+        "primary_segment_revenue_growth_yoy", "Primary Segment Revenue Growth YoY", "segment",
+        "(rev - rev_py) / rev_py * 100", "%", is_pct=True,
+        inputs=[
+            _i("rev", "primary_segment_revenue", "CURRENT"),
+            _i("rev_py", "primary_segment_revenue", "PY"),
+        ],
+    ),
+    _m(
+        "primary_segment_margin", "Primary Segment Margin", "segment",
+        "ebit / rev * 100", "%", is_pct=True,
+        inputs=[
+            _i("ebit", "primary_segment_ebit", "CURRENT"),
+            _i("rev", "primary_segment_revenue", "CURRENT"),
+        ],
+    ),
+    # ---------------- Phase 4g — Press release / deck ----------------
+    _m(
+        "ttm_revenue", "TTM Revenue", "growth",
+        "ttm", "crore",
+        inputs=[_i("ttm", "revenue_from_operations", "TTM")],
+    ),
+    _m(
+        "new_order_to_ttm_revenue", "New Order / TTM Revenue", "order_book",
+        "order_val / ttm_rev", "x",
+        inputs=[
+            _i("order_val", "new_order_value", "CURRENT"),
+            _i("ttm_rev", "ttm_revenue", "CURRENT", kind="metric"),
+        ],
+        deps=["ttm_revenue"],
+    ),
+    _m(
+        "acquisition_to_market_cap", "Acquisition / Market Cap", "strategic",
+        "deal / mcap", "x",
+        inputs=[
+            _i("deal", "acquisition_value", "CURRENT"),
+            _i("mcap", "market_cap", "CURRENT"),
+        ],
+    ),
+    _m(
+        "capacity_addition_pct", "Capacity Addition %", "operations",
+        "new_cap / exist_cap * 100", "%", is_pct=True,
+        inputs=[
+            _i("new_cap", "new_capacity", "CURRENT"),
+            _i("exist_cap", "existing_capacity", "CURRENT"),
+        ],
+    ),
+    _m(
+        "dividend_yield", "Dividend Yield", "valuation",
+        "dps / price * 100", "%", is_pct=True,
+        inputs=[
+            _i("dps", "dividend_per_share", "CURRENT"),
+            _i("price", "share_price_close", "CURRENT"),
+        ],
+    ),
+    _m(
+        "tam_growth_pct", "TAM Growth", "market_opportunity",
+        "(tam - tam_py) / tam_py * 100", "%", is_pct=True,
+        inputs=[
+            _i("tam", "tam_market_size", "CURRENT"),
+            _i("tam_py", "tam_market_size_prior", "CURRENT"),
+        ],
+    ),
+    _m(
+        "mix_shift_bps", "High-Margin Mix Shift", "business_quality",
+        "(now - py) * 100", "bps", is_bps=True,
+        inputs=[
+            _i("now", "high_margin_revenue_pct", "CURRENT"),
+            _i("py", "high_margin_revenue_pct", "PY"),
+        ],
+    ),
+    _m(
+        "target_gap_pct", "Management Target Gap", "execution",
+        "(target - current) / current * 100", "%", is_pct=True,
+        inputs=[
+            _i("target", "management_target_value", "CURRENT"),
+            _i("current", "revenue_from_operations", "CURRENT"),
+        ],
+    ),
+    _m(
+        "top_client_revenue_pct", "Top Client Revenue %", "business_quality",
+        "s", "%", is_pct=True,
+        inputs=[_i("s", "top_client_revenue_pct", "CURRENT")],
+    ),
+    _m(
+        "region_revenue_pct", "Region Revenue %", "business_quality",
+        "s", "%", is_pct=True,
+        inputs=[_i("s", "region_revenue_pct", "CURRENT")],
+    ),
 ]
 
 
@@ -646,31 +842,52 @@ SIGNAL_DEFS: list[dict] = [
     _s(
         "weak_profit_quality_other_income", "Weak Profit Quality: Other Income Dependency",
         "profit_quality", "Other income forms a large percentage of PBT.",
-        _leaf("other_income_to_pbt", ">", 20),
+        _leaf("other_income_to_pbt", ">", 18),
         SignalDirection.NEGATIVE, SeverityLevel.HIGH,
+    ),
+    _s(
+        "elevated_other_income_share", "Elevated Other Income Share",
+        "profit_quality", "Other income is a meaningful but not dominant share of PBT.",
+        {"all": [
+            _leaf("other_income_to_pbt", ">", 15),
+            _leaf("other_income_to_pbt", "<", 18),
+        ]},
+        SignalDirection.NEGATIVE, SeverityLevel.MEDIUM,
     ),
     _s(
         "margin_compression", "Margin Compression",
         "margin", "EBITDA margin declined materially YoY.",
-        _leaf("ebitda_margin_change_yoy_bps", "<", -100),
+        _leaf("ebitda_margin_change_yoy_bps", "<", -75),
         SignalDirection.NEGATIVE, SeverityLevel.MEDIUM,
     ),
     _s(
         "margin_expansion", "Margin Expansion",
         "margin", "EBITDA margin expanded YoY.",
-        _leaf("ebitda_margin_change_yoy_bps", ">", 100),
+        _leaf("ebitda_margin_change_yoy_bps", ">", 75),
         SignalDirection.POSITIVE, SeverityLevel.MEDIUM,
     ),
     _s(
         "revenue_acceleration", "Revenue Growth Acceleration",
-        "growth", "Revenue YoY growth above 15%.",
-        _leaf("revenue_yoy_growth", ">", 15),
+        "growth", "Revenue YoY growth above 12%.",
+        _leaf("revenue_yoy_growth", ">", 12),
         SignalDirection.POSITIVE, SeverityLevel.MEDIUM,
     ),
     _s(
+        "modest_revenue_growth", "Modest Revenue Growth",
+        "growth", "Revenue growing YoY but below acceleration tier.",
+        {"all": [
+            _leaf("revenue_yoy_growth", ">", 0),
+            _leaf("revenue_yoy_growth", "<", 12),
+        ]},
+        SignalDirection.POSITIVE, SeverityLevel.LOW,
+    ),
+    _s(
         "revenue_deceleration", "Revenue Growth Deceleration",
-        "growth", "Revenue YoY growth slowed versus the prior trend.",
-        _leaf("revenue_yoy_growth", "<", 8),
+        "growth", "Revenue YoY growth positive but slowing materially.",
+        {"all": [
+            _leaf("revenue_yoy_growth", ">", 0),
+            _leaf("revenue_yoy_growth", "<", 5),
+        ]},
         SignalDirection.NEGATIVE, SeverityLevel.MEDIUM,
     ),
     _s(
@@ -682,7 +899,7 @@ SIGNAL_DEFS: list[dict] = [
     _s(
         "finance_cost_pressure", "Finance Cost Pressure",
         "expense", "Finance costs absorb a heavy share of EBITDA.",
-        _leaf("finance_cost_burden", ">", 25),
+        _leaf("finance_cost_burden", ">", 22),
         SignalDirection.NEGATIVE, SeverityLevel.HIGH,
     ),
     _s(
@@ -702,7 +919,7 @@ SIGNAL_DEFS: list[dict] = [
         {"all": [
             _leaf("pat_growth_yoy", ">", 10),
             {"any": [
-                _leaf("other_income_to_pbt", ">", 20),
+                _leaf("other_income_to_pbt", ">", 18),
                 _leaf("exceptional_to_pat", ">", 15),
             ]},
         ]},
@@ -713,12 +930,69 @@ SIGNAL_DEFS: list[dict] = [
         "earnings_quality",
         "Revenue, EBITDA, and PAT all up YoY with healthy other-income share.",
         {"all": [
-            _leaf("revenue_yoy_growth", ">", 10),
-            _leaf("ebitda_growth_yoy", ">", 10),
-            _leaf("pat_growth_yoy", ">", 10),
+            _leaf("revenue_yoy_growth", ">", 8),
+            _leaf("ebitda_growth_yoy", ">", 8),
+            _leaf("pat_growth_yoy", ">", 8),
             _leaf("other_income_to_pbt", "<", 15),
         ]},
         SignalDirection.POSITIVE, SeverityLevel.HIGH,
+    ),
+    # ---------------- Phase 1b — Current-period (no YoY required) ----------------
+    _s(
+        "strong_cash_conversion",
+        "Strong Cash Conversion",
+        "cash_quality",
+        "CFO materially exceeds PAT — earnings backed by cash.",
+        _leaf("cfo_to_pat", ">", 1.0),
+        SignalDirection.POSITIVE, SeverityLevel.MEDIUM,
+    ),
+    _s(
+        "weak_cash_conversion",
+        "Weak Cash Conversion",
+        "cash_quality",
+        "CFO fails to cover PAT — earnings quality concern.",
+        _leaf("cfo_to_pat", "<", 0.5),
+        SignalDirection.NEGATIVE, SeverityLevel.HIGH,
+    ),
+    _s(
+        "healthy_pat_margin",
+        "Healthy PAT Margin",
+        "margin",
+        "PAT margin above 12% for the quarter.",
+        _leaf("pat_margin", ">", 12),
+        SignalDirection.POSITIVE, SeverityLevel.MEDIUM,
+    ),
+    _s(
+        "thin_pat_margin",
+        "Thin PAT Margin",
+        "margin",
+        "PAT margin below 8% for the quarter.",
+        _leaf("pat_margin", "<", 8),
+        SignalDirection.NEGATIVE, SeverityLevel.MEDIUM,
+    ),
+    _s(
+        "high_effective_tax_rate",
+        "High Effective Tax Rate",
+        "profit_quality",
+        "Effective tax rate above 28% of PBT.",
+        _leaf("effective_tax_rate", ">", 28),
+        SignalDirection.NEGATIVE, SeverityLevel.MEDIUM,
+    ),
+    _s(
+        "revenue_growth_qoq",
+        "Revenue Growth (QoQ)",
+        "growth",
+        "Revenue grew more than 5% versus the prior quarter.",
+        _leaf("revenue_qoq_growth", ">", 5),
+        SignalDirection.POSITIVE, SeverityLevel.MEDIUM,
+    ),
+    _s(
+        "revenue_decline_qoq",
+        "Revenue Decline (QoQ)",
+        "growth",
+        "Revenue contracted versus the prior quarter.",
+        _leaf("revenue_qoq_growth", "<", 0),
+        SignalDirection.NEGATIVE, SeverityLevel.MEDIUM,
     ),
     # ---------------- Phase 2 — Cash flow / Working capital ----------------
     _s(
@@ -726,7 +1000,7 @@ SIGNAL_DEFS: list[dict] = [
         "cash_quality",
         "Revenue growing but cash conversion weak or receivables growing far faster than revenue.",
         {"all": [
-            _leaf("revenue_yoy_growth", ">", 10),
+            _leaf("revenue_yoy_growth", ">", 8),
             {"any": [
                 _leaf("cfo_to_pat", "<", 0.6),
                 _leaf("receivables_growth_minus_revenue_growth_bps", ">", 1500),
@@ -739,7 +1013,7 @@ SIGNAL_DEFS: list[dict] = [
         "cash_quality",
         "Revenue + margin up, cash conversion strong, receivables tame.",
         {"all": [
-            _leaf("revenue_yoy_growth", ">", 10),
+            _leaf("revenue_yoy_growth", ">", 8),
             _leaf("ebitda_margin_change_yoy_bps", ">", 0),
             _leaf("cfo_to_pat", ">", 0.8),
             _leaf("receivables_growth_minus_revenue_growth_bps", "<", 500),
@@ -750,7 +1024,7 @@ SIGNAL_DEFS: list[dict] = [
         "channel_stuffing_risk", "Channel-Stuffing Risk",
         "earnings_quality",
         "Receivables growing materially faster than revenue.",
-        _leaf("receivables_growth_minus_revenue_growth_bps", ">", 2000),
+        _leaf("receivables_growth_minus_revenue_growth_bps", ">", 1500),
         SignalDirection.NEGATIVE, SeverityLevel.HIGH,
     ),
     _s(
@@ -788,7 +1062,7 @@ SIGNAL_DEFS: list[dict] = [
     _s(
         "interest_coverage_weakness", "Interest Coverage Weakness",
         "debt", "Interest coverage below 3x.",
-        _leaf("interest_coverage", "<", 3),
+        _leaf("interest_coverage", "<", 2.5),
         SignalDirection.NEGATIVE, SeverityLevel.HIGH,
     ),
     _s(
@@ -802,7 +1076,7 @@ SIGNAL_DEFS: list[dict] = [
         "debt",
         "Revenue growth + leverage up + interest coverage low.",
         {"all": [
-            _leaf("revenue_yoy_growth", ">", 10),
+            _leaf("revenue_yoy_growth", ">", 8),
             _leaf("net_debt_to_ebitda", ">", 2.5),
             _leaf("interest_coverage", "<", 4),
         ]},
@@ -936,7 +1210,7 @@ SIGNAL_DEFS: list[dict] = [
         "high_uncertainty", "High Management Uncertainty",
         "management_tone",
         "Concall language is unusually hedged.",
-        _leaf("management_uncertainty_score", ">", 60),
+        _leaf("management_uncertainty_score", ">", 55),
         SignalDirection.NEGATIVE, SeverityLevel.MEDIUM,
     ),
     # ---------------- Phase 4e — Order book ----------------
@@ -969,6 +1243,181 @@ SIGNAL_DEFS: list[dict] = [
         "order_book", "Cancellation rate above 10% of inflow.",
         _leaf("order_cancellation_rate", ">", 10),
         SignalDirection.NEGATIVE, SeverityLevel.HIGH,
+    ),
+    _s(
+        "booking_momentum", "Booking Momentum",
+        "order_book", "Order inflow grew materially YoY.",
+        _leaf("order_inflow_growth_yoy", ">", 15),
+        SignalDirection.POSITIVE, SeverityLevel.MEDIUM,
+    ),
+    _s(
+        "order_inflow_slowdown", "Order Inflow Slowdown",
+        "order_book", "Order inflow contracted YoY.",
+        _leaf("order_inflow_growth_yoy", "<", 0),
+        SignalDirection.NEGATIVE, SeverityLevel.MEDIUM,
+    ),
+    # ---------------- Phase 1 extensions — growth / WC / earnings ----------------
+    _s(
+        "operating_profit_momentum", "Operating Profit Momentum",
+        "growth", "EBITDA grew materially YoY.",
+        _leaf("ebitda_growth_yoy", ">", 8),
+        SignalDirection.POSITIVE, SeverityLevel.MEDIUM,
+    ),
+    _s(
+        "shareholder_earnings_growth", "Shareholder Earnings Growth",
+        "growth", "EPS grew materially YoY.",
+        _leaf("eps_growth_yoy", ">", 10),
+        SignalDirection.POSITIVE, SeverityLevel.MEDIUM,
+    ),
+    _s(
+        "eps_contraction", "EPS Contraction",
+        "growth", "EPS declined YoY.",
+        _leaf("eps_growth_yoy", "<", 0),
+        SignalDirection.NEGATIVE, SeverityLevel.HIGH,
+    ),
+    _s(
+        "receivable_days_stress", "Receivable Days Stress",
+        "working_capital", "DSO above 90 days (quarter proxy).",
+        _leaf("dso", ">", 90),
+        SignalDirection.NEGATIVE, SeverityLevel.MEDIUM,
+    ),
+    _s(
+        "inventory_buildup_risk", "Inventory Build-up Risk",
+        "working_capital", "Days inventory outstanding above 120.",
+        _leaf("dio", ">", 120),
+        SignalDirection.NEGATIVE, SeverityLevel.MEDIUM,
+    ),
+    _s(
+        "margin_strength", "Margin Strength",
+        "margin", "EBITDA margin above 20%.",
+        _leaf("ebitda_margin", ">", 20),
+        SignalDirection.POSITIVE, SeverityLevel.MEDIUM,
+    ),
+    # ---------------- Phase 4d — Concall tone signals ----------------
+    _s(
+        "demand_tone_positive", "Demand Tone Positive",
+        "management_tone", "Concall language references strong demand visibility.",
+        _leaf("concall_demand_score", ">", 45),
+        SignalDirection.POSITIVE, SeverityLevel.MEDIUM,
+    ),
+    _s(
+        "demand_tone_negative", "Demand Tone Negative",
+        "management_tone", "Weak demand language on the concall.",
+        {"all": [
+            _leaf("concall_demand_score", "<", 15),
+            _leaf("revenue_yoy_growth", "<", 5),
+        ]},
+        SignalDirection.NEGATIVE, SeverityLevel.MEDIUM,
+    ),
+    _s(
+        "margin_tone_pressure", "Margin Tone Pressure",
+        "management_tone", "Concall cites cost / margin headwinds.",
+        _leaf("concall_cost_pressure_score", ">", 50),
+        SignalDirection.NEGATIVE, SeverityLevel.MEDIUM,
+    ),
+    _s(
+        "margin_tone_confidence", "Margin Tone Confidence",
+        "management_tone", "Concall language supportive of margins.",
+        _leaf("concall_margin_tone_score", ">", 45),
+        SignalDirection.POSITIVE, SeverityLevel.MEDIUM,
+    ),
+    _s(
+        "pricing_power_signal", "Pricing Power",
+        "management_tone", "Management cites pricing actions / pass-through.",
+        _leaf("concall_pricing_power_score", ">", 40),
+        SignalDirection.POSITIVE, SeverityLevel.MEDIUM,
+    ),
+    _s(
+        "capex_expansion_intent", "Capex Expansion Intent",
+        "management_tone", "Management signals expansionary capex.",
+        _leaf("concall_capex_intent_score", ">", 40),
+        SignalDirection.POSITIVE, SeverityLevel.MEDIUM,
+    ),
+    _s(
+        "capex_caution", "Capex Caution",
+        "management_tone", "Limited capex / expansion language on concall.",
+        _leaf("concall_capex_intent_score", "<", 15),
+        SignalDirection.MIXED, SeverityLevel.LOW,
+    ),
+    _s(
+        "utilization_improving", "Utilization Improving",
+        "operations", "Capacity utilization rose versus prior year.",
+        _leaf("capacity_utilization_change", ">", 5),
+        SignalDirection.POSITIVE, SeverityLevel.MEDIUM,
+    ),
+    # ---------------- Phase 4f — Segment signals ----------------
+    _s(
+        "segment_growth_driver", "Segment Growth Driver",
+        "segment", "Primary segment revenue grew >15% YoY.",
+        _leaf("primary_segment_revenue_growth_yoy", ">", 15),
+        SignalDirection.POSITIVE, SeverityLevel.MEDIUM,
+    ),
+    _s(
+        "segment_margin_strength", "Segment Margin Strength",
+        "segment", "Primary segment EBIT margin above 20%.",
+        _leaf("primary_segment_margin", ">", 20),
+        SignalDirection.POSITIVE, SeverityLevel.MEDIUM,
+    ),
+    # ---------------- Phase 4g — Press / deck signals ----------------
+    _s(
+        "material_order_win", "Material Order Win",
+        "order_book", "New order value exceeds 5% of TTM revenue.",
+        _leaf("new_order_to_ttm_revenue", ">", 0.05),
+        SignalDirection.POSITIVE, SeverityLevel.HIGH,
+    ),
+    _s(
+        "strategic_acquisition", "Strategic Acquisition",
+        "strategic", "Acquisition value exceeds 5% of market cap.",
+        _leaf("acquisition_to_market_cap", ">", 0.05),
+        SignalDirection.MIXED, SeverityLevel.HIGH,
+    ),
+    _s(
+        "capacity_expansion", "Capacity Expansion",
+        "operations", "New capacity addition above 10% of existing base.",
+        _leaf("capacity_addition_pct", ">", 10),
+        SignalDirection.POSITIVE, SeverityLevel.MEDIUM,
+    ),
+    _s(
+        "dividend_payout_signal", "Dividend Payout Signal",
+        "valuation", "Indicative dividend yield above 2%.",
+        _leaf("dividend_yield", ">", 2),
+        SignalDirection.POSITIVE, SeverityLevel.MEDIUM,
+    ),
+    _s(
+        "tam_tailwind", "TAM Tailwind",
+        "market_opportunity", "Addressable market grew >10% versus prior estimate.",
+        _leaf("tam_growth_pct", ">", 10),
+        SignalDirection.POSITIVE, SeverityLevel.MEDIUM,
+    ),
+    _s(
+        "mix_shift_positive", "Mix Shift Positive",
+        "business_quality", "High-margin revenue mix expanded >100 bps YoY.",
+        _leaf("mix_shift_bps", ">", 100),
+        SignalDirection.POSITIVE, SeverityLevel.MEDIUM,
+    ),
+    _s(
+        "client_concentration_risk", "Client Concentration Risk",
+        "business_quality", "Top client exceeds 25% of revenue.",
+        _leaf("top_client_revenue_pct", ">", 25),
+        SignalDirection.NEGATIVE, SeverityLevel.HIGH,
+    ),
+    _s(
+        "region_concentration", "Region Concentration",
+        "business_quality", "Single region exceeds 70% of revenue.",
+        _leaf("region_revenue_pct", ">", 70),
+        SignalDirection.NEGATIVE, SeverityLevel.MEDIUM,
+    ),
+    _s(
+        "target_execution_upside", "Target Execution Upside",
+        "execution", "Management target >5% above current revenue run-rate.",
+        _leaf("target_gap_pct", ">", 5),
+        SignalDirection.POSITIVE, SeverityLevel.MEDIUM,
+    ),
+    _s(
+        "target_credibility_risk", "Target Credibility Risk",
+        "execution", "Management target more than 10% below current revenue.",
+        _leaf("target_gap_pct", "<", -10),
+        SignalDirection.NEGATIVE, SeverityLevel.MEDIUM,
     ),
     # ---------------- Manual / fact-driven (no numeric rule) ----------------
     _s(
@@ -1005,7 +1454,7 @@ SIGNAL_DEFS: list[dict] = [
         "Cheap valuation + clean operating performance.",
         {"all": [
             _leaf("pe_ratio", "<", 18),
-            _leaf("revenue_yoy_growth", ">", 12),
+            _leaf("revenue_yoy_growth", ">", 10),
             _leaf("cfo_to_pat", ">", 0.8),
             _leaf("ebitda_margin_change_yoy_bps", ">", 0),
         ]},
@@ -1016,8 +1465,8 @@ SIGNAL_DEFS: list[dict] = [
         "earnings_quality",
         "Margin expansion + PAT growth + improving management tone.",
         {"all": [
-            _leaf("ebitda_margin_change_yoy_bps", ">", 100),
-            _leaf("pat_growth_yoy", ">", 15),
+            _leaf("ebitda_margin_change_yoy_bps", ">", 75),
+            _leaf("pat_growth_yoy", ">", 12),
             _leaf("management_confidence_change_qoq", ">", 5),
         ]},
         SignalDirection.POSITIVE, SeverityLevel.HIGH,
@@ -1030,7 +1479,7 @@ SIGNAL_DEFS: list[dict] = [
             _leaf("management_confidence_score", ">", 65),
             {"any": [
                 _leaf("revenue_yoy_growth", "<", 5),
-                _leaf("ebitda_margin_change_yoy_bps", "<", -100),
+                _leaf("ebitda_margin_change_yoy_bps", "<", -75),
             ]},
         ]},
         SignalDirection.NEGATIVE, SeverityLevel.HIGH,

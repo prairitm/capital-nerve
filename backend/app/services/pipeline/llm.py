@@ -329,7 +329,7 @@ Return ONLY valid JSON matching this schema (no prose, no markdown fences):
 {
   "items": [
     {
-      "normalized_code": "<one of: revenue_from_operations, other_income, total_income, employee_cost, finance_cost, depreciation, other_expenses, cogs, exceptional_items, ebitda, ebitda_margin, ebit, pbt, tax_expense, pat, eps_basic, eps_diluted, cfo, capex_ppe, capex_intangibles, dividend_paid, interest_paid, borrowings_raised, trade_receivables, inventory, trade_payables, current_assets, current_liabilities, short_term_borrowings, long_term_borrowings, lease_liabilities, cash_and_equivalents, current_investments, share_capital, other_equity, shareholders_equity, total_assets, total_liabilities, promoter_holding_pct, promoter_pledge_pct, fii_holding_pct, dii_holding_pct, public_holding_pct, revenue_guidance_lower, revenue_guidance_upper, ebitda_margin_guidance_lower, ebitda_margin_guidance_upper, opening_order_book, closing_order_book, order_inflow, executed_orders, cancelled_orders, top_customer_orders>",
+      "normalized_code": "<one of: revenue_from_operations, other_income, total_income, employee_cost, finance_cost, depreciation, other_expenses, cogs, exceptional_items, ebitda, ebitda_margin, ebit, pbt, tax_expense, pat, eps_basic, eps_diluted, cfo, capex_ppe, capex_intangibles, dividend_paid, dividend_per_share, interest_paid, borrowings_raised, trade_receivables, inventory, trade_payables, current_assets, current_liabilities, short_term_borrowings, long_term_borrowings, lease_liabilities, cash_and_equivalents, current_investments, share_capital, other_equity, shareholders_equity, total_assets, total_liabilities, promoter_holding_pct, promoter_pledge_pct, fii_holding_pct, dii_holding_pct, public_holding_pct, revenue_guidance_lower, revenue_guidance_upper, ebitda_margin_guidance_lower, ebitda_margin_guidance_upper, opening_order_book, closing_order_book, order_inflow, executed_orders, cancelled_orders, top_customer_orders, new_order_value, acquisition_value, revenue_contribution_pct, new_capacity, existing_capacity, capacity_utilization_pct, tam_market_size, tam_market_size_prior, high_margin_revenue_pct, top_client_revenue_pct, region_revenue_pct, management_target_value, primary_segment_revenue, primary_segment_ebit, share_price_close, market_cap>",
       "raw_label": "<the exact label as printed in the document>",
       "value": <number>,
       "unit": "<crore | % | Rs | bps | days | x>",
@@ -531,6 +531,174 @@ class OpenAIProvider:
             raw_response=raw,
             notes=notes,
         )
+
+
+# ---------------------------------------------------------------------------
+# RAG answer generation (read-side; uses same provider factory)
+# ---------------------------------------------------------------------------
+
+
+@dataclass
+class RAGChunk:
+    page_id: int
+    document_id: int
+    page_number: int
+    document_title: str
+    text: str
+
+
+@dataclass
+class RAGCitation:
+    page_id: int
+    document_id: int
+    page_number: int
+    quote: str
+
+
+@dataclass
+class RAGAnswerResult:
+    answer: str
+    citations: list[RAGCitation]
+
+
+_RAG_SYSTEM_PROMPT = """You answer questions about Indian company filings using ONLY the provided passages.
+Return strict JSON with this shape:
+{
+  "answer": "<concise answer in plain English>",
+  "citations": [{"page_id": <int>, "quote": "<verbatim excerpt from that passage>"}]
+}
+Every factual claim must have at least one citation. Use only page_id values from the passages.
+If the passages do not contain enough information, say so clearly and return an empty citations array."""
+
+
+def answer_from_context(*, question: str, chunks: list[RAGChunk]) -> RAGAnswerResult:
+    """Generate a cited answer from retrieved document passages."""
+    if not chunks:
+        return RAGAnswerResult(
+            answer="No relevant passages were retrieved for this question.",
+            citations=[],
+        )
+
+    provider = get_provider()
+    if isinstance(provider, MockProvider):
+        return _mock_rag_answer(question, chunks)
+
+    user_message = _build_rag_user_message(question=question, chunks=chunks)
+    try:
+        if isinstance(provider, AnthropicProvider):
+            raw = _anthropic_rag_raw(provider, user_message)
+        elif isinstance(provider, OpenAIProvider):
+            raw = _openai_rag_raw(provider, user_message)
+        else:
+            return _mock_rag_answer(question, chunks)
+    except Exception as exc:
+        if settings.is_production:
+            raise
+        logger.exception("RAG LLM call failed; using mock answer: %s", exc)
+        return _mock_rag_answer(question, chunks)
+
+    return _parse_rag_json_response(raw, chunks)
+
+
+def _build_rag_user_message(*, question: str, chunks: list[RAGChunk]) -> str:
+    from app.core.config import settings as cfg
+
+    max_chars = cfg.RAG_MAX_CHUNK_CHARS
+    parts: list[str] = []
+    for chunk in chunks:
+        text = chunk.text[:max_chars]
+        parts.append(
+            f"--- PASSAGE page_id={chunk.page_id} document_id={chunk.document_id} "
+            f"page_number={chunk.page_number} title={chunk.document_title!r} ---\n{text}"
+        )
+    joined = "\n\n".join(parts)
+    return f"Question: {question}\n\nPassages:\n\n{joined}"
+
+
+def _parse_rag_json_response(raw: str, chunks: list[RAGChunk]) -> RAGAnswerResult:
+    cleaned = raw.strip()
+    if cleaned.startswith("```"):
+        cleaned = re.sub(r"^```(?:json)?\s*", "", cleaned)
+        cleaned = re.sub(r"\s*```$", "", cleaned)
+    m = re.search(r"\{.*\}", cleaned, re.DOTALL)
+    if not m:
+        return _mock_rag_answer("", chunks)
+    try:
+        data = json.loads(m.group(0))
+    except json.JSONDecodeError:
+        return _mock_rag_answer("", chunks)
+
+    chunk_by_page = {c.page_id: c for c in chunks}
+    citations: list[RAGCitation] = []
+    for entry in data.get("citations", []):
+        try:
+            page_id = int(entry["page_id"])
+            quote = str(entry.get("quote", "")).strip()
+            if not quote or page_id not in chunk_by_page:
+                continue
+            chunk = chunk_by_page[page_id]
+            citations.append(
+                RAGCitation(
+                    page_id=page_id,
+                    document_id=chunk.document_id,
+                    page_number=chunk.page_number,
+                    quote=quote,
+                )
+            )
+        except (KeyError, TypeError, ValueError):
+            continue
+
+    answer = str(data.get("answer", "")).strip()
+    if not answer:
+        return _mock_rag_answer("", chunks)
+    return RAGAnswerResult(answer=answer, citations=citations)
+
+
+def _mock_rag_answer(question: str, chunks: list[RAGChunk]) -> RAGAnswerResult:
+    del question
+    lines: list[str] = []
+    citations: list[RAGCitation] = []
+    for chunk in chunks[:3]:
+        excerpt = chunk.text.strip().replace("\n", " ")
+        if len(excerpt) > 220:
+            excerpt = excerpt[:217] + "..."
+        lines.append(
+            f"From {chunk.document_title} (page {chunk.page_number}): {excerpt}"
+        )
+        quote = chunk.text.strip()[:300]
+        citations.append(
+            RAGCitation(
+                page_id=chunk.page_id,
+                document_id=chunk.document_id,
+                page_number=chunk.page_number,
+                quote=quote,
+            )
+        )
+    answer = " ".join(lines) if lines else "No relevant passages were found."
+    return RAGAnswerResult(answer=answer, citations=citations)
+
+
+def _anthropic_rag_raw(provider: AnthropicProvider, user_message: str) -> str:
+    resp = provider._client.messages.create(
+        model=provider._model,
+        max_tokens=2048,
+        system=_RAG_SYSTEM_PROMPT,
+        messages=[{"role": "user", "content": user_message}],
+    )
+    text_chunks = [b.text for b in resp.content if getattr(b, "type", None) == "text"]
+    return "".join(text_chunks).strip()
+
+
+def _openai_rag_raw(provider: OpenAIProvider, user_message: str) -> str:
+    resp = provider._client.chat.completions.create(
+        model=provider._model,
+        max_tokens=2048,
+        messages=[
+            {"role": "system", "content": _RAG_SYSTEM_PROMPT},
+            {"role": "user", "content": user_message},
+        ],
+    )
+    return (resp.choices[0].message.content or "").strip()
 
 
 # ---------------------------------------------------------------------------

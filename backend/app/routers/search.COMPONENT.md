@@ -4,7 +4,8 @@
 
 ## Purpose
 
-Lightweight ILIKE search across companies, events, and intelligence cards. Powers both the top-bar dropdown and the Search page.
+Lightweight ILIKE search across companies, events, and intelligence cards, plus
+full-text search over ingested filing pages and a cited RAG Q&A endpoint.
 
 ## Source
 
@@ -15,22 +16,31 @@ Lightweight ILIKE search across companies, events, and intelligence cards. Power
 
 ## Endpoints
 
-- `GET /search?q=` — `q` is required (`Query(min_length=1)`). Returns `{ companies, events, cards }`.
+- `GET /search?q=` — `q` is required (`Query(min_length=1)`). Optional
+  `company_id`, `document_type`. Returns
+  `{ companies, events, cards, document_hits }`.
+- `POST /search/ask` — body `{ q, company_id?, event_id? }`. Returns cited
+  answer with `retrieval_mode` (`hybrid` | `fts_only`).
 
 ## Dependencies
 
-- Imports: `fastapi`, `sqlalchemy.select` / `or_`, models (`Company`, `Sector`, `CompanyEvent`, `IntelligenceCard`, `AppUser`), helper `company_brief`.
+- Imports: `fastapi`, `sqlalchemy.select` / `or_`, models (`Company`, `Sector`,
+  `CompanyEvent`, `IntelligenceCard`, `AppUser`), helper `company_brief`,
+  `document_search.search_pages_fts`, `document_rag.ask`.
 
 ## Patterns (symmetry)
 
-- Single string-LIKE pattern: `f"%{q.lower()}%"`. Reuse this when adding a new search dimension.
-- Caps: 10 companies, 10 events, 15 cards. Keep the same caps when adding new types (or document the change in the frontend `SearchPage` and `TopSearch` components).
-- Companies are searched on `company_name`, `nse_symbol`, `bse_code`, `short_name`. Events on `event_title` and `summary_text`. Cards on `headline`, `one_line_summary`, `detailed_explanation`.
-- The response uses ad hoc dicts (no `response_model`). When you add a field, mirror it in the frontend `SearchResult` interface.
+- Single string-LIKE pattern: `f"%{q.lower()}%"` for companies/events/cards.
+- Caps: 10 companies, 10 events, 15 cards, **15 document_hits**.
+- Document FTS uses PostgreSQL `plainto_tsquery` + `ts_headline` via
+  `document_search.search_pages_fts`.
+- The response uses ad hoc dicts for GET (no `response_model`). When you add a
+  field, mirror it in the frontend `SearchResult` interface.
 
 ## Verification checklist
 
-- [ ] Pattern uses lower-cased `f"%{q.lower()}%"`
-- [ ] Caps preserved (10 / 10 / 15)
+- [ ] Pattern uses lower-cased `f"%{q.lower()}%"` for ILIKE dimensions
+- [ ] Caps preserved (10 / 10 / 15 / 15)
 - [ ] Field additions mirrored in `frontend/src/api/types.ts SearchResult`
 - [ ] No new search type added without updating `TopSearch` and `SearchPage`
+- [ ] `POST /search/ask` returns citations with `document_id` + `page_number`

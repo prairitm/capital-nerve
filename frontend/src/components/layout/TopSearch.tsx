@@ -4,6 +4,7 @@ import { Search } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/api/client";
 import type { SearchResult } from "@/api/types";
+import { documentSourceHref } from "@/components/common/SourceDocumentLink";
 
 export function TopSearch() {
   const [q, setQ] = useState("");
@@ -57,7 +58,7 @@ export function TopSearch() {
               setOpen(false);
             }
           }}
-          placeholder="Search companies, signals…"
+          placeholder="Search companies, filings, signals…"
           className="input pl-9 text-base sm:text-sm"
         />
       </div>
@@ -65,7 +66,8 @@ export function TopSearch() {
         <div className="absolute top-full left-0 right-0 mt-2 card p-2 max-h-[60vh] overflow-y-auto z-40">
           {data.companies.length === 0 &&
             data.events.length === 0 &&
-            data.cards.length === 0 && (
+            data.cards.length === 0 &&
+            data.document_hits.length === 0 && (
               <div className="p-4 text-sm text-ink-mute">No matches.</div>
             )}
           {data.companies.length > 0 && (
@@ -100,6 +102,25 @@ export function TopSearch() {
                 >
                   <div className="text-sm">{c.headline}</div>
                   <div className="text-xs text-ink-soft">{c.company_name}</div>
+                </button>
+              ))}
+            </Section>
+          )}
+          {data.document_hits.length > 0 && (
+            <Section title="In filings">
+              {data.document_hits.slice(0, 3).map((hit) => (
+                <button
+                  key={`${hit.document_id}-${hit.page_number}`}
+                  onClick={() => {
+                    navigate(documentSourceHref(hit.document_id, hit.page_number));
+                    setOpen(false);
+                  }}
+                  className="block w-full text-left px-3 py-2 rounded-lg hover:bg-surface-2"
+                >
+                  <div className="text-sm line-clamp-2">{hit.document_title}</div>
+                  <div className="text-xs text-ink-soft">
+                    {hit.company_name} · p.{hit.page_number}
+                  </div>
                 </button>
               ))}
             </Section>

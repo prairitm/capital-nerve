@@ -1,0 +1,14 @@
+signals_full.csv — all 87 seed signals, exploded by fact + period scope.
+
+Filter columns (Y/N per row):
+  CY  = current quarter fact (engine scope CURRENT)
+  PY  = prior-year same quarter (engine scope PY)
+  CQ  = prior quarter (engine scope PQ)
+  TTM = trailing four quarters
+  AVG = average of current + prior-year (opening/closing assets)
+
+Example: filter CY=Y to see every fact needed for the reporting quarter.
+Example: filter PY=Y to see YoY comparison dependencies.
+Example: filter CQ=Y to see QoQ comparison dependencies.
+
+Regenerate: python backend/scripts/export_signals_full.py (or re-run export from seed_catalog).

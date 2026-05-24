@@ -1,0 +1,84 @@
+code,name,statement_type
+revenue_from_operations,Revenue from Operations,PROFIT_AND_LOSS
+other_income,Other Income,PROFIT_AND_LOSS
+total_income,Total Income,PROFIT_AND_LOSS
+employee_cost,Employee Benefit Expenses,PROFIT_AND_LOSS
+finance_cost,Finance Costs,PROFIT_AND_LOSS
+depreciation,Depreciation & Amortisation,PROFIT_AND_LOSS
+other_expenses,Other Expenses,PROFIT_AND_LOSS
+ebitda,EBITDA,PROFIT_AND_LOSS
+ebitda_margin,EBITDA Margin,PROFIT_AND_LOSS
+ebit,EBIT,PROFIT_AND_LOSS
+pbt,Profit Before Tax,PROFIT_AND_LOSS
+tax_expense,Tax Expense,PROFIT_AND_LOSS
+pat,Profit After Tax,PROFIT_AND_LOSS
+eps_basic,EPS (Basic),PROFIT_AND_LOSS
+eps_diluted,EPS (Diluted),PROFIT_AND_LOSS
+exceptional_items,Exceptional Items,PROFIT_AND_LOSS
+cogs,Cost of Goods Sold,PROFIT_AND_LOSS
+cfo,Cash Flow from Operations,CASH_FLOW
+capex_ppe,Capex (PPE),CASH_FLOW
+capex_intangibles,Capex (Intangibles),CASH_FLOW
+dividend_paid,Dividends Paid,CASH_FLOW
+interest_paid,Interest Paid,CASH_FLOW
+borrowings_raised,Borrowings Raised,CASH_FLOW
+trade_receivables,Trade Receivables,BALANCE_SHEET
+inventory,Inventory,BALANCE_SHEET
+trade_payables,Trade Payables,BALANCE_SHEET
+current_assets,Current Assets,BALANCE_SHEET
+current_liabilities,Current Liabilities,BALANCE_SHEET
+short_term_borrowings,Short-Term Borrowings,BALANCE_SHEET
+long_term_borrowings,Long-Term Borrowings,BALANCE_SHEET
+lease_liabilities,Lease Liabilities,BALANCE_SHEET
+cash_and_equivalents,Cash & Equivalents,BALANCE_SHEET
+current_investments,Current Investments,BALANCE_SHEET
+share_capital,Share Capital,BALANCE_SHEET
+other_equity,Other Equity,BALANCE_SHEET
+shareholders_equity,Shareholders' Equity,BALANCE_SHEET
+total_assets,Total Assets,BALANCE_SHEET
+total_liabilities,Total Liabilities,BALANCE_SHEET
+promoter_holding_pct,Promoter Holding %,NOTES
+promoter_pledge_pct,Promoter Pledge %,NOTES
+fii_holding_pct,FII Holding %,NOTES
+dii_holding_pct,DII Holding %,NOTES
+public_holding_pct,Public Holding %,NOTES
+revenue_guidance_lower,Revenue Guidance (lower),NOTES
+revenue_guidance_upper,Revenue Guidance (upper),NOTES
+ebitda_margin_guidance_lower,EBITDA Margin Guidance (lower),NOTES
+ebitda_margin_guidance_upper,EBITDA Margin Guidance (upper),NOTES
+opening_order_book,Opening Order Book,NOTES
+closing_order_book,Closing Order Book,NOTES
+order_inflow,Order Inflow,NOTES
+executed_orders,Executed Orders,NOTES
+cancelled_orders,Cancelled Orders,NOTES
+top_customer_orders,Top-Customer Orders,NOTES
+concall_confidence_score,Management Confidence Score,NOTES
+concall_uncertainty_score,Management Uncertainty Score,NOTES
+concall_evasive_score,Management Evasive Score,NOTES
+concall_demand_score,Concall Demand Score,NOTES
+concall_cost_pressure_score,Concall Cost-Pressure Score,NOTES
+concall_pricing_power_score,Concall Pricing-Power Score,NOTES
+concall_capex_intent_score,Concall Capex Intent Score,NOTES
+concall_margin_tone_score,Concall Margin Tone Score,NOTES
+dividend_per_share,Dividend Per Share,NOTES
+new_order_value,New Order Value,NOTES
+acquisition_value,Acquisition Value,NOTES
+revenue_contribution_pct,Revenue Contribution %,NOTES
+new_capacity,New Capacity,NOTES
+existing_capacity,Existing Capacity,NOTES
+capacity_utilization_pct,Capacity Utilization %,NOTES
+tam_market_size,TAM / Market Size,NOTES
+tam_market_size_prior,Prior TAM / Market Size,NOTES
+high_margin_revenue_pct,High-Margin Revenue %,NOTES
+top_client_revenue_pct,Top Client Revenue %,NOTES
+region_revenue_pct,Region Revenue %,NOTES
+management_target_value,Management Target Value,NOTES
+primary_segment_revenue,Primary Segment Revenue,SEGMENT
+primary_segment_ebit,Primary Segment EBIT,SEGMENT
+share_price_close,Share Price (Close),NOTES
+avg_volume_20d,20-day Average Volume,NOTES
+volume,Volume,NOTES
+delivery_pct,Delivery %,NOTES
+market_cap,Market Cap,NOTES
+pre_event_close,Pre-Event Close,NOTES
+post_event_close,Post-Event Close,NOTES

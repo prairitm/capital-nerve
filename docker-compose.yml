@@ -1,6 +1,6 @@
 services:
   db:
-    image: postgres:16-alpine
+    image: pgvector/pgvector:pg16
     environment:
       POSTGRES_USER: capitalnerve
       POSTGRES_PASSWORD: capitalnerve
@@ -29,6 +29,8 @@ services:
       LLM_MODEL: ${LLM_MODEL:-claude-sonnet-4-5-20250929}
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      EMBEDDING_PROVIDER: ${EMBEDDING_PROVIDER:-mock}
+      EMBEDDING_MODEL: ${EMBEDDING_MODEL:-text-embedding-3-small}
       AUTO_PUBLISH_CONFIDENCE: ${AUTO_PUBLISH_CONFIDENCE:-80.0}
       WORKER_INPROCESS: ${WORKER_INPROCESS:-true}
       ADMIN_EMAIL: ${ADMIN_EMAIL:-}
