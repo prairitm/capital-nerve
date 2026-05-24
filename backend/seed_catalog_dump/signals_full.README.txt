@@ -1,14 +1,21 @@
-signals_full.csv — all 87 seed signals, exploded by fact + period scope.
+signals_full.csv — all seed signals exploded by fact + period scope.
 
-Filter columns (Y/N per row):
-  CY  = current quarter fact (engine scope CURRENT)
+Extracted value linkage:
+  normalized_code / fact_code = ExtractedValue.normalized_code (LLM or regex extractors)
+  Normalization writes FinancialStatementFact rows keyed by the same code.
+  via_metric shows which CalculatedMetric consumes this fact at engine_scope.
+
+New columns:
+  fact_name, statement_type, fact_unit — catalog line-item metadata
+  via_metric, metric_name, metric_unit — calculated metric that reads the fact
+  extracted_value_fields — ExtractedValue columns populated at ingest
+  pipeline_chain — full ingest pipeline path to GeneratedSignal
+
+Period filter columns (Y/N):
+  CY  = current quarter (engine scope CURRENT)
   PY  = prior-year same quarter (engine scope PY)
   CQ  = prior quarter (engine scope PQ)
   TTM = trailing four quarters
-  AVG = average of current + prior-year (opening/closing assets)
+  AVG = average of current + prior-year opening/closing
 
-Example: filter CY=Y to see every fact needed for the reporting quarter.
-Example: filter PY=Y to see YoY comparison dependencies.
-Example: filter CQ=Y to see QoQ comparison dependencies.
-
-Regenerate: python backend/scripts/export_signals_full.py (or re-run export from seed_catalog).
+Regenerate: python -m app.scripts.export_signals_full
