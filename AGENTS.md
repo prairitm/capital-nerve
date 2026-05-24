@@ -86,7 +86,9 @@ Folder `_BASE.md` carries the layer-wide rules so per-file docs only describe de
 - [backend/app/schemas/_BASE.md](backend/app/schemas/_BASE.md)
 - [backend/app/schemas/v1/_BASE.md](backend/app/schemas/v1/_BASE.md)
 - [backend/app/seed/_BASE.md](backend/app/seed/_BASE.md)
+- [backend/app/scripts/_BASE.md](backend/app/scripts/_BASE.md)
 - [backend/app/services/_BASE.md](backend/app/services/_BASE.md)
+- [backend/app/services/ir_discovery/_BASE.md](backend/app/services/ir_discovery/_BASE.md)
 - [backend/app/services/pipeline/_BASE.md](backend/app/services/pipeline/_BASE.md)
 - [backend/app/workers/_BASE.md](backend/app/workers/_BASE.md)
 
@@ -97,7 +99,7 @@ These come from [README.md](README.md) and are referenced from individual standa
 - **Card colours (spec §11).** Positive, Negative, Mixed, Neutral, Low-confidence. Always include a text label — never colour alone.
 - **Feed ranking (spec §19).** `card_priority` reflects financial materiality + severity + surprise + confidence + relevance. Honour the existing ordering when changing list views.
 - **Pipeline.** `extracted_values → financial_statement_facts → calculated_metrics → generated_signals → intelligence_cards → card_evidence`. Do not introduce shortcuts that skip a layer. The real ingestion implementation lives under [backend/app/services/pipeline/](backend/app/services/pipeline/_BASE.md) and is the only package that writes those tables outside the seed.
-- **Ingestion runtime.** [`backend/app/routers/ingest.py`](backend/app/routers/ingest.py) accepts uploads and enqueues `extraction_jobs`. The worker in [`backend/app/workers/`](backend/app/workers/_BASE.md) drains the queue and runs `services/pipeline/runner.run_pipeline_for_document`. Auto-publish is gated on `AUTO_PUBLISH_CONFIDENCE`; below that, the Review Queue keeps the cards unpublished until an admin approves via `PATCH /review/{id}`.
+- **Ingestion runtime.** [`backend/app/routers/ingest.py`](backend/app/routers/ingest.py) accepts uploads and enqueues `extraction_jobs`. The worker in [`backend/app/workers/`](backend/app/workers/_BASE.md) drains the queue and runs `services/pipeline/runner.run_pipeline_for_document`. The standalone bulk path [`backend/app/scripts/bulk_ingest.py`](backend/app/scripts/bulk_ingest.COMPONENT.md) (driven by [`services/ir_discovery/`](backend/app/services/ir_discovery/_BASE.md)) reaches the same end-state for a date / quarter / last-N range. Both paths share helpers in [`services/ingest_common.py`](backend/app/services/ingest_common.COMPONENT.md). Auto-publish is gated on `AUTO_PUBLISH_CONFIDENCE`; below that, the Review Queue keeps the cards unpublished until an admin approves via `PATCH /review/{id}`.
 - **Production-only data.** There is no demo seed and no prefilled credentials. The catalog seeder [seed_catalog.py](backend/app/seed/seed_catalog.py) only writes reference data (line items, metric and signal definitions, financial periods, sectors). An optional single admin user is bootstrapped from `ADMIN_EMAIL` / `ADMIN_PASSWORD` env vars; otherwise users come from `POST /auth/signup`.
 
 ## Maintenance rules

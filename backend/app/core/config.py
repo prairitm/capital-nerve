@@ -4,6 +4,11 @@ from pathlib import Path
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
+# Resolve backend/.env from this file's location so Settings loads correctly
+# even when the process cwd is the repo root (e.g. root-level .venv).
+_BACKEND_ROOT = Path(__file__).resolve().parents[2]
+_ENV_FILE = _BACKEND_ROOT / ".env"
+
 # Environment values that trigger production-grade safety checks. Anything
 # else (dev / test / staging) is treated as non-production.
 _PRODUCTION_ENV_VALUES = {"production", "prod"}
@@ -14,7 +19,10 @@ _WEAK_JWT_SECRET_MARKERS = ("dev-secret", "change-me", "placeholder", "example")
 
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_file=".env", extra="ignore")
+    model_config = SettingsConfigDict(
+        env_file=str(_ENV_FILE) if _ENV_FILE.is_file() else ".env",
+        extra="ignore",
+    )
 
     DATABASE_URL: str = "postgresql+psycopg://capitalnerve:capitalnerve@db:5432/capitalnerve"
     JWT_SECRET: str = "dev-secret-change-me"
@@ -37,6 +45,21 @@ class Settings(BaseSettings):
     LLM_MODEL: str = "claude-sonnet-4-5-20250929"
     ANTHROPIC_API_KEY: str | None = None
     OPENAI_API_KEY: str | None = None
+
+    # --- IR discovery agent (used by `python -m app.scripts.bulk_ingest`) ---
+    # The OpenAI Agents SDK + WebSearchTool model that the bulk ingestor uses
+    # to locate quarterly result / concall transcript / presentation PDFs for
+    # a given (Company, FinancialPeriod) pair. `OPENAI_API_KEY` above doubles
+    # as the auth token for this agent — there is no separate key.
+    IR_AGENT_MODEL: str = "gpt-5.5"
+    # How many concurrent agent calls the CLI may run by default. Each agent
+    # call issues several web searches plus a structured-output completion,
+    # so going above ~8 hits OpenAI rate limits on standard tiers.
+    IR_AGENT_CONCURRENCY: int = 4
+    # Where the human-browsable mirror of bulk-ingested PDFs lives. Sits
+    # alongside `STORAGE_DIR` so an S3 swap on the canonical path leaves the
+    # local mirror behind for inspection.
+    IR_AGENT_RUNS_DIR: str = "var/ingest_runs"
 
     # Worker tunables. The worker polls `extraction_jobs` for PENDING rows.
     WORKER_POLL_INTERVAL_SECONDS: float = 2.0
@@ -63,6 +86,13 @@ class Settings(BaseSettings):
     @property
     def storage_path(self) -> Path:
         p = Path(self.STORAGE_DIR)
+        if not p.is_absolute():
+            p = Path.cwd() / p
+        return p
+
+    @property
+    def ir_agent_runs_path(self) -> Path:
+        p = Path(self.IR_AGENT_RUNS_DIR)
         if not p.is_absolute():
             p = Path.cwd() / p
         return p

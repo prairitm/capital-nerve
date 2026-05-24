@@ -15,9 +15,12 @@ Typed application settings loaded from `.env` via `pydantic-settings`.
 
 - `class Settings(BaseSettings)` with fields: `DATABASE_URL`, `JWT_SECRET`,
   `JWT_ALGORITHM`, `JWT_EXPIRE_MINUTES`, `CORS_ORIGINS`, `APP_ENV`,
-  `LLM_PROVIDER`, `LLM_MODEL`, `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, plus
+  `LLM_PROVIDER`, `LLM_MODEL`, `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`,
+  `IR_AGENT_MODEL`, `IR_AGENT_CONCURRENCY`, `IR_AGENT_RUNS_DIR`, plus
   ingestion/worker tunables (`STORAGE_DIR`, `WORKER_*`, `AUTO_PUBLISH_CONFIDENCE`).
 - Property `cors_origins_list -> list[str]` splits the comma-separated `CORS_ORIGINS` env value.
+- Property `storage_path -> Path` resolves `STORAGE_DIR` against `cwd`.
+- Property `ir_agent_runs_path -> Path` resolves `IR_AGENT_RUNS_DIR` against `cwd`.
 - `get_settings()` and module-level `settings` singleton (cached via `@lru_cache`).
 
 ## Dependencies

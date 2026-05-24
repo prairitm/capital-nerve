@@ -34,8 +34,12 @@ which the worker drains via [`app/services/pipeline/runner.py`](../services/pipe
 ## Dependencies
 
 - Imports: `fastapi`, `sqlalchemy`, `app.db.enums`, models (`CompanyEvent`,
-  `SourceDocument`, `ExtractionJob`, `ReviewQueue`, `Company`,
-  `FinancialPeriod`, `AppUser`), `app.services.pipeline.storage.get_storage`.
+  `SourceDocument`, `ExtractionJob`, `ReviewQueue`, `Company`, `AppUser`),
+  `app.services.pipeline.storage.get_storage`, and the shared helpers
+  `fetch_document_from_url` / `resolve_period_id` / `suffix_for` from
+  [`app.services.ingest_common`](../services/ingest_common.COMPONENT.md).
+  Period / URL helpers are NOT defined inline anymore — the CLI bulk
+  ingestor reuses the same module.
 
 ## Patterns (symmetry)
 
@@ -50,7 +54,8 @@ which the worker drains via [`app/services/pipeline/runner.py`](../services/pipe
   create-new-quarterly-from-date. Returns HTTP 400 if none resolve.
 - Re-uploading the same `file_hash` updates the existing `SourceDocument`
   (`period_id`, `event_id`, `extraction_status=PENDING`) before queuing a job.
-- `_suffix_for` keeps storage files introspectable; do not strip suffixes.
+- `suffix_for` (from `app.services.ingest_common`) keeps storage files
+  introspectable; do not strip suffixes.
 
 ## Verification checklist
 

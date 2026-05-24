@@ -8,12 +8,9 @@ persists the file, creates a `CompanyEvent` + `SourceDocument`, queues an
 """
 from __future__ import annotations
 
-import re
 from datetime import date, datetime, timezone
 from typing import Annotated
-from urllib.parse import unquote, urlparse
 
-import httpx
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -25,18 +22,22 @@ from app.db.enums import (
     DocumentType,
     EventType,
     ExtractionStatus,
-    PeriodType,
     SeverityLevel,
 )
 from app.models.events import CompanyEvent, ExtractionJob, SourceDocument
-from app.models.master import Company, FinancialPeriod
+from app.models.master import Company
 from app.models.review import ReviewQueue
 from app.models.user import AppUser
+from app.services.ingest_common import (
+    FetchError,
+    PeriodResolutionError,
+    fetch_document_from_url,
+    resolve_period_id,
+    suffix_for,
+)
 from app.services.pipeline.storage import get_storage
 
 router = APIRouter(prefix="/ingest", tags=["ingest"])
-
-_MAX_URL_BYTES = 50 * 1024 * 1024
 
 
 # ---------------------------------------------------------------------------
@@ -82,18 +83,21 @@ def ingest_upload(
     else:
         url = document_url.strip() if document_url else ""
         try:
-            data, filename, content_type = _fetch_document_from_url(url)
-        except ValueError as exc:
+            data, filename, content_type = fetch_document_from_url(url)
+        except FetchError as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
         source_url = url
 
     storage = get_storage()
-    suffix = _suffix_for(filename, content_type)
+    suffix = suffix_for(filename, content_type)
     stored = storage.put_bytes(data, suffix=suffix)
 
-    resolved_period = _resolve_period_id(
-        db, period_id=period_id, period_label=period_label, event_date=event_date
-    )
+    try:
+        resolved_period = resolve_period_id(
+            db, period_id=period_id, period_label=period_label, event_date=event_date
+        )
+    except PeriodResolutionError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
     if resolved_period is None:
         raise HTTPException(
             status_code=400,
@@ -242,205 +246,3 @@ def _enqueue_review(
     db.add(review)
     db.flush()
     return review
-
-
-# e.g. "Q4 FY2025-26", "Q4 FY25-26", "q4 fy25/26"
-_PERIOD_LABEL_RE = re.compile(
-    r"^\s*Q([1-4])\s+FY\s*(\d{2,4})\s*[-/]\s*(\d{2,4})\s*$",
-    re.IGNORECASE,
-)
-
-
-def _resolve_period_id(
-    db: Session,
-    *,
-    period_id: int | None,
-    period_label: str | None,
-    event_date: date | None,
-) -> int | None:
-    """Find an existing financial period by id, label, or event date.
-
-    Resolution order: `period_id` → exact `display_label` → parsed quarter/FY
-    label → date lookup → create quarterly period from date or parsed label.
-    """
-    if period_id:
-        if db.get(FinancialPeriod, period_id):
-            return period_id
-        raise HTTPException(status_code=400, detail=f"period_id {period_id} not found")
-
-    if period_label:
-        label = period_label.strip()
-        matched = db.scalar(
-            select(FinancialPeriod).where(FinancialPeriod.display_label == label)
-        )
-        if matched:
-            return matched.period_id
-        parsed = _parse_period_label(label)
-        if parsed:
-            quarter, fy_year = parsed
-            by_key = db.scalar(
-                select(FinancialPeriod).where(
-                    FinancialPeriod.fy_year == fy_year,
-                    FinancialPeriod.quarter == quarter,
-                    FinancialPeriod.period_type == PeriodType.QUARTERLY,
-                )
-            )
-            if by_key:
-                return by_key.period_id
-            return _create_period_from_quarter(db, fy_year=fy_year, quarter=quarter)
-
-    if event_date:
-        q = db.scalar(
-            select(FinancialPeriod).where(
-                FinancialPeriod.period_type == PeriodType.QUARTERLY,
-                FinancialPeriod.period_start_date <= event_date,
-                FinancialPeriod.period_end_date >= event_date,
-            )
-        )
-        if q:
-            return q.period_id
-        return _create_period_from_date(db, event_date)
-
-    return None
-
-
-def _parse_period_label(label: str) -> tuple[int, int] | None:
-    """Parse 'Q4 FY25-26' → (quarter=4, fy_year=2025). Returns None if unrecognized."""
-    m = _PERIOD_LABEL_RE.match(label.strip())
-    if not m:
-        return None
-    quarter = int(m.group(1))
-    y1 = int(m.group(2))
-    if len(m.group(2)) == 2:
-        y1 = 2000 + y1 if y1 < 70 else 1900 + y1
-    return quarter, y1
-
-
-def _quarter_date_bounds(fy_year: int, quarter: int) -> tuple[date, date, str, str]:
-    """Indian FY quarter window and canonical labels for `fy_year` + `quarter`."""
-    q_start_month = 4 + (quarter - 1) * 3
-    q_start_year = fy_year if q_start_month <= 12 else fy_year + 1
-    if q_start_month > 12:
-        q_start_month -= 12
-    start = date(q_start_year, q_start_month, 1)
-    next_month = q_start_month + 3
-    end_year = q_start_year + (next_month - 1) // 12
-    end_month = ((next_month - 1) % 12) + 1
-    end = date(end_year, end_month, 1) - _one_day()
-    fy_label = f"FY{fy_year}-{(fy_year + 1) % 100:02d}"
-    display_label = f"Q{quarter} {fy_label}"
-    return start, end, fy_label, display_label
-
-
-def _create_period_from_quarter(db: Session, *, fy_year: int, quarter: int) -> int:
-    """Find or insert a quarterly period for the parsed FY quarter."""
-    existing = db.scalar(
-        select(FinancialPeriod).where(
-            FinancialPeriod.fy_year == fy_year,
-            FinancialPeriod.quarter == quarter,
-            FinancialPeriod.period_type == PeriodType.QUARTERLY,
-        )
-    )
-    if existing:
-        return existing.period_id
-    start, end, fy_label, display_label = _quarter_date_bounds(fy_year, quarter)
-    period = FinancialPeriod(
-        fy_year=fy_year,
-        fy_label=fy_label,
-        quarter=quarter,
-        period_type=PeriodType.QUARTERLY,
-        period_start_date=start,
-        period_end_date=end,
-        display_label=display_label,
-    )
-    db.add(period)
-    db.flush()
-    return period.period_id
-
-
-def _create_period_from_date(db: Session, d: date) -> int:
-    """Create a quarterly `FinancialPeriod` whose window contains `d`."""
-    month = d.month
-    quarter = ((month - 4) % 12) // 3 + 1
-    fy_year = d.year if month >= 4 else d.year - 1
-    return _create_period_from_quarter(db, fy_year=fy_year, quarter=quarter)
-
-
-def _one_day():
-    from datetime import timedelta
-
-    return timedelta(days=1)
-
-
-def _fetch_document_from_url(url: str) -> tuple[bytes, str | None, str | None]:
-    """Download a PDF or text filing from an http(s) URL."""
-    parsed = urlparse(url.strip())
-    if parsed.scheme not in ("http", "https") or not parsed.netloc:
-        raise ValueError("document_url must be a valid http or https URL")
-
-    try:
-        with httpx.Client(
-            follow_redirects=True,
-            timeout=httpx.Timeout(30.0, connect=10.0),
-        ) as client:
-            with client.stream("GET", url) as response:
-                response.raise_for_status()
-                content_type = response.headers.get("content-type", "").split(";")[0].strip() or None
-                chunks: list[bytes] = []
-                total = 0
-                for chunk in response.iter_bytes():
-                    total += len(chunk)
-                    if total > _MAX_URL_BYTES:
-                        raise ValueError(
-                            f"Remote document exceeds {_MAX_URL_BYTES // (1024 * 1024)} MB limit"
-                        )
-                    chunks.append(chunk)
-                data = b"".join(chunks)
-    except httpx.HTTPStatusError as exc:
-        raise ValueError(f"Could not fetch document_url: HTTP {exc.response.status_code}") from exc
-    except httpx.RequestError as exc:
-        raise ValueError(f"Could not fetch document_url: {exc}") from exc
-
-    if not data:
-        raise ValueError("Remote document is empty")
-
-    filename = _filename_from_url(parsed.path) or _filename_from_content_type(content_type)
-    if not _suffix_for(filename, content_type) in (".pdf", ".txt", ".md"):
-        raise ValueError(
-            "Remote document must be a PDF or plain text file "
-            "(check the URL extension or Content-Type header)"
-        )
-    return data, filename, content_type
-
-
-def _filename_from_url(path: str) -> str | None:
-    name = unquote(path.rsplit("/", 1)[-1]).strip()
-    if name and "." in name:
-        return name
-    return None
-
-
-def _filename_from_content_type(content_type: str | None) -> str | None:
-    if not content_type:
-        return None
-    if "pdf" in content_type:
-        return "document.pdf"
-    if "markdown" in content_type:
-        return "document.md"
-    if "text" in content_type:
-        return "document.txt"
-    return None
-
-
-def _suffix_for(filename: str | None, content_type: str | None) -> str:
-    """Pick a sensible extension so storage files are still introspectable."""
-    if filename and "." in filename:
-        return "." + filename.rsplit(".", 1)[-1].lower()
-    if content_type:
-        if "pdf" in content_type:
-            return ".pdf"
-        if "markdown" in content_type:
-            return ".md"
-        if "text" in content_type:
-            return ".txt"
-    return ".bin"
