@@ -424,6 +424,7 @@ def build_intelligence_object_brief(
         company=company_brief(company),
         period=period_brief(period),
         event_id=event.event_id if event else None,
+        event_type=event.event_type if event else None,
         event_title=event.event_title if event else None,
         event_date=event.event_date.isoformat() if event else None,
         signal_id=card.signal_id,

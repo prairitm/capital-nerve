@@ -14,7 +14,7 @@ Full event timeline for one company at `/company/:symbol/events`.
 
 ## Contract
 
-- Data: `GET /companies/:symbol` (`CompanyDetail.timeline`).
+- Data: `GET /v1/companies/:symbol` (company header) and `GET /v1/companies/:symbol/events?limit=200&dedupe_periods=false` (all filings, grouped by quarter in UI).
 - Back control at top returns to `/company/:symbol`.
 
 ## Dependencies
@@ -23,8 +23,8 @@ Full event timeline for one company at `/company/:symbol/events`.
 
 ## Patterns (symmetry)
 
-- Timeline row UI matches [`CompanyPage.tsx`](CompanyPage.tsx); summaries are not line-clamped on this page.
-- Timeline order matches company page (newest-first); first row highlighted as most recent by date.
+- Renders [`CompanyQuarterTimeline`](../components/common/CompanyQuarterTimeline.tsx): one section per `period.display_label`, nested rows per filing type (results, concall, deck).
+- Timeline order: newest quarter first; within a quarter, quarterly result before other types.
 
 ## Verification checklist
 

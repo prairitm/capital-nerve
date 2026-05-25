@@ -20,7 +20,7 @@ from typing import Any
 
 from pydantic import BaseModel
 
-from app.db.enums import ConfidenceLevel, SeverityLevel, SignalDirection
+from app.db.enums import ConfidenceLevel, EventType, SeverityLevel, SignalDirection
 from app.schemas.common import (
     CardMetricComparison,
     CompanyBrief,
@@ -72,6 +72,7 @@ class IntelligenceObjectBrief(BaseModel):
     company: CompanyBrief
     period: PeriodBrief | None = None
     event_id: int | None = None
+    event_type: EventType | None = None
     event_title: str | None = None
     event_date: str | None = None
     signal_id: int | None = None

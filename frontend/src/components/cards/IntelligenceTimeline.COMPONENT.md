@@ -32,6 +32,7 @@ Renders grouped cards as a vertical timeline. Each group has an optional event h
 - Each date section is collapsible (`useState<Set<string>>`) and shows an event count badge.
 - When there is exactly one un-dated section the timeline renders inline (no date header).
 - Event header navigation goes to `/company/:symbol/event/:eventId` when both are available; otherwise the header button is disabled with `cursor-default`.
+- Event header title uses `resolveEventDisplayTitle` (document type only), not `event_title` — company name appears only when `showCompanyInHeader` is true. Reporting quarter (`resolveQuarterPeriodLabel` from card/event `period`) appears as a muted uppercase line between company and document type. Optional meta line is date-only when `showDateInHeader`.
 - Card variant choice (`card` vs `feed`) is passed down to either `IntelligenceCard` or `IntelligenceFeedItem`. Do not introduce a third variant without updating both components.
 
 ## UI / UX

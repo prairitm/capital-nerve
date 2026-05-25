@@ -4,8 +4,10 @@ import type {
   EventType,
   IntelligenceObject,
   IntelligenceObjectBrief,
+  PeriodBrief,
   TimelineEvent,
 } from "@/api/types";
+import { eventTitleToPeriodLabel, resolveQuarterPeriodLabel } from "@/lib/format";
 
 /**
  * Narrative intelligence card types (concall / presentation). Keep in sync with
@@ -91,7 +93,7 @@ export function intelligenceObjectBriefToCardBrief(
     company: d.company,
     period: d.period,
     event_id: d.event_id,
-    event_type: null,
+    event_type: d.event_type,
     event_title: d.event_title,
     event_date: d.event_date,
     metrics_json: [],
@@ -308,5 +310,107 @@ export function groupCardsByEvent(cards: CardBrief[]): TimelineCardGroup[] {
     });
   }
 
+  return groups;
+}
+
+const EVENT_TYPE_ORDER: Record<EventType, number> = {
+  QUARTERLY_RESULT: 0,
+  ANNUAL_REPORT: 1,
+  INVESTOR_PRESENTATION: 2,
+  CONCALL_TRANSCRIPT: 3,
+  PRESS_RELEASE: 4,
+  EXCHANGE_FILING: 5,
+  SHAREHOLDING_PATTERN: 6,
+  CREDIT_RATING: 7,
+};
+
+export interface QuarterEventGroup<T extends QuarterTimelineEvent = QuarterTimelineEvent> {
+  key: string;
+  label: string;
+  periodEndDate: string;
+  events: T[];
+}
+
+/** Minimal shape for quarter grouping (hub `TimelineEvent` and `EventBriefV1`). */
+export interface QuarterTimelineEvent {
+  event_id: number;
+  event_type: EventType;
+  event_title: string;
+  event_date: string;
+  overall_signal?: string | null;
+  overall_severity?: string | null;
+  summary_text?: string | null;
+  period?: PeriodBrief | null;
+}
+
+function eventTypeRank(eventType: EventType): number {
+  return EVENT_TYPE_ORDER[eventType] ?? 99;
+}
+
+function sortEventsWithinQuarter<T extends QuarterTimelineEvent>(events: T[]): T[] {
+  return [...events].sort((a, b) => {
+    const rankDiff = eventTypeRank(a.event_type) - eventTypeRank(b.event_type);
+    if (rankDiff !== 0) return rankDiff;
+    const dateDiff = new Date(b.event_date).getTime() - new Date(a.event_date).getTime();
+    if (dateDiff !== 0) return dateDiff;
+    return b.event_id - a.event_id;
+  });
+}
+
+function resolveQuarterGroupLabel<T extends QuarterTimelineEvent>(events: T[]): string {
+  for (const event of events) {
+    if (event.period?.display_label) return event.period.display_label;
+  }
+  for (const event of events) {
+    if (event.period?.fy_label != null && event.period.quarter != null) {
+      return `Q${event.period.quarter} ${event.period.fy_label}`;
+    }
+  }
+  for (const event of events) {
+    const parsed = eventTitleToPeriodLabel(event.event_title);
+    if (parsed) return parsed;
+  }
+  return resolveQuarterPeriodLabel(null, events[0]?.event_title);
+}
+
+/** Group company events by reporting quarter, newest quarter first. */
+export function groupEventsByQuarter<T extends QuarterTimelineEvent>(
+  events: T[],
+): QuarterEventGroup<T>[] {
+  const byKey = new Map<string, QuarterEventGroup<T>>();
+
+  for (const event of events) {
+    const parsedPeriod = eventTitleToPeriodLabel(event.event_title);
+    const key =
+      event.period?.period_id != null
+        ? `period-${event.period.period_id}`
+        : parsedPeriod
+          ? `period-${parsedPeriod}`
+          : `ungrouped-${event.event_date}`;
+    const periodEndDate = event.period?.period_end_date ?? event.event_date;
+
+    let group = byKey.get(key);
+    if (!group) {
+      group = { key, label: "", periodEndDate, events: [] };
+      byKey.set(key, group);
+    }
+    group.events.push(event);
+    if (
+      event.period?.period_end_date &&
+      new Date(event.period.period_end_date).getTime() >
+        new Date(group.periodEndDate).getTime()
+    ) {
+      group.periodEndDate = event.period.period_end_date;
+    }
+  }
+
+  const groups = [...byKey.values()];
+  for (const group of groups) {
+    group.events = sortEventsWithinQuarter(group.events);
+    group.label = resolveQuarterGroupLabel(group.events);
+  }
+  groups.sort(
+    (a, b) => new Date(b.periodEndDate).getTime() - new Date(a.periodEndDate).getTime(),
+  );
   return groups;
 }

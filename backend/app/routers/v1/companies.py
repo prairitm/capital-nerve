@@ -37,9 +37,13 @@ from app.services.event_summary import (
     pick_watch_next,
     resolve_event_summary_text,
 )
+from app.services.event_timeline import pick_canonical_per_period
 from app.services.intelligence_object_builder import build_intelligence_object_brief
 
 router = APIRouter(prefix="/v1", tags=["v1: companies"])
+
+# One row per reporting period on the hub; 60 quarters ≈ 15 years of history.
+_HUB_TIMELINE_LIMIT = 60
 
 
 _SNAPSHOT_ROWS: tuple[tuple[str, str, str], ...] = (
@@ -147,9 +151,9 @@ def company_hub(
         select(CompanyEvent)
         .where(CompanyEvent.company_id == company.company_id)
         .where(_published)
-        .order_by(CompanyEvent.event_date.desc())
-        .limit(30)
+        .order_by(CompanyEvent.event_date.desc(), CompanyEvent.event_id.desc())
     ).all()
+    events = pick_canonical_per_period(events)[:_HUB_TIMELINE_LIMIT]
     event_ids = [e.event_id for e in events]
     sigs_by_event, cards_by_event = load_signals_and_cards_by_event(db, event_ids)
     timeline = [
@@ -165,6 +169,9 @@ def company_hub(
                 sigs_by_event.get(e.event_id, []),
                 cards_by_event.get(e.event_id, []),
             ),
+            period=period_brief(db.get(FinancialPeriod, e.period_id))
+            if e.period_id
+            else None,
         )
         for e in events
     ]

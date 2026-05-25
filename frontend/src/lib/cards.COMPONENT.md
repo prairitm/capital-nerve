@@ -14,6 +14,7 @@ Feed transforms for the intelligence card list: filter the `watch_next` card typ
 ## Contract
 
 - Exports:
+  - `intelligenceObjectBriefToCardBrief(d)` — adapter from v1 `IntelligenceObjectBrief` to legacy `CardBrief` (includes `event_type`).
   - `intelligenceObjectToCardBrief(d)` — adapter from v1 `IntelligenceObject` to legacy `CardBrief`.
   - `filterInsightListCards(cards)` — drops the `watch_next` card type.
   - `filterSignalFiredCards(cards)` — keeps cards with `signal_id`, plus the explicit summary types in `SUMMARY_CARD_TYPES`.
@@ -22,6 +23,7 @@ Feed transforms for the intelligence card list: filter the `watch_next` card typ
   - `interface TimelineCardGroup { key; event; eventDate; eventLabel; eventType; cards }`
   - `groupCardsByTimeline(cards, timeline)` — groups cards into the order of `timeline`, then appends orphan events and an `Other` ungrouped bucket.
   - `groupCardsByEvent(cards)` — groups cards by their `event_id` without a timeline reference.
+  - `groupEventsByQuarter(events)` — groups `TimelineEvent` / `EventBriefV1` rows by `period.period_id`, newest quarter first.
 
 ## Dependencies
 

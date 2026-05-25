@@ -25,6 +25,11 @@ Indian-locale formatters for numbers, currency in Crores, percentages, signed de
   - `formatDate(d)` — `dd MMM yyyy` in `en-IN`.
   - `relativeDate(d)` — `today / yesterday / Nd / Nw / Nmo / Ny ago`.
   - `eventTypeLabel(type)` — lower-cases and replaces `_` with space.
+  - `eventTypeTitle(type)` — title-case label for timeline row headings (e.g. "Quarterly result").
+  - `eventTitleToTypeTitle(title)` — strips company/period prefix from legacy `event_title` values.
+  - `resolveEventDisplayTitle(eventType, eventTitle)` — prefers `eventTypeTitle`, then parsed title.
+  - `eventTitleToPeriodLabel(title)` — extracts `Q# FY####-##` from legacy event titles.
+  - `resolveQuarterPeriodLabel(period, eventTitle?)` — quarter header text only (never full `event_title`).
   - `timelineDateKey(d)` — ISO `YYYY-MM-DD` for grouping (validates format).
   - `mainIssueLabel(overallSignal)` — `"Key risk" | "Main concern" | "Key concern" | "Key focus"`.
   - `cardTypeLabel(type)` — explicit map, falls back to Title Case.

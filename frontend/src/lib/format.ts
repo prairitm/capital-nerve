@@ -446,6 +446,75 @@ export function eventTypeLabel(type: string | null | undefined): string | null {
   return type.replace(/_/g, " ").toLowerCase();
 }
 
+/** Title-case document / event type for timeline row headings (e.g. "Investor presentation"). */
+export function eventTypeTitle(type: string | null | undefined): string {
+  const label = eventTypeLabel(type);
+  if (!label) return "Event";
+  return label.replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+const EVENT_TITLE_TYPE_SUFFIXES = [
+  "Investor Presentation",
+  "Concall Transcript",
+  "Financial Results",
+  "Quarterly Result",
+  "Annual Report",
+  "Press Release",
+  "Exchange Filing",
+  "Shareholding Pattern",
+  "Credit Rating",
+] as const;
+
+/** Strip company / period prefix from legacy `event_title` when `event_type` is missing. */
+export function eventTitleToTypeTitle(title: string | null | undefined): string | null {
+  if (!title) return null;
+  const trimmed = title.trim();
+  for (const suffix of EVENT_TITLE_TYPE_SUFFIXES) {
+    if (trimmed.toLowerCase().endsWith(suffix.toLowerCase())) {
+      return suffix;
+    }
+  }
+  const match = trimmed.match(/^.+?\s+Q\d\s+FY[\d-]+\s+(.+)$/i);
+  return match?.[1]?.trim() ?? null;
+}
+
+/** Prefer enum-backed label; fall back to parsing `event_title`. */
+export function resolveEventDisplayTitle(
+  eventType: string | null | undefined,
+  eventTitle: string | null | undefined,
+): string {
+  if (eventType) return eventTypeTitle(eventType);
+  return eventTitleToTypeTitle(eventTitle) ?? "Event";
+}
+
+/** Extract `Q4 FY2025-26` from titles like `RELIANCE Q4 FY2025-26 Concall Transcript`. */
+export function eventTitleToPeriodLabel(title: string | null | undefined): string | null {
+  if (!title) return null;
+  const match = title.trim().match(/\b(Q[1-4])\s+(FY\d{4}-\d{2})\b/i);
+  if (!match) return null;
+  return `${match[1].toUpperCase()} ${match[2].toUpperCase()}`;
+}
+
+export interface QuarterPeriodLike {
+  display_label?: string;
+  fy_label?: string;
+  quarter?: number | null;
+}
+
+/** Reporting quarter label for timeline section headers (never the full event title). */
+export function resolveQuarterPeriodLabel(
+  period: QuarterPeriodLike | null | undefined,
+  eventTitle?: string | null,
+): string {
+  if (period?.display_label) return period.display_label;
+  if (period?.fy_label != null && period.quarter != null) {
+    return `Q${period.quarter} ${period.fy_label}`;
+  }
+  const parsed = eventTitleToPeriodLabel(eventTitle);
+  if (parsed) return parsed;
+  return "Unknown period";
+}
+
 /** ISO date (YYYY-MM-DD) for grouping timeline rows on the same calendar day. */
 export function timelineDateKey(d: string | null | undefined): string | null {
   if (!d) return null;

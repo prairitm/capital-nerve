@@ -46,8 +46,10 @@ from app.services.ir_discovery.agent import find_period_assets
 from app.services.ir_discovery.exchange import (
     DiscoveryResult,
     discover_period_assets,
+    discover_period_assets_via_scraper,
 )
 from app.services.ir_discovery.exchange.discover import merge_with_agent
+from app.services.ir_discovery.exchange.nse_client import _NSESession
 from app.services.ir_discovery.ingest import IngestOutcome, ingest_one
 from app.services.ir_discovery.periods import PeriodRangeError, expand_range
 from app.services.ir_discovery.schemas import (
@@ -165,6 +167,16 @@ def run(
             "exclusive with it."
         ),
     ),
+    nse_scraper: bool = typer.Option(
+        False,
+        "--nse-scraper",
+        help=(
+            "Use the NSE corporate-announcements JSON feed (no date range) "
+            "and text-match each announcement against the requested period. "
+            "Disables both BSE and the OpenAI WebSearch agent. Mutually "
+            "exclusive with --agent-only and --no-agent-fallback."
+        ),
+    ),
     admin_email: Optional[str] = typer.Option(
         None,
         "--admin-email",
@@ -185,15 +197,17 @@ def run(
         format="%(asctime)s %(levelname)s %(name)s :: %(message)s",
     )
 
-    if no_agent_fallback and agent_only:
+    if sum(bool(x) for x in (no_agent_fallback, agent_only, nse_scraper)) > 1:
         typer.echo(
-            "--no-agent-fallback and --agent-only are mutually exclusive: "
-            "the first disables tier-2, the second disables tier-1.",
+            "--no-agent-fallback, --agent-only, and --nse-scraper are "
+            "mutually exclusive: --no-agent-fallback disables tier-2, "
+            "--agent-only disables tier-1, --nse-scraper replaces tier-1 "
+            "with the NSE scraper and disables tier-2.",
             err=True,
         )
         raise typer.Exit(code=2)
 
-    if not no_agent_fallback:
+    if not no_agent_fallback and not nse_scraper:
         try:
             ensure_openai_api_key()
         except RuntimeError as exc:
@@ -239,10 +253,14 @@ def run(
         typer.echo(f"Asset keys: {list(asset_keys)}")
         typer.echo(f"Concurrency: {concurrency}")
         typer.echo(f"Dry run: {dry_run}; skip pipeline: {skip_pipeline}")
-        typer.echo(
-            f"Tiers: exchange={'off' if agent_only else 'on'}, "
-            f"agent={'off' if no_agent_fallback else 'on'}"
-        )
+        if nse_scraper:
+            tier_banner = "Tiers: nse_scraper=on, exchange=off, agent=off"
+        else:
+            tier_banner = (
+                f"Tiers: exchange={'off' if agent_only else 'on'}, "
+                f"agent={'off' if no_agent_fallback else 'on'}"
+            )
+        typer.echo(tier_banner)
         typer.echo(f"Run log: {log_path}")
     finally:
         db.close()
@@ -259,6 +277,7 @@ def run(
             skip_pipeline=skip_pipeline,
             no_agent_fallback=no_agent_fallback,
             agent_only=agent_only,
+            nse_scraper=nse_scraper,
             force_reextract=force_reextract,
             admin_user_id=admin_id,
         )
@@ -287,29 +306,49 @@ async def _run_async(
     skip_pipeline: bool,
     no_agent_fallback: bool,
     agent_only: bool,
+    nse_scraper: bool,
     force_reextract: bool,
     admin_user_id: Optional[int],
 ) -> int:
     """Returns the count of pair-level failures.
 
-    Two-tier discovery per pair (either tier may be disabled):
+    Discovery per pair takes one of three shapes:
 
-    1. ``exchange.discover_period_assets`` — deterministic BSE-first,
-       NSE-fallback corporate-filings client. Skipped entirely when
-       ``--agent-only`` is set.
-    2. ``agent.find_period_assets`` — invoked when at least one slot
-       is still missing. Skipped entirely when ``--no-agent-fallback``
-       is set.
+    1. **Default** — ``exchange.discover_period_assets`` (BSE-first,
+       NSE-fallback corporate-filings JSON) followed by
+       ``agent.find_period_assets`` for any remaining slots unless
+       ``--no-agent-fallback`` is set.
+    2. **--agent-only** — skip the exchange tier; the OpenAI WebSearch
+       agent fills every slot.
+    3. **--nse-scraper** — skip BSE entirely. Hit the NSE
+       ``corporate-announcements`` JSON once per symbol with no date
+       range and match each announcement against the requested period
+       by text. The agent fallback is forced off.
     """
     semaphore = asyncio.Semaphore(max(1, concurrency))
     failures = 0
     log_fh = log_path.open("a", encoding="utf-8")
 
+    # Per-symbol payload cache for --nse-scraper so multiple periods
+    # for the same company reuse one HTTP fetch + cookie warmup.
+    scraper_payload_cache: dict[str, object] = {}
+    scraper_cache_lock = asyncio.Lock()
+    scraper_session: Optional[_NSESession] = _NSESession() if nse_scraper else None
+
     async def _process_pair(company: CompanyTarget, period: PeriodSpec) -> None:
         nonlocal failures
         async with semaphore:
-            # ---- Tier 1: BSE/NSE corporate filings ----
-            if agent_only:
+            # ---- Tier 1 / scraper / agent-only ----
+            if nse_scraper:
+                discovery = await _run_nse_scraper_tier(
+                    company,
+                    period,
+                    asset_keys,
+                    cache=scraper_payload_cache,
+                    cache_lock=scraper_cache_lock,
+                    session=scraper_session,
+                )
+            elif agent_only:
                 discovery = _empty_discovery(company, period)
             else:
                 discovery = await _run_exchange_tier(company, period, asset_keys)
@@ -318,9 +357,10 @@ async def _run_async(
             # The agent runs whenever any slot is missing; we then merge
             # its results so empty slots get a primary URL AND already-
             # filled slots get an agent URL stashed as a download-time
-            # fallback (see merge_with_agent).
+            # fallback (see merge_with_agent). --nse-scraper implies the
+            # agent is off (mutex enforced at CLI parse time).
             missing = discovery.missing_keys(asset_keys)
-            if missing and not no_agent_fallback:
+            if missing and not no_agent_fallback and not nse_scraper:
                 try:
                     agent_assets = await find_period_assets(company, period)
                 except Exception as exc:
@@ -378,7 +418,11 @@ async def _run_async(
         for c in companies
         for p in periods
     ]
-    await asyncio.gather(*tasks)
+    try:
+        await asyncio.gather(*tasks)
+    finally:
+        if scraper_session is not None:
+            await asyncio.to_thread(scraper_session.close)
     log_fh.close()
     return failures
 
@@ -412,6 +456,93 @@ async def _run_exchange_tier(
             return _empty_discovery(company, period)
     finally:
         await asyncio.to_thread(db.close)
+
+
+async def _run_nse_scraper_tier(
+    company: CompanyTarget,
+    period: PeriodSpec,
+    asset_keys: tuple[str, ...],
+    *,
+    cache: dict[str, object],
+    cache_lock: asyncio.Lock,
+    session: Optional[_NSESession],
+) -> DiscoveryResult:
+    """Run the NSE-scraper tier with a per-symbol payload cache.
+
+    NSE returns the full corporate-announcements list for a symbol on
+    every call; we only want one HTTP fetch (+ cookie warmup) per
+    symbol regardless of how many periods we're filling for it. The
+    cache is keyed by upper-cased ``nse_symbol`` and protected by
+    ``cache_lock`` so concurrent pairs for the same symbol coalesce on
+    the first fetch.
+
+    Failures degrade to an empty ``DiscoveryResult`` — with
+    ``--nse-scraper`` the agent fallback is off, so empty slots stay
+    empty and ``ingest_one`` surfaces a clean "no asset discovered"
+    error per pair.
+    """
+    symbol = (company.nse_symbol or "").strip().upper()
+    if not symbol:
+        return _empty_discovery(company, period)
+
+    async with cache_lock:
+        payload = cache.get(symbol)
+        if payload is None:
+            try:
+                payload = await asyncio.to_thread(
+                    _fetch_nse_scraper_payload,
+                    symbol,
+                    session,
+                )
+            except Exception:
+                logger.exception(
+                    "NSE scraper fetch crashed for %s / %s",
+                    symbol,
+                    period.display_label,
+                )
+                payload = []
+            cache[symbol] = payload if payload is not None else []
+
+    try:
+        return await discover_period_assets_via_scraper(
+            company,
+            period,
+            asset_keys=asset_keys,
+            session=session,
+            payload=cache[symbol],
+        )
+    except Exception:
+        logger.exception(
+            "NSE scraper discovery crashed for %s / %s",
+            symbol,
+            period.display_label,
+        )
+        return _empty_discovery(company, period)
+
+
+def _fetch_nse_scraper_payload(
+    symbol: str,
+    session: Optional[_NSESession],
+) -> Optional[object]:
+    """Single sync HTTP fetch used inside ``asyncio.to_thread``.
+
+    Returns the parsed JSON payload (typically a dict with a ``data``
+    key) or ``None`` on failure. A ``None`` is cached as ``[]`` by the
+    caller so we don't retry every period.
+    """
+    params = {
+        "index": "equities",
+        "symbol": symbol,
+        "reqXbrl": "false",
+    }
+    own_session = session is None
+    if own_session:
+        session = _NSESession()
+    try:
+        return session.get_json(params)
+    finally:
+        if own_session:
+            session.close()
 
 
 def _empty_discovery(

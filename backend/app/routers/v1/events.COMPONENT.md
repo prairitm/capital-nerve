@@ -15,7 +15,7 @@ Typed event endpoints under `/v1`. Replaces the ad-hoc dict response in the flat
 
 ## Endpoints
 
-- `GET /v1/companies/{symbol}/events?event_type=&limit=&offset=` (`response_model=list[EventBriefV1]`). Resolves the symbol via `find_company`, filters by optional `event_type`, paginates with `offset` + `limit`.
+- `GET /v1/companies/{symbol}/events?event_type=&dedupe_periods=&limit=&offset=` (`response_model=list[EventBriefV1]`). Resolves the symbol via `find_company`, filters by optional `event_type`, optionally collapses to one canonical row per period (`dedupe_periods=true` by default), paginates with `offset` + `limit` (default `limit=100`).
 - `GET /v1/events/{event_id}` (`response_model=EventDetailV1`). Returns the full event including `raw_facts` (joined from `financial_statement_facts`), `documents`, and a flat `metric_snapshot` for headline numbers.
 
 ## Dependencies

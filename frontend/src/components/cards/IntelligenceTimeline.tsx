@@ -8,7 +8,12 @@ import { IntelligenceCard } from "@/components/cards/IntelligenceCard";
 import { IntelligenceFeedItem } from "@/components/cards/IntelligenceFeedItem";
 import { SeverityBadge } from "@/components/common/SeverityBadge";
 import { SignalBadge } from "@/components/common/SignalBadge";
-import { eventTypeLabel, formatDate, timelineDateKey } from "@/lib/format";
+import {
+  formatDate,
+  resolveEventDisplayTitle,
+  resolveQuarterPeriodLabel,
+  timelineDateKey,
+} from "@/lib/format";
 
 interface Props {
   groups: TimelineCardGroup[];
@@ -71,10 +76,24 @@ function TimelineEventHeader({
   const eventId = group.event?.event_id ?? lead?.event_id;
   const signal = group.event?.overall_signal ?? lead?.signal_direction;
   const severity = group.event?.overall_severity ?? lead?.severity;
-  const typeLabel = eventTypeLabel(group.eventType);
+  const eventType = group.eventType ?? lead?.event_type ?? null;
+  const displayTitle = resolveEventDisplayTitle(eventType, group.eventLabel);
+  const periodLabelRaw = resolveQuarterPeriodLabel(
+    lead?.period ?? group.event?.period ?? null,
+    group.eventLabel,
+  );
+  const periodLabel = periodLabelRaw === "Unknown period" ? null : periodLabelRaw;
   const canNavigate = Boolean(symbol && eventId);
 
-  if (!group.eventDate && !group.eventLabel && !showCompanyInHeader && !typeLabel) return null;
+  if (
+    !group.eventDate &&
+    !periodLabel &&
+    !eventType &&
+    !group.eventLabel &&
+    !showCompanyInHeader
+  ) {
+    return null;
+  }
 
   return (
     <button
@@ -88,17 +107,9 @@ function TimelineEventHeader({
       )}
     >
       <div className="space-y-1.5 min-w-0">
-        {(showDateInHeader && group.eventDate) || typeLabel ? (
-          <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] uppercase tracking-wider text-ink-soft">
-            {showDateInHeader && group.eventDate && (
-              <span className="shrink-0">{formatDate(group.eventDate)}</span>
-            )}
-            {showDateInHeader && group.eventDate && typeLabel && (
-              <span className="text-line shrink-0" aria-hidden>
-                ·
-              </span>
-            )}
-            {typeLabel && <span className="shrink-0">{typeLabel}</span>}
+        {showDateInHeader && group.eventDate ? (
+          <div className="text-[11px] uppercase tracking-wider text-ink-soft">
+            <span className="shrink-0">{formatDate(group.eventDate)}</span>
           </div>
         ) : null}
 
@@ -113,9 +124,13 @@ function TimelineEventHeader({
           </div>
         ) : null}
 
-        {group.eventLabel ? (
-          <p className="text-sm font-medium text-ink leading-snug">{group.eventLabel}</p>
+        {periodLabel ? (
+          <p className="text-[11px] uppercase tracking-wider text-ink-soft">{periodLabel}</p>
         ) : null}
+
+        {(eventType || group.eventLabel) && (
+          <p className="text-sm font-medium text-ink leading-snug">{displayTitle}</p>
+        )}
 
         {(signal || severity) && (
           <div className="flex items-center gap-2 pt-0.5">
@@ -169,7 +184,12 @@ export function IntelligenceTimeline({
         <div
           className={clsx(
             "space-y-2",
-            (group.eventLabel || showCompanyInHeader || group.eventType || group.eventDate) && "mt-2",
+            (group.eventType ||
+              group.eventLabel ||
+              showCompanyInHeader ||
+              group.eventDate ||
+              lead?.period) &&
+              "mt-2",
           )}
         >
           {group.cards.map((c) =>

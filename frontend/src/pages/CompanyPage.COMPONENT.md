@@ -38,7 +38,7 @@ Company hub at `/company/:symbol`. Verdict-first layout: identity + actions, lat
 
 - `xl:grid-cols-3`: main column = timeline, intelligence, documents; sidebar = signals, snapshot, trends.
 - Market price/mcap de-emphasized to a single muted line under company meta.
-- Recent-events timeline shows newest-first (API `event_date` desc); top row highlighted as most recent by date. `latest_event_id` is only for the quarterly verdict strip above.
+- Recent-events timeline uses `CompanyQuarterTimeline` (4 most recent quarters); `latest_event_id` highlights the verdict row and drives the quarterly strip above.
 
 ## Verification checklist
 

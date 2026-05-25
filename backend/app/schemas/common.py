@@ -125,6 +125,7 @@ class TimelineEvent(BaseModel):
     overall_signal: SignalDirection | None
     overall_severity: SeverityLevel | None
     summary_text: str | None
+    period: PeriodBrief | None = None
 
 
 class FinancialSnapshotRow(BaseModel):

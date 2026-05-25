@@ -9,18 +9,26 @@ documented in [`services/ir_discovery/_BASE.md`](../services/ir_discovery/_BASE.
 Given a time period, walks every `Company` row in the DB (filterable via
 `--symbols`) and resolves the financial-results / transcript /
 presentation / annual-report PDF for each `(Company, PeriodSpec)` pair
-using the two-tier discovery flow:
+using one of three discovery modes:
 
-1. **Tier 1** — `services/ir_discovery/exchange.discover_period_assets`
-   hits the BSE corporate-filings API (`AnnGetData/w`) first and the
-   NSE `corporate-announcements` API for the same window. BSE wins the
-   primary slot when both have a hit; NSE's same-type filing is parked
-   as a download-time fallback. Free, deterministic, mandate-backed.
-2. **Tier 2** — `services/ir_discovery/agent.find_period_assets`
-   (OpenAI Agents SDK + WebSearchTool) runs whenever any slot is
-   missing AND `--no-agent-fallback` was NOT passed. Its URLs become
-   the primary for empty slots; for slots tier-1 already filled, the
-   agent's URL is appended to that slot's fallback chain.
+1. **Default two-tier** — `services/ir_discovery/exchange.discover_period_assets`
+   (BSE first via `AnnGetData/w`, NSE `corporate-announcements` for the
+   same date window second) followed by
+   `services/ir_discovery/agent.find_period_assets` (OpenAI Agents SDK
+   + WebSearchTool) for any still-empty slots. BSE wins the primary
+   slot when both have a hit; NSE's same-type filing is parked as a
+   download-time fallback. The agent's URLs become the primary for
+   empty slots; for slots tier-1 already filled, the agent's URL is
+   appended to the slot's fallback chain.
+2. **`--nse-scraper`** —
+   `services/ir_discovery/exchange.discover_period_assets_via_scraper`
+   hits the NSE `corporate-announcements` JSON feed once per symbol
+   with no date range and matches each announcement against the
+   requested `PeriodSpec` by lowercased text markers (quarter / FY
+   label / `period_end` rendered as `DD-MM-YYYY`, `DDMMYYYY`,
+   `31st december 2024`, …). BSE is skipped entirely. The agent
+   fallback is forced off. Every filled slot is stamped with
+   `discovery_source = "nse_scraper"`.
 3. **Download with fallback** — at ingest time, the primary URL is
    tried first. If it raises `FetchError` (HTTP error, oversized
    body, or — most importantly — a 200 OK HTML wrapper masquerading
@@ -69,6 +77,15 @@ Optional:
   `--no-agent-fallback`. Useful when an exchange API is down, when
   benchmarking the agent in isolation, or when running on companies
   that don't trade on NSE/BSE.
+- `--nse-scraper` — replace tier-1 with a no-date-range NSE
+  corporate-announcements scrape (see
+  [`services/ir_discovery/exchange/nse_scraper.COMPONENT.md`](../services/ir_discovery/exchange/nse_scraper.COMPONENT.md)).
+  Period selection is done by text-matching the announcement subject,
+  description, and attachment URL against a marker set derived from
+  the `PeriodSpec`. Skips BSE entirely. The agent fallback is
+  forced off. Mutually exclusive with `--agent-only` AND
+  `--no-agent-fallback`. Does NOT require `OPENAI_API_KEY`.
+  Use for deterministic, free, NSE-only runs.
 - `--admin-email you@x.com` — `AppUser` whose id is stamped on
   `ExtractionJob.meta.queued_by_user_id`. Defaults to the first
   `user_type=ADMIN` row.
@@ -133,8 +150,19 @@ Optional:
       asset, never `"bse"` / `"nse"`.
 - [ ] `--no-agent-fallback --agent-only` exits with code 2 (mutually
       exclusive).
+- [ ] `--nse-scraper --agent-only` exits with code 2 (mutually
+      exclusive).
+- [ ] `--nse-scraper --no-agent-fallback` exits with code 2
+      (mutually exclusive — `--nse-scraper` already implies the
+      agent is off).
+- [ ] `--nse-scraper` does NOT require `OPENAI_API_KEY` to be set
+      and makes zero BSE HTTP calls.
+- [ ] With `--nse-scraper`, every filled `assets[]` entry has
+      `discovery_source == "nse_scraper"`; the run banner reads
+      `Tiers: nse_scraper=on, exchange=off, agent=off`.
 - [ ] Each `assets[]` entry in `kind=ingest_outcome` rows has
-      `discovery_source` set to one of `"bse" | "nse" | "agent"`.
+      `discovery_source` set to one of
+      `"bse" | "nse" | "agent" | "nse_scraper"`.
 - [ ] When BSE's primary URL is rejected at download time (HTML
       wrapper, oversized, network error), the run still ingests the
       slot if any fallback (NSE same-type filing or agent URL) is

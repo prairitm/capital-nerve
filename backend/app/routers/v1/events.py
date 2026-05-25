@@ -37,6 +37,7 @@ from app.schemas.v1.events import (
 )
 from app.schemas.v1.signals import SignalBriefV1
 from app.services.event_financials import build_financial_snapshot_for_period
+from app.services.event_timeline import pick_canonical_per_period
 from app.services.event_summary import (
     load_signals_and_cards_by_event,
     pick_main_issue,
@@ -69,7 +70,11 @@ def list_company_events(
     db: Session = Depends(get_db),
     user: AppUser = Depends(get_current_user),
     event_type: EventType | None = None,
-    limit: int = Query(default=30, ge=1, le=200),
+    dedupe_periods: bool = Query(
+        default=True,
+        description="When true, return at most one canonical event per financial period (prefers quarterly results).",
+    ),
+    limit: int = Query(default=100, ge=1, le=200),
     offset: int = Query(default=0, ge=0),
 ) -> list[EventBriefV1]:
     company = find_company(db, symbol)
@@ -84,10 +89,18 @@ def list_company_events(
     )
     if event_type:
         stmt = stmt.where(CompanyEvent.event_type == event_type)
-    stmt = stmt.order_by(CompanyEvent.event_date.desc(), CompanyEvent.event_id.desc()).offset(offset).limit(limit)
+    stmt = stmt.order_by(CompanyEvent.event_date.desc(), CompanyEvent.event_id.desc())
 
     rows = db.execute(stmt).all()
     events = [event for (event, _period) in rows]
+    if dedupe_periods:
+        events = pick_canonical_per_period(events)
+    events = events[offset : offset + limit]
+    period_by_id = {
+        period.period_id: period
+        for (event, period) in rows
+        if period is not None and event.event_id in {e.event_id for e in events}
+    }
     sigs_by, cards_by = load_signals_and_cards_by_event(
         db, [e.event_id for e in events]
     )
@@ -111,7 +124,10 @@ def list_company_events(
                 cards_by.get(event.event_id, []),
             ),
         )
-        for (event, period) in rows
+        for event in events
+        for period in [
+            period_by_id.get(event.period_id) if event.period_id is not None else None
+        ]
     ]
 
 
@@ -220,12 +236,14 @@ def event_detail(
     financial_snapshot = build_financial_snapshot_for_period(db, event.company_id, period)
 
     # ---- Related events ----
-    related_rows = db.scalars(
-        select(CompanyEvent)
-        .where(CompanyEvent.company_id == event.company_id)
-        .order_by(CompanyEvent.event_date.desc(), CompanyEvent.event_id.desc())
-        .limit(8)
-    ).all()
+    related_rows = pick_canonical_per_period(
+        db.scalars(
+            select(CompanyEvent)
+            .where(CompanyEvent.company_id == event.company_id)
+            .where(CompanyEvent.is_published.is_(True))
+            .order_by(CompanyEvent.event_date.desc(), CompanyEvent.event_id.desc())
+        ).all()
+    )[:8]
     related_events: list[TimelineEvent] = [
         TimelineEvent(
             event_id=e.event_id,
@@ -235,6 +253,9 @@ def event_detail(
             overall_signal=e.overall_signal,
             overall_severity=e.overall_severity,
             summary_text=e.summary_text,
+            period=period_brief(db.get(FinancialPeriod, e.period_id))
+            if e.period_id
+            else None,
         )
         for e in related_rows
         if e.event_id != event_id

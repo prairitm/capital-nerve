@@ -154,6 +154,7 @@ export interface TimelineEvent {
   overall_signal: SignalDirection | null;
   overall_severity: SeverityLevel | null;
   summary_text: string | null;
+  period?: PeriodBrief | null;
 }
 
 export interface FinancialSnapshotRow {
@@ -793,6 +794,7 @@ export interface IntelligenceObjectBrief {
   company: CompanyBrief;
   period: PeriodBrief | null;
   event_id: number | null;
+  event_type: EventType | null;
   event_title: string | null;
   event_date: string | null;
   signal_id: number | null;

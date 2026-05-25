@@ -7,10 +7,15 @@ import { api } from "@/api/client";
 import type { CardBrief, CompanyDetail, SignalBriefV1 } from "@/api/types";
 import { IntelligenceCard } from "@/components/cards/IntelligenceCard";
 import { MetricSparkline } from "@/components/cards/MetricSparkline";
+import { CompanyQuarterTimeline } from "@/components/common/CompanyQuarterTimeline";
 import { PageLoader } from "@/components/common/Spinner";
 import { SignalBadge } from "@/components/common/SignalBadge";
 import { SeverityBadge } from "@/components/common/SeverityBadge";
-import { filterInsightListCards, intelligenceObjectBriefToCardBrief } from "@/lib/cards";
+import {
+  filterInsightListCards,
+  groupEventsByQuarter,
+  intelligenceObjectBriefToCardBrief,
+} from "@/lib/cards";
 import {
   formatCr,
   formatDate,
@@ -95,8 +100,8 @@ export function CompanyPage() {
     data.latest_event_id != null
       ? data.timeline.find((e) => e.event_id === data.latest_event_id) ?? data.timeline[0]
       : data.timeline[0];
-  const timelineVisible = data.timeline.slice(0, TIMELINE_INITIAL);
-  const timelineLatestEventId = data.timeline[0]?.event_id ?? null;
+  const quarterGroups = groupEventsByQuarter(data.timeline);
+  const timelineLatestEventId = data.latest_event_id ?? data.timeline[0]?.event_id ?? null;
   const documentsVisible = showAllDocuments
     ? data.documents
     : data.documents.slice(0, DOCUMENTS_INITIAL);
@@ -250,7 +255,7 @@ export function CompanyPage() {
             <section className="card p-5 md:p-6">
               <div className="flex items-baseline justify-between gap-3 mb-3">
                 <h2 className="text-base font-semibold">Recent events</h2>
-                {data.timeline.length > TIMELINE_INITIAL && symbol && (
+                {quarterGroups.length > TIMELINE_INITIAL && symbol && (
                   <button
                     type="button"
                     onClick={() => navigate(`/company/${symbol}/events`)}
@@ -261,39 +266,16 @@ export function CompanyPage() {
                   </button>
                 )}
               </div>
-              <ol className="relative border-l border-line ml-2">
-                {timelineVisible.map((ev) => {
-                  const isLatest = ev.event_id === timelineLatestEventId;
-                  return (
-                    <li key={ev.event_id} className="ml-4 mb-4 last:mb-0">
-                      <span className={clsx("ui-dot", isLatest && "bg-brand ring-2 ring-brand/30")} />
-                      <button
-                        type="button"
-                        onClick={() => navigate(`/company/${symbol}/event/${ev.event_id}`)}
-                        className={clsx(
-                          "w-full text-left rounded-lg -mx-2 px-2 py-1 transition-colors",
-                          isLatest ? "bg-surface-2/60" : "hover:bg-surface-2/40",
-                        )}
-                      >
-                        <span className="text-[11px] uppercase tracking-wider text-ink-soft">
-                          {formatDate(ev.event_date)} ·{" "}
-                          {ev.event_type.replace(/_/g, " ").toLowerCase()}
-                        </span>
-                        <div className="font-medium mt-1">{ev.event_title}</div>
-                        {(ev.overall_signal || ev.overall_severity) && (
-                          <div className="flex items-center gap-2 mt-1.5">
-                            {ev.overall_signal && <SignalBadge direction={ev.overall_signal} />}
-                            {ev.overall_severity && <SeverityBadge level={ev.overall_severity} />}
-                          </div>
-                        )}
-                        {ev.summary_text && (
-                          <p className="text-xs text-ink-mute mt-2 line-clamp-2">{ev.summary_text}</p>
-                        )}
-                      </button>
-                    </li>
-                  );
-                })}
-              </ol>
+              {symbol && (
+                <CompanyQuarterTimeline
+                  events={data.timeline}
+                  symbol={symbol}
+                  latestEventId={timelineLatestEventId}
+                  maxQuarters={TIMELINE_INITIAL}
+                  collapsible={quarterGroups.length > 1}
+                  summaryLineClamp
+                />
+              )}
             </section>
           )}
 

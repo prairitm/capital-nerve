@@ -43,6 +43,10 @@ endpoints.
 - Latest event resolution and the embedded timeline only include
   `CompanyEvent.is_published=True`, matching
   `GET /v1/companies/{symbol}/events`.
+- Embedded `timeline` collapses to one canonical event per financial period
+  (via `services.event_timeline.pick_canonical_per_period`, preferring
+  `QUARTERLY_RESULT`) and returns up to 60 periods so bulk-ingested concall /
+  deck rows do not crowd out older quarters.
 - Badges are derived from the latest event direction plus the card type of
   the top objects — mirrors the legacy logic in
   `app.routers.companies.company_detail`.

@@ -14,7 +14,7 @@ The canonical decision-ready payload for the entire v1 namespace. Every renderer
 ## Contract
 
 - `IntelligenceObject` — full payload returned by `GET /v1/intelligence-objects/{id}`. Carries `company`, `event`, `signal`, `metrics`, `metric_comparisons`, `calculation`, `evidence`, `display`, `suggested_actions`, plus derived fields `importance_score`, `time_horizon`, `investor_relevance`, `confidence`.
-- `IntelligenceObjectBrief` — compact row used by list endpoints (`GET /v1/intelligence-objects`, `GET /v1/companies/{symbol}/intelligence-objects`) and embedded inside `PortfolioAlert.top_objects`. Includes the same derived fields so consumers can rank without an extra fetch.
+- `IntelligenceObjectBrief` — compact row used by list endpoints (`GET /v1/intelligence-objects`, `GET /v1/companies/{symbol}/intelligence-objects`) and embedded inside `PortfolioAlert.top_objects`. Includes `event_type` alongside `event_title` / `event_date` so feed headers can show document type without parsing titles.
 - `IODisplayConfig` — `(layout, primary_metric, chart_type, cta, surfaces)`. Sourced from `intelligence_cards.display_context` plus card-type defaults derived in the builder.
 - `IOMetric` — `(name, value, unit)`. One row per entry in `intelligence_cards.metrics_json`.
 
