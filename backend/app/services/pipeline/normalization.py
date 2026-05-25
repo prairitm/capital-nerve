@@ -72,6 +72,7 @@ def run_normalization(
             existing.value = float(ev.numeric_value or 0.0)
             existing.unit = ev.unit or "crore"
             existing.currency = ev.currency or "INR"
+            existing.column_label = ev.column_label
             existing.source_extracted_value_id = ev.extracted_value_id
             existing.confidence_score = ev.confidence_score
         else:
@@ -87,6 +88,7 @@ def run_normalization(
                     value=float(ev.numeric_value or 0.0),
                     unit=ev.unit or "crore",
                     currency=ev.currency or "INR",
+                    column_label=ev.column_label,
                     period_value_type="CURRENT",
                     source_extracted_value_id=ev.extracted_value_id,
                     confidence_score=ev.confidence_score,

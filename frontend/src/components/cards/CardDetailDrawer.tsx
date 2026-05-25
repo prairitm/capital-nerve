@@ -9,6 +9,8 @@ import { SeverityBadge } from "@/components/common/SeverityBadge";
 import { SignalBadge } from "@/components/common/SignalBadge";
 import { Spinner } from "@/components/common/Spinner";
 import { SourceDocumentLinks, uniqueSourceRefs } from "@/components/common/SourceDocumentLink";
+import { CalculationChainPanel } from "@/components/evidence/CalculationChainPanel";
+import { EvidencePanel } from "@/components/evidence/EvidencePanel";
 import { MetricSparkline } from "@/components/cards/MetricSparkline";
 import { cardTypeLabel, formatDate, formatNumber, formatPct, formatSigned, mainIssueLabel } from "@/lib/format";
 import { useNavigate } from "react-router-dom";
@@ -449,6 +451,8 @@ export function CardDetailDrawer({ cardId, onClose, onSaveWatchItem }: Props) {
               </section>
             )}
 
+            <CalculationChainPanel chain={data.calculation_chain} />
+            <EvidencePanel evidence={data.evidence} limit={5} />
             <CalculationPanel calculation={data.calculation} />
 
             {data.event_main_issue && (

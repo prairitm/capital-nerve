@@ -4,7 +4,11 @@
 
 ## Purpose
 
-Coloured pill for a card's `severity` level (`LOW`, `MEDIUM`, `HIGH`, `CRITICAL`).
+Coloured pill for a card's `severity` level (`LOW`, `MEDIUM`, `HIGH`, `CRITICAL`),
+relabelled in the UI as *materiality* (Routine / Notable / Material /
+Market-moving). Kept as a compatibility alias for the canonical
+[`MaterialityBadge`](MaterialityBadge.tsx) so existing call sites pick up the
+new vocabulary without a mechanical rename.
 
 ## Source
 
@@ -25,11 +29,18 @@ Coloured pill for a card's `severity` level (`LOW`, `MEDIUM`, `HIGH`, `CRITICAL`
 
 ## Patterns (symmetry)
 
-- Maps `SeverityLevel` → `{ label, klass }`. Both `HIGH` and `CRITICAL` use `chip-negative`; `MEDIUM` uses `chip-mixed`; `LOW` uses `chip-low`.
+- Maps `SeverityLevel` → `{ label, klass }`:
+  - `LOW` → "Routine" / `chip-low`
+  - `MEDIUM` → "Notable" / `chip-neutral`
+  - `HIGH` → "Material" / `chip-mixed`
+  - `CRITICAL` → "Market-moving" / `chip-negative`
 - Same dot + label pattern as `SignalBadge`.
+- Renders a `title` tooltip explaining the materiality semantics so hover
+  reveals the meaning to first-time users.
 
 ## Verification checklist
 
 - [ ] Returns `null` for falsy `level`
-- [ ] HIGH and CRITICAL share the `chip-negative` class (do not split them)
+- [ ] Labels match the four-step materiality vocabulary above
 - [ ] Dot + label structure mirrors `SignalBadge`
+- [ ] Backend enum stays `LOW/MEDIUM/HIGH/CRITICAL` — never invent a new value here

@@ -56,6 +56,15 @@ uses this to feed the AST evaluator without a custom SQL block per metric.
 - `_SUPPORTED_SCOPES` is the single source of truth — extend it when adding
   a new scope, and update [`tests/test_seed_config.py`](../../../tests/test_seed_config.py).
 
+## Comparator integrity
+
+PQ / PY / PY_PQ lookups go through `_comparator_value`, which refuses to
+return a fact whose `financial_statement_facts.column_label` indicates the
+value came from a YTD / nine-month / half-year / full-year aggregate
+column. Tokens checked are in `_AGGREGATE_COLUMN_TOKENS`. This prevents
+quarter-vs-YTD math (the root cause of the 708 % Revenue QoQ on
+RELIANCE). Missing label → assumed quarter, no skip.
+
 ## Verification checklist
 
 - [ ] `CURRENT` lookup matches `period_value_type='CURRENT'` rows only.
@@ -64,3 +73,6 @@ uses this to feed the AST evaluator without a custom SQL block per metric.
 - [ ] `kind="metric"` reads only metrics already written for the period —
       relies on the metrics stage doing `db.flush()` per metric.
 - [ ] Unknown scope → resolver logs a warning and returns `None`.
+- [ ] A PQ/PY fact with `column_label` like "9M", "YTD", "Full Year" is
+      treated as missing — the dependent metric is dropped rather than
+      computed against a year-to-date denominator.

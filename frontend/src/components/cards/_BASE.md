@@ -6,8 +6,9 @@ Components in this folder render the intelligence-card domain — feed items, fu
 
 ## Domain rules
 
-- Cards always show: type label, headline, one-line summary, signal direction, optional severity, optional confidence. The visual order in [`IntelligenceCard.tsx`](IntelligenceCard.tsx) and [`IntelligenceFeedItem.tsx`](IntelligenceFeedItem.tsx) is the canonical reference — match it when adding new card surfaces.
-- Card colours follow spec §11: `SignalBadge` and `SeverityBadge` from [`../common/`](../common/) are the only sources of truth for the colour-plus-label pairing. Do not roll your own coloured pill.
+- Cards always show: type label, headline, one-line summary, **tone** (signal direction), optional **materiality**, optional confidence. The visual order in [`IntelligenceCard.tsx`](IntelligenceCard.tsx) and [`IntelligenceFeedItem.tsx`](IntelligenceFeedItem.tsx) is the canonical reference — match it when adding new card surfaces.
+- Card colours follow spec §11: [`SignalBadge`](../common/SignalBadge.tsx) and [`SeverityBadge`](../common/SeverityBadge.tsx) / [`MaterialityBadge`](../common/MaterialityBadge.tsx) from [`../common/`](../common/) are the only sources of truth for the colour-plus-label pairing. Do not roll your own coloured pill.
+- **Tone vs materiality.** Backend keeps `SignalDirection` (`POSITIVE/NEGATIVE/MIXED/NEUTRAL`) and `SeverityLevel` (`LOW/MEDIUM/HIGH/CRITICAL`). The UI surfaces them as two distinct chips: **Tone** (Positive / Negative / Mixed / Neutral) and **Materiality** (Routine / Notable / Material / Market-moving). Never combine into a single contradictory label like "Critical-risk — Positive".
 - Feed ranking respects `card_priority` (spec §19). Sorting / grouping logic for feeds lives in [`@/lib/cards`](../../lib/cards.ts) — do not sort cards by hand inside components.
 - The `watch_next` card type is filtered out of insight lists via `filterInsightListCards` (see [`@/lib/cards`](../../lib/cards.ts)).
 

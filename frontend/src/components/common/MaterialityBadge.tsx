@@ -2,14 +2,11 @@ import clsx from "clsx";
 import type { SeverityLevel } from "@/api/types";
 
 /**
- * Materiality chip — rebranded from "Severity" so the UI never combines
- * "Critical-risk" with "Positive" tone. Backend enum stays
- * `LOW / MEDIUM / HIGH / CRITICAL`; user-facing labels are
- * `Routine / Notable / Material / Market-moving`.
- *
- * `MaterialityBadge` is the canonical name going forward; `SeverityBadge`
- * is kept as a compatibility alias so existing call sites pick up the new
- * vocabulary without a mechanical rename.
+ * Materiality chip — answers "how much does this move the thesis?". Severity
+ * is the underlying field but we relabel it as Materiality in the UI so it
+ * is not confused with tone (POSITIVE / NEGATIVE / MIXED / NEUTRAL), which
+ * lives on `SignalBadge`. Together the two chips replace any single
+ * contradictory "Critical-risk + Positive" headline.
  */
 const MAP: Record<SeverityLevel, { label: string; klass: string }> = {
   LOW: { label: "Routine", klass: "chip-low" },
@@ -18,7 +15,7 @@ const MAP: Record<SeverityLevel, { label: string; klass: string }> = {
   CRITICAL: { label: "Market-moving", klass: "chip-negative" },
 };
 
-export function SeverityBadge({
+export function MaterialityBadge({
   level,
   size = "sm",
 }: {

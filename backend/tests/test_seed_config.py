@@ -13,7 +13,7 @@ from __future__ import annotations
 
 import pytest
 
-from app.seed.seed_catalog import METRIC_DEFS, SIGNAL_DEFS
+from app.seed.seed_catalog import METRIC_DEFS, SIGNAL_DEFS, _format_rule_text
 from app.services.pipeline.formula import FormulaError, evaluate
 from app.services.pipeline.inputs import _SUPPORTED_SCOPES
 
@@ -108,3 +108,59 @@ def test_signal_rules_reference_known_metrics():
             assert code in METRIC_CODES, (
                 f"signal `{sig['code']}` references unknown metric `{code}`"
             )
+
+
+# ---------------------------------------------------------------------------
+# Phase 1A — metric bounds + rule_text
+# ---------------------------------------------------------------------------
+
+
+def test_margin_and_growth_metrics_carry_sanity_bounds():
+    """Margin / growth metrics that the user reported as breaking must declare bounds."""
+    must_have_bounds = {
+        "ebitda_margin",
+        "pat_margin",
+        "primary_segment_margin",
+        "revenue_yoy_growth",
+        "revenue_qoq_growth",
+        "other_income_to_pbt",
+    }
+    by_code = {m["code"]: m for m in METRIC_DEFS}
+    for code in must_have_bounds:
+        spec = by_code[code]
+        assert spec.get("bounds") is not None, f"metric `{code}` missing bounds"
+        lo, hi = spec["bounds"]
+        assert (lo is None or hi is None or lo < hi), (
+            f"metric `{code}` bounds are inverted: {spec['bounds']}"
+        )
+
+
+def test_format_rule_text_handles_grammar_variants():
+    """Leaf, all, any, not, and metric_ref must all produce readable text."""
+    leaf = {"metric": "ebitda_margin", "operator": ">", "threshold": 20}
+    assert _format_rule_text(leaf) == "ebitda_margin > 20"
+
+    composite_all = {"all": [leaf, {"metric": "pat_margin", "operator": "<", "threshold": 8}]}
+    assert _format_rule_text(composite_all) == "ebitda_margin > 20 and pat_margin < 8"
+
+    composite_any = {"any": [leaf, {"metric": "pat_margin", "operator": "<", "threshold": 8}]}
+    assert _format_rule_text(composite_any) == "ebitda_margin > 20 or pat_margin < 8"
+
+    negated = {"not": leaf}
+    assert _format_rule_text(negated) == "not (ebitda_margin > 20)"
+
+    ref = {"metric": "receivables_growth_yoy", "operator": ">", "metric_ref": "revenue_yoy_growth"}
+    assert _format_rule_text(ref) == "receivables_growth_yoy > revenue_yoy_growth"
+
+    # Empty / manual signals should yield None.
+    assert _format_rule_text({}) is None
+
+
+def test_every_evaluable_signal_produces_rule_text():
+    """Numeric signals must carry a non-empty rule_text so the UI can show it."""
+    for sig in SIGNAL_DEFS:
+        rule = sig["rule"]
+        if not rule:
+            continue
+        text = _format_rule_text(rule)
+        assert text, f"signal `{sig['code']}` produced empty rule_text from rule {rule}"

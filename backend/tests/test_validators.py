@@ -96,12 +96,52 @@ def test_unit_aliases_are_canonicalised(raw: str, expected: str):
     assert kept[0].unit == expected
 
 
-def test_unknown_unit_is_dropped():
+def test_lakh_unit_is_rescaled_to_crore():
     items = [_item("revenue_from_operations", 100.0, unit="lakh")]
     report = ValidatorReport()
     kept = canonicalize_units(items, report=report)
+    assert len(kept) == 1
+    assert kept[0].unit == "crore"
+    assert kept[0].value == pytest.approx(1.0)
+    assert report.unit_dropped == []
+    assert report.unit_rescaled
+    entry = report.unit_rescaled[0]
+    assert entry["from_unit"] == "lakh"
+    assert entry["to_unit"] == "crore"
+    assert entry["scale"] == pytest.approx(0.01)
+    assert entry["from_value"] == pytest.approx(100.0)
+
+
+def test_million_unit_is_rescaled():
+    items = [_item("ebitda", 250.0, unit="million")]
+    report = ValidatorReport()
+    kept = canonicalize_units(items, report=report)
+    assert kept[0].unit == "crore"
+    assert kept[0].value == pytest.approx(25.0)
+
+
+def test_billion_unit_is_rescaled():
+    items = [_item("market_cap", 1.5, unit="billion")]
+    report = ValidatorReport()
+    kept = canonicalize_units(items, report=report)
+    assert kept[0].unit == "crore"
+    assert kept[0].value == pytest.approx(150.0)
+
+
+def test_raw_rupees_unit_is_rescaled():
+    items = [_item("revenue_from_operations", 1_000_000_000.0, unit="rupees")]
+    report = ValidatorReport()
+    kept = canonicalize_units(items, report=report)
+    assert kept[0].unit == "crore"
+    assert kept[0].value == pytest.approx(100.0)
+
+
+def test_truly_unknown_unit_is_dropped():
+    items = [_item("revenue_from_operations", 100.0, unit="furlongs")]
+    report = ValidatorReport()
+    kept = canonicalize_units(items, report=report)
     assert kept == []
-    assert report.unit_dropped[0]["raw_unit"] == "lakh"
+    assert report.unit_dropped[0]["raw_unit"] == "furlongs"
 
 
 # ---------------------------------------------------------------------------
@@ -166,22 +206,31 @@ def test_ebitda_margin_identity_breach():
 
 def test_run_validators_combines_all_three_stages():
     # Page text contains every value so the source-text stage does not drop
-    # anything — the bad unit on `inventory` is what should drop that row.
+    # anything — the bad unit on `inventory` is rescaled (lakh→crore), and
+    # the unrecognisable unit on `cogs` is dropped.
     pages = [
         (
             1,
-            "Revenue from Operations 100 Other Income 5 Total Income 105 Inventory 50",
+            "Revenue from Operations 100 Other Income 5 Total Income 105 "
+            "Inventory 50 COGS 70",
         )
     ]
     items = [
         _item("revenue_from_operations", 100, src="Revenue from Operations 100"),
         _item("other_income", 5, src="Other Income 5"),
         _item("total_income", 105, src="Total Income 105"),
-        _item("inventory", 50, unit="lakh", src="Inventory 50"),  # bad unit -> dropped
+        _item("inventory", 50, unit="lakh", src="Inventory 50"),  # rescaled
+        _item("cogs", 70, unit="furlongs", src="COGS 70"),  # dropped
     ]
     out, report = run_validators(items, pages=pages)
     codes = {i.normalized_code for i in out}
-    assert "inventory" not in codes
+    assert "inventory" in codes  # rescaled, not dropped
+    assert "cogs" not in codes  # dropped
+    inventory = next(i for i in out if i.normalized_code == "inventory")
+    assert inventory.unit == "crore"
+    assert inventory.value == pytest.approx(0.5)
     assert len(report.unit_dropped) == 1
+    assert report.unit_dropped[0]["raw_unit"] == "furlongs"
+    assert report.unit_rescaled
     assert report.totals_breaches == []
     assert report.source_text_dropped == []

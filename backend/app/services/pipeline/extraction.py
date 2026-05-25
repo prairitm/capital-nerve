@@ -174,6 +174,7 @@ def run_extraction(
                 unit=item.unit,
                 page_number=item.page_number,
                 source_text=item.source_text,
+                column_label=item.column_label,
                 confidence_score=item.confidence,
                 confidence_level=_confidence_to_level(item.confidence),
                 is_normalized=True,

@@ -6,13 +6,16 @@ import clsx from "clsx";
 import { api } from "@/api/client";
 import type { CardBrief, CompanyDetail, SignalBriefV1 } from "@/api/types";
 import { IntelligenceCard } from "@/components/cards/IntelligenceCard";
+import { IntelligenceTimeline } from "@/components/cards/IntelligenceTimeline";
 import { MetricSparkline } from "@/components/cards/MetricSparkline";
 import { CompanyQuarterTimeline } from "@/components/common/CompanyQuarterTimeline";
+import { SignalTrendChart } from "@/components/common/SignalTrendChart";
 import { PageLoader } from "@/components/common/Spinner";
 import { SignalBadge } from "@/components/common/SignalBadge";
 import { SeverityBadge } from "@/components/common/SeverityBadge";
 import {
   filterInsightListCards,
+  groupCardsByEvent,
   groupEventsByQuarter,
   intelligenceObjectBriefToCardBrief,
 } from "@/lib/cards";
@@ -48,6 +51,7 @@ export function CompanyPage() {
   const navigate = useNavigate();
   const qc = useQueryClient();
   const [showAllDocuments, setShowAllDocuments] = useState(false);
+  const [groupKeyIntelByEvent, setGroupKeyIntelByEvent] = useState(false);
 
   const { data, isLoading } = useQuery({
     queryKey: ["company", symbol],
@@ -279,19 +283,41 @@ export function CompanyPage() {
             </section>
           )}
 
+          {symbol && <SignalTrendChart symbol={symbol} quarters={8} />}
+
           {topCards.length > 0 && (
             <section className="card rounded-xl overflow-hidden">
-              <div className="px-4 py-4 border-b border-line/60 bg-surface-2/30">
-                <h2 className="text-base font-semibold">Key intelligence</h2>
-                <p className="text-sm text-ink-mute mt-0.5">
-                  Highest-priority cards for this company.
-                </p>
+              <div className="px-4 py-4 border-b border-line/60 bg-surface-2/30 flex items-baseline justify-between gap-3">
+                <div>
+                  <h2 className="text-base font-semibold">Key intelligence</h2>
+                  <p className="text-sm text-ink-mute mt-0.5">
+                    Highest-priority cards for this company.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setGroupKeyIntelByEvent((v) => !v)}
+                  className="text-xs text-ink-soft hover:text-ink shrink-0"
+                  aria-pressed={groupKeyIntelByEvent}
+                >
+                  {groupKeyIntelByEvent ? "Show as list" : "Group by event"}
+                </button>
               </div>
-              <div className="p-4 space-y-3">
-                {topCards.map((c: CardBrief) => (
-                  <IntelligenceCard key={c.card_id} card={c} showCompany={false} />
-                ))}
-              </div>
+              {groupKeyIntelByEvent ? (
+                <div className="p-4">
+                  <IntelligenceTimeline
+                    groups={groupCardsByEvent(topCards)}
+                    variant="card"
+                    showCompanyInHeader={false}
+                  />
+                </div>
+              ) : (
+                <div className="p-4 space-y-3">
+                  {topCards.map((c: CardBrief) => (
+                    <IntelligenceCard key={c.card_id} card={c} showCompany={false} />
+                  ))}
+                </div>
+              )}
             </section>
           )}
 

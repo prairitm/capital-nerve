@@ -15,10 +15,13 @@ from sqlalchemy.orm import Session
 
 from app.db.enums import SeverityLevel, SignalDirection
 from app.models.events import CompanyEvent, SourceDocument
+from app.models.facts import ExtractedValue
 from app.models.intelligence import (
+    CalculatedMetric,
     CardEvidence,
     GeneratedSignal,
     IntelligenceCard,
+    MetricDefinition,
     SignalDefinition,
 )
 from app.models.master import Company, FinancialPeriod
@@ -26,6 +29,10 @@ from app.routers._helpers import build_source_label, company_brief, period_brief
 from app.schemas.common import EvidenceItem
 from app.schemas.v1.events import EventBriefV1
 from app.schemas.v1.intelligence_object import (
+    CalculationChain,
+    CalculationChainInput,
+    CalculationChainMetric,
+    CalculationChainSignal,
     IntelligenceObject,
     IntelligenceObjectBrief,
     IODisplayConfig,
@@ -284,6 +291,151 @@ def _signal_brief(
     )
 
 
+def _build_calculation_chain(
+    db: Session,
+    card: IntelligenceCard,
+    signal_row: GeneratedSignal | None,
+    signal_def: SignalDefinition | None,
+) -> CalculationChain | None:
+    """Assemble the full Signal → Metric → Facts explainability chain.
+
+    Returns ``None`` for summary cards (`result_verdict`) and any card that
+    has no underlying signal — those render through the existing metrics
+    list rather than the calculation panel. The frontend
+    `CalculationChainPanel` reads this structure directly.
+    """
+    cm: CalculatedMetric | None = None
+    md: MetricDefinition | None = None
+    if signal_row and signal_row.primary_metric_id:
+        cm = db.get(CalculatedMetric, signal_row.primary_metric_id)
+        if cm is not None and cm.metric_def_id is not None:
+            md = db.get(MetricDefinition, cm.metric_def_id)
+
+    if not signal_def and not cm:
+        return None
+
+    signal_chain: CalculationChainSignal | None = None
+    if signal_def is not None:
+        # First leaf from the signal's metric_refs drives the "fired at" copy.
+        fired_value: float | None = None
+        fired_unit: str | None = None
+        threshold: float | None = None
+        operator: str | None = None
+        metric_ref_code: str | None = None
+        refs = list(signal_row.metric_refs or []) if signal_row else []
+        if refs:
+            head = refs[0] if isinstance(refs[0], dict) else None
+            if head:
+                fired_value = (
+                    float(head["value"]) if head.get("value") is not None else None
+                )
+                fired_unit = head.get("unit")
+                threshold = (
+                    float(head["threshold"])
+                    if head.get("threshold") is not None
+                    else None
+                )
+                operator = head.get("op")
+                metric_ref_code = head.get("metric_ref")
+        signal_chain = CalculationChainSignal(
+            code=signal_def.signal_code,
+            name=signal_def.signal_name,
+            category=signal_def.signal_category,
+            rule_text=signal_def.rule_text,
+            direction=signal_row.signal_direction if signal_row else signal_def.default_direction,
+            severity=signal_row.severity if signal_row else signal_def.default_severity,
+            fired_value=fired_value,
+            fired_unit=fired_unit,
+            threshold=threshold,
+            operator=operator,
+            metric_ref=metric_ref_code,
+        )
+
+    metric_chain: CalculationChainMetric | None = None
+    if cm is not None:
+        inputs = _build_calculation_chain_inputs(db, cm, md, card.document_id)
+        metric_chain = CalculationChainMetric(
+            code=md.metric_code if md else None,
+            name=md.metric_name if md else None,
+            formula_text=md.formula_text if md else None,
+            value=float(cm.metric_value) if cm.metric_value is not None else None,
+            unit=cm.unit or (md.unit if md else None),
+            inputs=inputs,
+            is_quarantined=bool(cm.is_quarantined),
+            quarantine_reason=cm.quarantine_reason,
+        )
+
+    if not signal_chain and not metric_chain:
+        return None
+
+    return CalculationChain(signal=signal_chain, metric=metric_chain)
+
+
+def _build_calculation_chain_inputs(
+    db: Session,
+    cm: CalculatedMetric,
+    md: MetricDefinition | None,
+    document_id: int | None,
+) -> list[CalculationChainInput]:
+    """Resolve every input variable used by the metric into a source-anchored row.
+
+    `CalculatedMetric.input_values` carries the runtime values keyed by the
+    formula's local variable name. `MetricDefinition.inputs_json` carries the
+    declarative `{name, code, scope, kind}` for each variable. We zip the two
+    and then look up the matching `ExtractedValue` row (current-period facts
+    only — prior-period sources live in a different document and won't have
+    a quote in this filing) so the panel can show the underlying quote +
+    page number.
+    """
+    runtime: dict = dict(cm.input_values or {})
+    decls = list((md.inputs_json or []) if md else [])
+    decl_by_name = {
+        d.get("name"): d for d in decls if isinstance(d, dict) and d.get("name")
+    }
+    extracted_by_code = _extracted_lookup(db, document_id) if document_id else {}
+
+    out: list[CalculationChainInput] = []
+    for name, value in runtime.items():
+        decl = decl_by_name.get(name) or {}
+        code = decl.get("code")
+        scope = (decl.get("scope") or "CURRENT").upper()
+        kind = (decl.get("kind") or "fact").lower()
+        page_number: int | None = None
+        source_text: str | None = None
+        doc_id: int | None = None
+        unit: str | None = None
+        if kind == "fact" and scope == "CURRENT" and code:
+            ev = extracted_by_code.get(code)
+            if ev is not None:
+                page_number = ev.page_number
+                source_text = ev.source_text
+                doc_id = ev.document_id
+                unit = ev.unit
+        out.append(
+            CalculationChainInput(
+                formula_name=name,
+                code=code,
+                scope=scope,
+                kind=kind,
+                value=float(value) if value is not None else None,
+                unit=unit,
+                document_id=doc_id,
+                page_number=page_number,
+                source_text=source_text,
+            )
+        )
+    return out
+
+
+def _extracted_lookup(db: Session, document_id: int) -> dict[str, ExtractedValue]:
+    rows = (
+        db.query(ExtractedValue)
+        .filter(ExtractedValue.document_id == document_id)
+        .all()
+    )
+    return {ev.normalized_label or ev.raw_label: ev for ev in rows}
+
+
 def _evidence_items(rows: Iterable[CardEvidence]) -> list[EvidenceItem]:
     return [
         EvidenceItem(
@@ -351,6 +503,8 @@ def build_intelligence_object(
 
     severity = card.severity
 
+    calculation_chain = _build_calculation_chain(db, card, signal_row, signal_def)
+
     return IntelligenceObject(
         intelligence_object_id=card.card_id,
         object_type=card.card_type,
@@ -375,6 +529,7 @@ def build_intelligence_object(
         trend_sparklines=trend_sparklines,
         concern_heatmap=concern_heatmap,
         calculation=card.calculations_json or {},
+        calculation_chain=calculation_chain,
         evidence=_evidence_items(evidence_rows),
         display=_display_for(card),
         suggested_actions=_derive_suggested_actions(card.card_type, card.signal_direction, severity),
@@ -391,12 +546,18 @@ def build_intelligence_object_brief(
     company: Company,
     period: FinancialPeriod | None,
     event: CompanyEvent | None,
+    document: SourceDocument | None = None,
 ) -> IntelligenceObjectBrief:
     """Lighter projection used by feeds and portfolio alerts.
 
     Skips the heavy joins on signal definitions and evidence so list endpoints
     stay fast. Consumers that need the full payload should call the by-id
     endpoint, which goes through `build_intelligence_object`.
+
+    `document` is optional because portfolio_monitor's hot path does not load
+    `SourceDocument`. When omitted, `source_label` falls back to the period /
+    event label resolved by `build_source_label` and `document_id` comes from
+    `card.document_id` so the feed-row PDF jump still works.
     """
 
     primary_metric: str | None = None
@@ -430,6 +591,8 @@ def build_intelligence_object_brief(
         signal_id=card.signal_id,
         primary_metric=primary_metric,
         investor_relevance=_derive_investor_relevance(card.card_type, card.signal_direction),
+        source_label=build_source_label(period, event, document),
+        document_id=card.document_id,
         created_at=card.created_at,
     )
 

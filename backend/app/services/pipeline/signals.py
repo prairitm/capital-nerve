@@ -416,12 +416,19 @@ def _primary_metric_summary(
 def _load_metric_values(
     db: Session, *, company_id: int, period_id: int
 ) -> dict[str, CalculatedMetric]:
+    """Load published metrics for the period, skipping quarantined rows.
+
+    Quarantined metrics (`is_quarantined=True`) breached their sanity bounds
+    and would only produce wrong signals. They stay in the DB for the admin
+    Review Queue but never participate in rule evaluation.
+    """
     stmt = (
         select(CalculatedMetric, MetricDefinition)
         .join(MetricDefinition, MetricDefinition.metric_def_id == CalculatedMetric.metric_def_id)
         .where(
             CalculatedMetric.company_id == company_id,
             CalculatedMetric.period_id == period_id,
+            CalculatedMetric.is_quarantined.is_(False),
         )
     )
     return {md.metric_code: cm for cm, md in db.execute(stmt).all()}

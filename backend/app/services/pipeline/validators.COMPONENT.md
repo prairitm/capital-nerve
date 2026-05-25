@@ -26,7 +26,16 @@ sense-checked against basic accounting identities.
   missing page or page out of range are kept but downgraded to confidence ≤ 60.
 - `canonicalize_units(items, *, report)` — maps unit aliases ("Cr",
   "INR cr", "Rs.", "₹") onto the canonical schema enum (`crore`, `%`, `Rs`,
-  `bps`, `days`, `x`). Drops items whose unit cannot be canonicalised.
+  `bps`, `days`, `x`) AND rescales numeric values for known unit multiples
+  (`lakh` × 0.01, `thousand` × 1e-5, `million` × 0.1, `billion` × 100,
+  `trillion` × 1e5, raw rupees × 1e-7) onto crore. Drops items whose unit
+  cannot be mapped at all. Rescales are reported on
+  `ValidatorReport.unit_rescaled` so the Review Queue can show every value
+  that the pipeline silently moved into the canonical scale.
+- `_resolve_unit(raw)` — internal helper that returns the canonical unit and
+  the numeric scale factor (1.0 unless rescaled). Reused by the bulk
+  reprocess script so re-runs apply the same scaling logic without going
+  back to the LLM.
 - `validate_totals(items, *, report)` — checks accounting identities:
   - `total_income = revenue_from_operations + other_income`
   - `pat = pbt - tax_expense`
@@ -51,12 +60,16 @@ sense-checked against basic accounting identities.
 - Each validator takes the same `report: ValidatorReport` accumulator. Don't
   return errors out-of-band; everything that touched the run must be
   serialisable through the report so the admin UI can explain low confidence.
-- Drop-vs-downgrade policy:
+- Drop-vs-downgrade-vs-rescale policy:
   - **Drop** when the item is definitely wrong (numeric token not on page,
     unrecognisable unit) — keeping it would poison downstream metrics.
   - **Downgrade** when the item is *suspect* but plausibly correct (totals
     math breach) — the Review Queue is the right escalation, not silent
     deletion.
+  - **Rescale** when the unit is unambiguously a known multiple of crore
+    (`lakh`, `thousand`, `million`, `billion`, raw rupees). The value is
+    converted in-place and the original is preserved in
+    `ValidatorReport.unit_rescaled`.
 
 ## Verification checklist
 
@@ -67,5 +80,5 @@ sense-checked against basic accounting identities.
 - [ ] Totals breach downgrades every involved item's confidence, not just
       the target.
 - [ ] `tests/test_validators.py` covers each validator path (source-text
-      hallucination, unit alias, totals breach for `total_income`, `pat`, and
-      `ebitda_margin`).
+      hallucination, unit alias, **unit rescale** for lakh / million / raw
+      rupees, totals breach for `total_income`, `pat`, and `ebitda_margin`).

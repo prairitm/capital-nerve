@@ -37,6 +37,13 @@ class MetricDefinition(Base):
     is_percentage: Mapped[bool] = mapped_column(Boolean, default=False)
     is_bps: Mapped[bool] = mapped_column(Boolean, default=False)
 
+    # Plausible (min, max) bounds for the computed value. NULL means
+    # unbounded. Used by the metrics stage to quarantine impossibly large
+    # margin / growth values that almost always indicate a unit / period
+    # mismatch upstream — see ``services/pipeline/metrics.py``.
+    validation_min: Mapped[float | None] = mapped_column(Numeric(24, 6))
+    validation_max: Mapped[float | None] = mapped_column(Numeric(24, 6))
+
     description: Mapped[str | None] = mapped_column(Text)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
@@ -69,6 +76,12 @@ class CalculatedMetric(Base):
 
     input_values: Mapped[dict] = mapped_column(JSONB, default=dict)
     calculation_steps: Mapped[dict] = mapped_column(JSONB, default=dict)
+
+    # Quarantine flag for metric values outside the metric definition's
+    # plausible (min, max) bounds. Quarantined metrics are persisted for the
+    # admin Review Queue but never feed signals/cards.
+    is_quarantined: Mapped[bool] = mapped_column(Boolean, default=False)
+    quarantine_reason: Mapped[str | None] = mapped_column(Text)
 
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 

@@ -157,8 +157,8 @@ def list_company_intelligence_objects(
 
     rows = db.execute(stmt).all()
     return [
-        build_intelligence_object_brief(card, comp, per, ev)
-        for (card, comp, per, ev, _doc) in rows
+        build_intelligence_object_brief(card, comp, per, ev, doc)
+        for (card, comp, per, ev, doc) in rows
     ]
 
 
@@ -225,8 +225,8 @@ def list_intelligence_objects(
 
     rows = db.execute(stmt).all()
     return [
-        build_intelligence_object_brief(card, comp, per, ev)
-        for (card, comp, per, ev, _doc) in rows
+        build_intelligence_object_brief(card, comp, per, ev, doc)
+        for (card, comp, per, ev, doc) in rows
     ]
 
 

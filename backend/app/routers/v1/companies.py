@@ -16,7 +16,7 @@ from app.core.deps import get_current_user, get_db
 from app.db.enums import EventType
 from app.models.events import CompanyEvent, SourceDocument
 from app.models.facts import FinancialLineItemDefinition, FinancialStatementFact
-from app.models.intelligence import IntelligenceCard
+from app.models.intelligence import CalculatedMetric, IntelligenceCard, MetricDefinition
 from app.models.master import Company, FinancialPeriod, Sector
 from app.models.user import AppUser, Watchlist, WatchlistCompany
 from app.routers._helpers import company_brief, find_company, period_brief
@@ -143,8 +143,8 @@ def company_hub(
         .limit(8)
     ).all()
     top_objects: list[IntelligenceObjectBrief] = [
-        build_intelligence_object_brief(card, comp, per, ev)
-        for (card, comp, per, ev, _doc) in top_object_rows
+        build_intelligence_object_brief(card, comp, per, ev, doc)
+        for (card, comp, per, ev, doc) in top_object_rows
     ]
 
     events = db.scalars(
@@ -332,3 +332,89 @@ def company_hub(
         timeline=timeline,
         documents=documents,
     )
+
+
+# Default metric set when the caller does not specify `codes`. Mirrors the
+# "key intelligence" lens analysts use to read a quarter: growth, margins,
+# profit quality, and segment health.
+_DEFAULT_METRIC_TREND_CODES: tuple[str, ...] = (
+    "revenue_yoy_growth",
+    "ebitda_margin",
+    "pat_margin",
+    "primary_segment_margin",
+)
+
+
+@router.get(
+    "/companies/{symbol}/metric-trend",
+    response_model=list[FinancialTrend],
+)
+def company_metric_trend(
+    symbol: str,
+    codes: str | None = Query(
+        default=None,
+        description="Comma-separated metric_def codes; defaults to the analyst signal set.",
+    ),
+    quarters: int = Query(default=8, ge=1, le=24),
+    db: Session = Depends(get_db),
+    user: AppUser = Depends(get_current_user),
+) -> list[FinancialTrend]:
+    """Last N quarters of selected `calculated_metrics` for one company.
+
+    Powers the company-page Signal Trend chart. Quarantined rows are
+    excluded so a single bad data point cannot pull a multi-quarter line
+    off-scale. Returns one `FinancialTrend` per requested metric code in
+    request order; metrics with no usable rows are dropped.
+    """
+    company = find_company(db, symbol)
+    if not company:
+        raise HTTPException(status_code=404, detail="Company not found")
+
+    if codes:
+        requested = tuple(c.strip() for c in codes.split(",") if c.strip())
+    else:
+        requested = _DEFAULT_METRIC_TREND_CODES
+    if not requested:
+        return []
+
+    md_rows = db.execute(
+        select(MetricDefinition).where(MetricDefinition.metric_code.in_(requested))
+    ).scalars().all()
+    md_by_code = {md.metric_code: md for md in md_rows}
+
+    trends: list[FinancialTrend] = []
+    for code in requested:
+        md = md_by_code.get(code)
+        if md is None:
+            continue
+        rows = db.execute(
+            select(CalculatedMetric, FinancialPeriod)
+            .join(FinancialPeriod, FinancialPeriod.period_id == CalculatedMetric.period_id)
+            .where(CalculatedMetric.company_id == company.company_id)
+            .where(CalculatedMetric.metric_def_id == md.metric_def_id)
+            .where(CalculatedMetric.is_quarantined.is_(False))
+            .where(CalculatedMetric.metric_value.is_not(None))
+            .order_by(FinancialPeriod.period_end_date.desc())
+            .limit(quarters)
+        ).all()
+        if not rows:
+            continue
+        # Display chronologically, oldest first, so the chart reads left → right.
+        rows.reverse()
+        points = [
+            FinancialTrendPoint(
+                period_label=period.display_label,
+                period_end_date=period.period_end_date,
+                value=float(cm.metric_value) if cm.metric_value is not None else None,
+            )
+            for (cm, period) in rows
+        ]
+        trends.append(
+            FinancialTrend(
+                metric_code=md.metric_code,
+                metric_name=md.metric_name,
+                unit=md.unit or "",
+                points=points,
+            )
+        )
+    return trends

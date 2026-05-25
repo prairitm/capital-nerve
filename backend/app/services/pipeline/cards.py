@@ -211,7 +211,7 @@ def run_result_verdict(
     if not signals and not event.overall_signal:
         return None
 
-    from app.services.event_summary import build_event_summary_text
+    from app.services.event_summary import build_analyst_summary, build_event_summary_text
 
     # Replace any previous verdict for this document so re-runs stay clean.
     existing = list(
@@ -234,6 +234,19 @@ def run_result_verdict(
     summary = build_event_summary_text(signals, []) or headline
     metrics_json = _verdict_metrics_json(db, signals)
 
+    # Themed AnalystSummary persisted alongside the verdict card so the event
+    # page can pin it without re-querying signals/cards (Phase 2B).
+    event_cards = list(
+        db.scalars(
+            select(IntelligenceCard).where(
+                IntelligenceCard.event_id == document.event_id,
+                IntelligenceCard.card_type != "watch_next",
+            )
+        )
+    )
+    analyst_summary = build_analyst_summary(signals, event_cards, db=db)
+    calculations_json = {"analyst_summary": analyst_summary} if analyst_summary else {}
+
     card = IntelligenceCard(
         company_id=document.company_id,
         event_id=document.event_id,
@@ -253,7 +266,7 @@ def run_result_verdict(
         watch_next="Track the next event for confirmation or reversal.",
         action_label="Open event detail",
         metrics_json=metrics_json,
-        calculations_json={},
+        calculations_json=calculations_json,
         display_context={
             "primary_metric": metrics_json[0]["display"] if metrics_json else None,
             "surfaces": ["home", "company_page", "event_page"],
@@ -327,21 +340,45 @@ def _verdict_priority(severity: SeverityLevel) -> float:
     return float(bump.get(severity, 60)) + 5.0
 
 
+_DIRECTION_DESCRIPTOR: dict[SignalDirection, str] = {
+    SignalDirection.POSITIVE: "Constructive quarter",
+    SignalDirection.NEGATIVE: "Weak quarter",
+    SignalDirection.MIXED: "Mixed quarter",
+    SignalDirection.NEUTRAL: "In-line quarter",
+}
+
+
+_MATERIALITY_QUALIFIER: dict[SeverityLevel, str] = {
+    SeverityLevel.LOW: "routine signals",
+    SeverityLevel.MEDIUM: "notable signals",
+    SeverityLevel.HIGH: "material signals",
+    SeverityLevel.CRITICAL: "market-moving signals",
+}
+
+
 def _verdict_headline(
     direction: SignalDirection,
     severity: SeverityLevel,
     event: CompanyEvent,
 ) -> str:
-    descriptor = {
-        SignalDirection.POSITIVE: "Constructive quarter",
-        SignalDirection.NEGATIVE: "Weak quarter",
-        SignalDirection.MIXED: "Mixed quarter",
-        SignalDirection.NEUTRAL: "In-line quarter",
-    }.get(direction, "Quarterly verdict")
-    if severity == SeverityLevel.CRITICAL:
-        descriptor = "Critical-risk quarter"
-    suffix = f" — {event.event_title}" if event.event_title else ""
-    return f"{descriptor}{suffix}"
+    """Headline copy that respects direction + materiality without contradicting itself.
+
+    Severity (LOW / MEDIUM / HIGH / CRITICAL) measures *materiality* — how
+    much the signals move the investment thesis. Direction
+    (POSITIVE / NEGATIVE / MIXED / NEUTRAL) measures *tone* — whether they
+    are constructive, troubling, mixed, or in-line. Combining "Critical-risk"
+    with "Positive" is semantically broken, so we let direction lead and let
+    severity colour the materiality qualifier instead.
+
+    Examples:
+      - POSITIVE + CRITICAL → "Constructive quarter — market-moving signals"
+      - NEGATIVE + CRITICAL → "Weak quarter — market-moving signals"
+      - NEUTRAL  + LOW      → "In-line quarter — routine signals"
+    """
+
+    descriptor = _DIRECTION_DESCRIPTOR.get(direction, "Quarterly verdict")
+    qualifier = _MATERIALITY_QUALIFIER.get(severity, "notable signals")
+    return f"{descriptor} — {qualifier}"
 
 
 def _verdict_metrics_json(db: Session, signals: list[GeneratedSignal]) -> list[dict]:

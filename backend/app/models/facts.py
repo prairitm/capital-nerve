@@ -68,6 +68,13 @@ class ExtractedValue(Base):
     bounding_box: Mapped[dict | None] = mapped_column(JSONB)
     source_text: Mapped[str | None] = mapped_column(Text)
 
+    # Period-column label inferred by the extractor (e.g. "Q3 FY24-25",
+    # "9M FY24-25", "YTD"). Used by the comparator-integrity check in
+    # ``services/pipeline/inputs.py`` so a YTD column never gets used as a
+    # PQ/PY denominator. NULL means "unknown" (current quarter is the
+    # default).
+    column_label: Mapped[str | None] = mapped_column(String)
+
     confidence_score: Mapped[float | None] = mapped_column(Numeric(5, 2))
     confidence_level: Mapped[ConfidenceLevel | None] = mapped_column(Enum(ConfidenceLevel, name="confidence_level"))
 
@@ -113,6 +120,13 @@ class FinancialStatementFact(Base):
     currency: Mapped[str] = mapped_column(String, default="INR")
 
     period_value_type: Mapped[str] = mapped_column(String, default="CURRENT")
+
+    # Column the value came from in the source filing ("Q3 FY24-25", "9M",
+    # "YTD"). Inherited from ``ExtractedValue.column_label`` during
+    # normalization. The comparator-integrity check in
+    # ``services/pipeline/inputs.py`` skips PQ/PY lookups whose column is
+    # a YTD/9M/H1 aggregate so QoQ never divides by a year-to-date number.
+    column_label: Mapped[str | None] = mapped_column(String)
 
     source_extracted_value_id: Mapped[int | None] = mapped_column(ForeignKey("extracted_values.extracted_value_id"))
     confidence_score: Mapped[float | None] = mapped_column(Numeric(5, 2))

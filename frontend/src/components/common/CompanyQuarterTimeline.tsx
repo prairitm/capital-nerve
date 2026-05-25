@@ -1,5 +1,5 @@
-import { useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useCallback, useMemo } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { ChevronDown } from "lucide-react";
 import clsx from "clsx";
 import { SignalBadge } from "@/components/common/SignalBadge";
@@ -19,6 +19,22 @@ interface Props<T extends QuarterTimelineEvent> {
   maxQuarters?: number;
 }
 
+const EXPANDED_QUERY_KEY = "expanded";
+
+function parseExpandedParam(value: string | null): Set<string> {
+  if (!value) return new Set();
+  return new Set(
+    value
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean),
+  );
+}
+
+function serializeExpanded(set: Set<string>): string {
+  return [...set].sort().join(",");
+}
+
 export function CompanyQuarterTimeline<T extends QuarterTimelineEvent>({
   events,
   symbol,
@@ -28,23 +44,43 @@ export function CompanyQuarterTimeline<T extends QuarterTimelineEvent>({
   maxQuarters,
 }: Props<T>) {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const quarterGroups = useMemo(() => {
     const groups = groupEventsByQuarter(events);
     return maxQuarters != null ? groups.slice(0, maxQuarters) : groups;
   }, [events, maxQuarters]);
-  const [collapsedKeys, setCollapsedKeys] = useState<Set<string>>(() => new Set());
+
+  const expandedKeys = useMemo(
+    () => parseExpandedParam(searchParams.get(EXPANDED_QUERY_KEY)),
+    [searchParams],
+  );
+
+  const setKey = useCallback(
+    (key: string, expanded: boolean) => {
+      const next = new Set(expandedKeys);
+      if (expanded) next.add(key);
+      else next.delete(key);
+      setSearchParams(
+        (prev) => {
+          const params = new URLSearchParams(prev);
+          const serialized = serializeExpanded(next);
+          if (serialized) params.set(EXPANDED_QUERY_KEY, serialized);
+          else params.delete(EXPANDED_QUERY_KEY);
+          return params;
+        },
+        { replace: true },
+      );
+    },
+    [expandedKeys, setSearchParams],
+  );
 
   if (quarterGroups.length === 0) return null;
 
   const latestQuarterKey = quarterGroups[0]?.key ?? null;
 
   const toggleQuarter = (key: string) => {
-    setCollapsedKeys((prev) => {
-      const next = new Set(prev);
-      if (next.has(key)) next.delete(key);
-      else next.add(key);
-      return next;
-    });
+    const isExpanded = expandedKeys.has(key) || key === latestQuarterKey;
+    setKey(key, !isExpanded);
   };
 
   return (
@@ -52,7 +88,7 @@ export function CompanyQuarterTimeline<T extends QuarterTimelineEvent>({
       {quarterGroups.map((group) => {
         const isLatestQuarter = group.key === latestQuarterKey;
         const expanded =
-          !collapsible || isLatestQuarter || !collapsedKeys.has(group.key);
+          !collapsible || expandedKeys.has(group.key) || isLatestQuarter;
         const lead = group.events[0];
 
         return (

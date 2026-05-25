@@ -175,7 +175,16 @@ def _m(
     is_bps: bool = False,
     inputs: list[dict] | None = None,
     deps: list[str] | None = None,
+    bounds: tuple[float | None, float | None] | None = None,
 ) -> dict:
+    """Build a metric-definition row for the seed.
+
+    ``bounds`` is the plausible (min, max) range for the computed value. The
+    metrics stage quarantines results outside this range so margins above
+    100 % or growth above 500 % never reach the signals/cards layer. Either
+    endpoint can be ``None`` for one-sided bounds. ``None`` overall means no
+    bound is enforced (e.g. raw absolute values like ``fcf`` in crore).
+    """
     return {
         "code": code,
         "name": name,
@@ -186,6 +195,7 @@ def _m(
         "is_bps": is_bps,
         "inputs": inputs or [],
         "deps": deps or [],
+        "bounds": bounds,
     }
 
 
@@ -202,6 +212,7 @@ METRIC_DEFS: list[dict] = [
             _i("revenue", "revenue_from_operations", "CURRENT"),
             _i("revenue_py", "revenue_from_operations", "PY"),
         ],
+        bounds=(-100.0, 500.0),
     ),
     _m(
         "revenue_qoq_growth", "Revenue QoQ Growth", "growth",
@@ -210,6 +221,7 @@ METRIC_DEFS: list[dict] = [
             _i("revenue", "revenue_from_operations", "CURRENT"),
             _i("revenue_pq", "revenue_from_operations", "PQ"),
         ],
+        bounds=(-100.0, 300.0),
     ),
     _m(
         "ebitda_growth_yoy", "EBITDA Growth YoY", "growth",
@@ -218,6 +230,7 @@ METRIC_DEFS: list[dict] = [
             _i("ebitda", "ebitda", "CURRENT"),
             _i("ebitda_py", "ebitda", "PY"),
         ],
+        bounds=(-500.0, 1000.0),
     ),
     _m(
         "pat_growth_yoy", "PAT Growth YoY", "growth",
@@ -226,6 +239,7 @@ METRIC_DEFS: list[dict] = [
             _i("pat", "pat", "CURRENT"),
             _i("pat_py", "pat", "PY"),
         ],
+        bounds=(-500.0, 1000.0),
     ),
     _m(
         "pat_growth_qoq", "PAT Growth QoQ", "growth",
@@ -234,6 +248,7 @@ METRIC_DEFS: list[dict] = [
             _i("pat", "pat", "CURRENT"),
             _i("pat_pq", "pat", "PQ"),
         ],
+        bounds=(-500.0, 1000.0),
     ),
     _m(
         "eps_growth_yoy", "EPS Growth YoY", "growth",
@@ -242,6 +257,7 @@ METRIC_DEFS: list[dict] = [
             _i("eps", "eps_basic", "CURRENT"),
             _i("eps_py", "eps_basic", "PY"),
         ],
+        bounds=(-500.0, 1000.0),
     ),
     _m(
         "ebitda_margin", "EBITDA Margin", "margin",
@@ -250,6 +266,7 @@ METRIC_DEFS: list[dict] = [
             _i("ebitda", "ebitda", "CURRENT"),
             _i("revenue", "revenue_from_operations", "CURRENT"),
         ],
+        bounds=(-50.0, 100.0),
     ),
     _m(
         "ebitda_margin_change_yoy_bps", "EBITDA Margin Change YoY", "margin",
@@ -260,6 +277,7 @@ METRIC_DEFS: list[dict] = [
             _i("ebitda_py", "ebitda", "PY"),
             _i("revenue_py", "revenue_from_operations", "PY"),
         ],
+        bounds=(-10000.0, 10000.0),
     ),
     _m(
         "pat_margin", "PAT Margin", "margin",
@@ -268,6 +286,7 @@ METRIC_DEFS: list[dict] = [
             _i("pat", "pat", "CURRENT"),
             _i("revenue", "revenue_from_operations", "CURRENT"),
         ],
+        bounds=(-50.0, 100.0),
     ),
     _m(
         "other_income_to_pbt", "Other Income to PBT", "profit_quality",
@@ -276,6 +295,7 @@ METRIC_DEFS: list[dict] = [
             _i("other_income", "other_income", "CURRENT"),
             _i("pbt", "pbt", "CURRENT"),
         ],
+        bounds=(-200.0, 200.0),
     ),
     _m(
         "exceptional_to_pat", "Exceptional Items / PAT", "earnings_quality",
@@ -292,6 +312,7 @@ METRIC_DEFS: list[dict] = [
             _i("tax", "tax_expense", "CURRENT"),
             _i("pbt", "pbt", "CURRENT"),
         ],
+        bounds=(-100.0, 100.0),
     ),
     _m(
         "finance_cost_burden", "Finance Cost Burden", "expense",
@@ -300,6 +321,7 @@ METRIC_DEFS: list[dict] = [
             _i("finance_cost", "finance_cost", "CURRENT"),
             _i("ebitda", "ebitda", "CURRENT"),
         ],
+        bounds=(-200.0, 200.0),
     ),
     _m(
         "interest_coverage", "Interest Coverage", "debt",
@@ -317,6 +339,7 @@ METRIC_DEFS: list[dict] = [
             _i("cfo", "cfo", "CURRENT"),
             _i("pat", "pat", "CURRENT"),
         ],
+        bounds=(-20.0, 20.0),
     ),
     _m(
         "cash_conversion_ratio", "Cash Conversion Ratio", "cashflow",
@@ -325,6 +348,7 @@ METRIC_DEFS: list[dict] = [
             _i("cfo", "cfo", "CURRENT"),
             _i("pat", "pat", "CURRENT"),
         ],
+        bounds=(-20.0, 20.0),
     ),
     _m(
         "fcf", "Free Cash Flow", "cashflow",
@@ -343,6 +367,7 @@ METRIC_DEFS: list[dict] = [
             _i("revenue", "revenue_from_operations", "CURRENT"),
         ],
         deps=["fcf"],
+        bounds=(-100.0, 100.0),
     ),
     _m(
         "receivables_growth_yoy", "Receivables Growth YoY", "working_capital",
@@ -719,6 +744,7 @@ METRIC_DEFS: list[dict] = [
             _i("rev", "primary_segment_revenue", "CURRENT"),
             _i("rev_py", "primary_segment_revenue", "PY"),
         ],
+        bounds=(-100.0, 500.0),
     ),
     _m(
         "primary_segment_margin", "Primary Segment Margin", "segment",
@@ -727,6 +753,7 @@ METRIC_DEFS: list[dict] = [
             _i("ebit", "primary_segment_ebit", "CURRENT"),
             _i("rev", "primary_segment_revenue", "CURRENT"),
         ],
+        bounds=(-100.0, 100.0),
     ),
     # ---------------- Phase 4g — Press release / deck ----------------
     _m(
@@ -1574,6 +1601,9 @@ def upsert_metric_defs(db: Session) -> dict[str, MetricDefinition]:
     out: dict[str, MetricDefinition] = {}
     for spec in METRIC_DEFS:
         code = spec["code"]
+        bounds = spec.get("bounds")
+        v_min = bounds[0] if bounds and bounds[0] is not None else None
+        v_max = bounds[1] if bounds and bounds[1] is not None else None
         existing = db.scalar(select(MetricDefinition).where(MetricDefinition.metric_code == code))
         if existing:
             # Idempotent re-seed: refresh the engine fields so older DBs pick
@@ -1583,6 +1613,8 @@ def upsert_metric_defs(db: Session) -> dict[str, MetricDefinition]:
             existing.inputs_json = spec["inputs"]
             existing.dependencies_json = spec["deps"]
             existing.metric_category = spec["category"]
+            existing.validation_min = v_min
+            existing.validation_max = v_max
             out[code] = existing
             continue
         md = MetricDefinition(
@@ -1595,6 +1627,8 @@ def upsert_metric_defs(db: Session) -> dict[str, MetricDefinition]:
             is_bps=spec["is_bps"],
             inputs_json=spec["inputs"],
             dependencies_json=spec["deps"],
+            validation_min=v_min,
+            validation_max=v_max,
         )
         db.add(md)
         db.flush()
@@ -1603,13 +1637,52 @@ def upsert_metric_defs(db: Session) -> dict[str, MetricDefinition]:
     return out
 
 
+def _format_rule_text(rule: dict | None) -> str | None:
+    """Stringify a rule_json tree into the inline form shown on cards.
+
+    Mirrors the grammar in ``services/pipeline/signals.py``:
+    ``{"all": [...]}`` → ``" and "``, ``{"any": [...]}`` → ``" or "``,
+    ``{"not": ...}`` → ``"not (...)"``, leaf → ``"metric op threshold"``.
+    Returns ``None`` for empty rules (manual / fact-driven signals).
+    """
+    if not rule:
+        return None
+    if "all" in rule:
+        parts = [
+            _format_rule_text(child) for child in rule.get("all") or []
+        ]
+        return " and ".join(p for p in parts if p) or None
+    if "any" in rule:
+        parts = [
+            _format_rule_text(child) for child in rule.get("any") or []
+        ]
+        return " or ".join(p for p in parts if p) or None
+    if "not" in rule:
+        child = _format_rule_text(rule.get("not"))
+        return f"not ({child})" if child else None
+    metric = rule.get("metric")
+    op = rule.get("operator")
+    if not metric or not op:
+        return None
+    if "metric_ref" in rule and rule["metric_ref"]:
+        return f"{metric} {op} {rule['metric_ref']}"
+    threshold = rule.get("threshold")
+    if threshold is None:
+        return None
+    if isinstance(threshold, float) and threshold.is_integer():
+        threshold = int(threshold)
+    return f"{metric} {op} {threshold}"
+
+
 def upsert_signal_defs(db: Session) -> dict[str, SignalDefinition]:
     out: dict[str, SignalDefinition] = {}
     for spec in SIGNAL_DEFS:
         code = spec["code"]
+        rule_text = _format_rule_text(spec["rule"])
         existing = db.scalar(select(SignalDefinition).where(SignalDefinition.signal_code == code))
         if existing:
             existing.rule_json = spec["rule"]
+            existing.rule_text = rule_text
             out[code] = existing
             continue
         sd = SignalDefinition(
@@ -1618,6 +1691,7 @@ def upsert_signal_defs(db: Session) -> dict[str, SignalDefinition]:
             signal_category=spec["category"],
             description=spec["desc"],
             rule_json=spec["rule"],
+            rule_text=rule_text,
             default_direction=spec["direction"],
             default_severity=spec["severity"],
         )

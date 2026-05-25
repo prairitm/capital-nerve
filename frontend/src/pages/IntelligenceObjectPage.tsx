@@ -17,6 +17,8 @@ import { SeverityBadge } from "@/components/common/SeverityBadge";
 import { SignalBadge } from "@/components/common/SignalBadge";
 import { PageLoader } from "@/components/common/Spinner";
 import { SourceDocumentLinks, uniqueSourceRefs } from "@/components/common/SourceDocumentLink";
+import { CalculationChainPanel } from "@/components/evidence/CalculationChainPanel";
+import { EvidencePanel } from "@/components/evidence/EvidencePanel";
 import {
   EvidenceInlineLinks,
   evidenceMatchingLabel,
@@ -445,6 +447,13 @@ export function IntelligenceObjectPage() {
               </div>
             </section>
           )}
+
+          <CalculationChainPanel chain={data.calculation_chain} />
+
+          <EvidencePanel
+            evidence={data.evidence}
+            subtitle="Source quotes pulled from the underlying document. Click a page link to verify in the viewer."
+          />
 
           {calculationEntries.length > 0 && (
             <section className="card overflow-hidden">

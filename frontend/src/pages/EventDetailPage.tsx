@@ -5,6 +5,7 @@ import { ArrowLeft, ChevronRight, FileText } from "lucide-react";
 import clsx from "clsx";
 import { api } from "@/api/client";
 import type { CardBrief, EventDetailV1, FinancialSnapshotRow, SignalBriefV1 } from "@/api/types";
+import { AnalystSummaryCard } from "@/components/cards/AnalystSummaryCard";
 import { IntelligenceCard } from "@/components/cards/IntelligenceCard";
 import { SaveWatchItemDialog } from "@/components/cards/SaveWatchItemDialog";
 import { PageLoader } from "@/components/common/Spinner";
@@ -494,6 +495,8 @@ export function EventDetailPage() {
           </div>
         )}
       </section>
+
+      <AnalystSummaryCard summary={data.analyst_summary} />
 
       {showFinancialSnapshot && (
         <EventFinancialSnapshot

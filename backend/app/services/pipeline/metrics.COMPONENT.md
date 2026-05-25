@@ -29,6 +29,10 @@ DAG once per period — no per-metric Python.
   4. Persists comparison metadata (`comparison_period_id`, `change_absolute`,
      `change_percent`) when the metric has a `PY` or `PQ` comparator input,
      so the existing UI keeps showing trend chips.
+  5. **Bounds quarantine.** Values outside `MetricDefinition.validation_min`
+     / `validation_max` are persisted with `is_quarantined=True` and a
+     human-readable `quarantine_reason`. Downstream signals load
+     non-quarantined rows only — see [`signals._load_metric_values`](signals.py).
 
 ## Dependencies
 
@@ -60,3 +64,5 @@ DAG once per period — no per-metric Python.
       "metric DAG is acyclic".
 - [ ] Re-running the pipeline does not duplicate metric rows.
 - [ ] Division-by-zero metrics are skipped silently.
+- [ ] Values outside the metric's plausible bounds land on `calculated_metrics`
+      with `is_quarantined=True` and never feed signals/cards.

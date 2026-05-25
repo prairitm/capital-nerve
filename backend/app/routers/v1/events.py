@@ -29,6 +29,8 @@ from app.schemas.common import (
     TimelineEvent,
 )
 from app.schemas.v1.events import (
+    AnalystSummary,
+    AnalystSummaryTheme,
     EventBriefV1,
     EventConcallFact,
     EventDetailV1,
@@ -39,6 +41,7 @@ from app.schemas.v1.signals import SignalBriefV1
 from app.services.event_financials import build_financial_snapshot_for_period
 from app.services.event_timeline import pick_canonical_per_period
 from app.services.event_summary import (
+    build_analyst_summary,
     load_signals_and_cards_by_event,
     pick_main_issue,
     pick_watch_next,
@@ -316,6 +319,30 @@ def event_detail(
 
     summary_text = resolve_event_summary_text(event, sigs, card_models)
 
+    # AnalystSummary is persisted on the verdict card; rebuild fresh when the
+    # card is absent (e.g. non-quarterly event) so the field still renders.
+    analyst_summary_payload: dict | None = None
+    for c in card_models:
+        if c.card_type == "result_verdict" and isinstance(c.calculations_json, dict):
+            payload = c.calculations_json.get("analyst_summary")
+            if isinstance(payload, dict):
+                analyst_summary_payload = payload
+                break
+    if analyst_summary_payload is None:
+        analyst_summary_payload = build_analyst_summary(sigs, card_models, db=db)
+    analyst_summary = (
+        AnalystSummary(
+            verdict=str(analyst_summary_payload.get("verdict", "neutral")),
+            themes=[
+                AnalystSummaryTheme(**t)
+                for t in (analyst_summary_payload.get("themes") or [])
+                if isinstance(t, dict)
+            ],
+        )
+        if analyst_summary_payload
+        else None
+    )
+
     return EventDetailV1(
         event_id=event.event_id,
         event_type=event.event_type,
@@ -342,4 +369,5 @@ def event_detail(
         concern_heatmap=concern_heatmap,
         concall_facts=concall_facts,
         ingestion_status=ingestion_status,
+        analyst_summary=analyst_summary,
     )

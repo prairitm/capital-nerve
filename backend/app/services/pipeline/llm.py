@@ -63,6 +63,13 @@ class ExtractedLineItem:
     page_number: int | None = None
     source_text: str | None = None  # quoted source line — surfaces as evidence
     confidence: float = 90.0  # 0..100
+    # Optional period-column label the value was pulled from. Surfaces onto
+    # ``extracted_values.column_label`` / ``financial_statement_facts.column_label``
+    # so the comparator-integrity check in ``services/pipeline/inputs.py``
+    # can refuse to divide quarter values by year-to-date / nine-month
+    # columns. Always ``"Quarter Ended"`` for values harvested by
+    # ``quarter_column.enforce_quarter_ended_only``.
+    column_label: str | None = None
 
 
 @dataclass

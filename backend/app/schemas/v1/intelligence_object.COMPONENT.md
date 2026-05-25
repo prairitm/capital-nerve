@@ -14,7 +14,8 @@ The canonical decision-ready payload for the entire v1 namespace. Every renderer
 ## Contract
 
 - `IntelligenceObject` — full payload returned by `GET /v1/intelligence-objects/{id}`. Carries `company`, `event`, `signal`, `metrics`, `metric_comparisons`, `calculation`, `evidence`, `display`, `suggested_actions`, plus derived fields `importance_score`, `time_horizon`, `investor_relevance`, `confidence`.
-- `IntelligenceObjectBrief` — compact row used by list endpoints (`GET /v1/intelligence-objects`, `GET /v1/companies/{symbol}/intelligence-objects`) and embedded inside `PortfolioAlert.top_objects`. Includes `event_type` alongside `event_title` / `event_date` so feed headers can show document type without parsing titles.
+- `IntelligenceObjectBrief` — compact row used by list endpoints (`GET /v1/intelligence-objects`, `GET /v1/companies/{symbol}/intelligence-objects`) and embedded inside `PortfolioAlert.top_objects`. Includes `event_type` alongside `event_title` / `event_date` so feed headers can show document type without parsing titles. Also carries `document_id` + `source_label` so feed rows can render a one-click PDF jump chip without joining `SourceDocument` on the frontend.
+- `CalculationChain` (+ `CalculationChainSignal`, `CalculationChainMetric`, `CalculationChainInput`) — structured "why this fired" payload attached to every `IntelligenceObject`. Mirrors the value → metric → signal → card pipeline; each input carries `document_id`, `page_number`, and `source_text` so a panel can render the formula with one-click verification.
 - `IODisplayConfig` — `(layout, primary_metric, chart_type, cta, surfaces)`. Sourced from `intelligence_cards.display_context` plus card-type defaults derived in the builder.
 - `IOMetric` — `(name, value, unit)`. One row per entry in `intelligence_cards.metrics_json`.
 

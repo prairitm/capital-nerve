@@ -17,6 +17,10 @@ backfills.
   catalog into `seed_catalog_dump/signals_full.csv`.
 - [`bulk_ingest.py`](bulk_ingest.COMPONENT.md) — bulk IR-discovery
   ingestion driven by [`services/ir_discovery/`](../services/ir_discovery/_BASE.md).
+- [`reprocess_metrics.py`](reprocess_metrics.COMPONENT.md) — replay
+  stages 2-5 of the pipeline (normalize → metrics → signals → cards)
+  over persisted `extracted_values` after the unit-rescale / sanity-bounds
+  changes in Phase 1A of the analyst-trust overhaul.
 
 ## Cross-cutting rules
 

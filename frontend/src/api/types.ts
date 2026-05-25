@@ -673,6 +673,20 @@ export interface EventConcallFactV1 {
   page_number: number | null;
 }
 
+export type AnalystSummaryTone = "positive" | "negative" | "mixed" | "neutral";
+
+export interface AnalystSummaryTheme {
+  label: string;
+  tone: AnalystSummaryTone;
+  sentence: string;
+  evidence_ids: number[];
+}
+
+export interface AnalystSummary {
+  verdict: AnalystSummaryTone;
+  themes: AnalystSummaryTheme[];
+}
+
 export interface EventDetailV1 extends EventBriefV1 {
   main_issue: string | null;
   watch_next: string | null;
@@ -687,6 +701,7 @@ export interface EventDetailV1 extends EventBriefV1 {
   concern_heatmap: ConcernHeatmapRow[];
   concall_facts: EventConcallFactV1[];
   ingestion_status: EventIngestionStatusV1;
+  analyst_summary: AnalystSummary | null;
 }
 
 export interface SignalCalculation {
@@ -817,7 +832,51 @@ export interface IntelligenceObjectBrief {
   signal_id: number | null;
   primary_metric: string | null;
   investor_relevance: string[];
+  source_label: string | null;
+  document_id: number | null;
   created_at: string;
+}
+
+export interface CalculationChainInput {
+  formula_name: string;
+  code: string | null;
+  scope: string;
+  kind: "fact" | "metric";
+  value: number | null;
+  unit: string | null;
+  document_id: number | null;
+  page_number: number | null;
+  source_text: string | null;
+}
+
+export interface CalculationChainMetric {
+  code: string | null;
+  name: string | null;
+  formula_text: string | null;
+  value: number | null;
+  unit: string | null;
+  inputs: CalculationChainInput[];
+  is_quarantined: boolean;
+  quarantine_reason: string | null;
+}
+
+export interface CalculationChainSignal {
+  code: string | null;
+  name: string | null;
+  category: string | null;
+  rule_text: string | null;
+  direction: SignalDirection | null;
+  severity: SeverityLevel | null;
+  fired_value: number | null;
+  fired_unit: string | null;
+  threshold: number | null;
+  operator: string | null;
+  metric_ref: string | null;
+}
+
+export interface CalculationChain {
+  signal: CalculationChainSignal | null;
+  metric: CalculationChainMetric | null;
 }
 
 export interface IntelligenceObject {
@@ -844,6 +903,7 @@ export interface IntelligenceObject {
   trend_sparklines: FinancialTrend[];
   concern_heatmap: ConcernHeatmapRow[];
   calculation: Record<string, unknown>;
+  calculation_chain: CalculationChain | null;
   evidence: EvidenceItem[];
   display: IODisplayConfig;
   suggested_actions: string[];

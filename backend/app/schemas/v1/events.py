@@ -62,6 +62,27 @@ class EventIngestionStatus(BaseModel):
     values_extracted_total: int
 
 
+class AnalystSummaryTheme(BaseModel):
+    """One themed sentence in the analyst summary card."""
+
+    label: str  # "Topline", "Margins", "Segments", "Capex / management tone"
+    tone: str  # "positive" | "negative" | "mixed" | "neutral"
+    sentence: str
+    evidence_ids: list[int] = []
+
+
+class AnalystSummary(BaseModel):
+    """Themed quarter / event summary pinned above the cards list.
+
+    Built by [`services/event_summary.build_analyst_summary`] from the fired
+    signals + published cards and persisted alongside the `result_verdict`
+    card in `intelligence_cards.calculations_json["analyst_summary"]`.
+    """
+
+    verdict: str  # "positive" | "negative" | "mixed" | "neutral"
+    themes: list[AnalystSummaryTheme] = []
+
+
 class EventConcallFact(BaseModel):
     fact_type: str
     topic: str | None
@@ -97,3 +118,4 @@ class EventDetailV1(EventBriefV1):
     concern_heatmap: list[ConcernHeatmapRow] = []
     concall_facts: list[EventConcallFact] = []
     ingestion_status: EventIngestionStatus
+    analyst_summary: AnalystSummary | None = None

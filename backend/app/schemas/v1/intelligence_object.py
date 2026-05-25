@@ -56,6 +56,65 @@ class IODisplayConfig(BaseModel):
     surfaces: list[str] = []
 
 
+class CalculationChainInput(BaseModel):
+    """One input fact feeding the metric formula.
+
+    Carries the page-anchored source for the analyst to verify in one click.
+    """
+
+    formula_name: str  # local variable name in the formula (e.g. "revenue")
+    code: str | None = None  # normalized line-item code or metric code
+    scope: str = "CURRENT"
+    kind: str = "fact"  # "fact" | "metric"
+    value: float | None = None
+    unit: str | None = None
+    document_id: int | None = None
+    page_number: int | None = None
+    source_text: str | None = None
+
+
+class CalculationChainMetric(BaseModel):
+    """The CalculatedMetric layer of the value → metric → signal → card chain."""
+
+    code: str | None = None
+    name: str | None = None
+    formula_text: str | None = None
+    value: float | None = None
+    unit: str | None = None
+    inputs: list[CalculationChainInput] = []
+    is_quarantined: bool = False
+    quarantine_reason: str | None = None
+
+
+class CalculationChainSignal(BaseModel):
+    """The GeneratedSignal layer of the chain — what rule fired, with what value."""
+
+    code: str | None = None
+    name: str | None = None
+    category: str | None = None
+    rule_text: str | None = None
+    direction: SignalDirection | None = None
+    severity: SeverityLevel | None = None
+    fired_value: float | None = None
+    fired_unit: str | None = None
+    threshold: float | None = None
+    operator: str | None = None
+    metric_ref: str | None = None
+
+
+class CalculationChain(BaseModel):
+    """Full value → metric → signal → card explainability payload.
+
+    Designed so a single panel can render the rule, the formula, every input
+    with its source quote + page reference, without joining any other API
+    response. NULL fields gracefully degrade for summary cards
+    (`result_verdict`) that don't have one underlying signal.
+    """
+
+    signal: CalculationChainSignal | None = None
+    metric: CalculationChainMetric | None = None
+
+
 class IntelligenceObjectBrief(BaseModel):
     """Compact intelligence object row for feeds and portfolio alerts."""
 
@@ -78,6 +137,8 @@ class IntelligenceObjectBrief(BaseModel):
     signal_id: int | None = None
     primary_metric: str | None = None
     investor_relevance: list[str] = []
+    source_label: str | None = None
+    document_id: int | None = None
     created_at: datetime
 
 
@@ -107,6 +168,7 @@ class IntelligenceObject(BaseModel):
     trend_sparklines: list[FinancialTrend] = []
     concern_heatmap: list[ConcernHeatmapRow] = []
     calculation: dict[str, Any] = {}
+    calculation_chain: CalculationChain | None = None
     evidence: list[EvidenceItem] = []
     display: IODisplayConfig
     suggested_actions: list[str] = []

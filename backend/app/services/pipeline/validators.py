@@ -67,6 +67,60 @@ _UNIT_ALIASES: dict[str, str] = {
 }
 
 
+# Numeric scale multipliers from the raw unit onto canonical ``crore``. Lets
+# the LLM legitimately report values in lakh / thousand / million without the
+# downstream metric stage seeing 100× off numbers. Keys are the **lower-cased
+# raw** unit string (matched after stripping). Anything outside this map and
+# the alias map above is dropped — see ``canonicalize_units``.
+_UNIT_SCALE_TO_CRORE: dict[str, float] = {
+    "crore": 1.0,
+    "crores": 1.0,
+    "cr": 1.0,
+    "cr.": 1.0,
+    "inr cr": 1.0,
+    "inr crore": 1.0,
+    "inr crores": 1.0,
+    "rs cr": 1.0,
+    "rs. cr": 1.0,
+    "rs crore": 1.0,
+    "₹ cr": 1.0,
+    "₹cr": 1.0,
+    # 1 lakh = 0.01 crore (100 lakh make a crore).
+    "lakh": 0.01,
+    "lakhs": 0.01,
+    "lac": 0.01,
+    "lacs": 0.01,
+    "inr lakh": 0.01,
+    "rs lakh": 0.01,
+    # 1 thousand = 1e-5 crore (1 crore = 1e7).
+    "thousand": 1e-5,
+    "thousands": 1e-5,
+    "k": 1e-5,
+    # 1 million = 0.1 crore.
+    "million": 0.1,
+    "millions": 0.1,
+    "mn": 0.1,
+    "mm": 0.1,
+    "inr mn": 0.1,
+    "rs mn": 0.1,
+    # 1 billion = 100 crore.
+    "billion": 100.0,
+    "billions": 100.0,
+    "bn": 100.0,
+    "inr bn": 100.0,
+    "rs bn": 100.0,
+    # 1 trillion = 100,000 crore.
+    "trillion": 1e5,
+    "trillions": 1e5,
+    "tn": 1e5,
+    # Raw rupees → crore (1 crore = 10,000,000 INR).
+    "rupees": 1e-7,
+    "rupee": 1e-7,
+    "inr rupees": 1e-7,
+    "rs rupees": 1e-7,
+}
+
+
 @dataclass
 class ValidatorReport:
     """Per-validator outcomes; serialised onto ``extraction_jobs.validator_report``."""
@@ -74,6 +128,7 @@ class ValidatorReport:
     source_text_dropped: list[dict] = field(default_factory=list)
     unit_dropped: list[dict] = field(default_factory=list)
     unit_normalised: list[dict] = field(default_factory=list)
+    unit_rescaled: list[dict] = field(default_factory=list)
     totals_breaches: list[dict] = field(default_factory=list)
 
     @property
@@ -89,6 +144,7 @@ class ValidatorReport:
             "source_text_dropped": self.source_text_dropped,
             "unit_dropped": self.unit_dropped,
             "unit_normalised": self.unit_normalised,
+            "unit_rescaled": self.unit_rescaled,
             "totals_breaches": self.totals_breaches,
         }
 
@@ -165,19 +221,51 @@ def _value_token(value: float) -> str:
 # ---------------------------------------------------------------------------
 
 
+@dataclass
+class _CanonicalisedUnit:
+    """Outcome of resolving one raw unit string against the canonical schema."""
+
+    unit: str  # final canonical unit ("crore", "%", "Rs", ...)
+    scale: float  # multiplier applied to the value (1.0 unless rescaled)
+
+
+def _resolve_unit(raw: str) -> _CanonicalisedUnit | None:
+    """Return the canonical unit + numeric scale for a raw unit string.
+
+    Returns ``None`` when the unit cannot be mapped at all — the caller drops
+    the item. The scale is the factor that converts the *value* into the
+    canonical unit (e.g. ``lakh`` → ``crore`` ⇒ scale = 0.01).
+    """
+    if not raw:
+        return None
+    key = raw.strip().lower()
+    if key in _UNIT_SCALE_TO_CRORE:
+        return _CanonicalisedUnit(unit="crore", scale=_UNIT_SCALE_TO_CRORE[key])
+    alias = _UNIT_ALIASES.get(key)
+    if alias is not None:
+        return _CanonicalisedUnit(unit=alias, scale=1.0)
+    if raw in _CANONICAL_UNITS:
+        return _CanonicalisedUnit(unit=raw, scale=1.0)
+    return None
+
+
 def canonicalize_units(
     items: list[ExtractedLineItem],
     *,
     report: ValidatorReport,
 ) -> list[ExtractedLineItem]:
-    """Normalise unit strings; drop items whose unit isn't in the allow-list."""
+    """Normalise unit strings and rescale values onto the canonical unit.
+
+    Lakh / thousand / million / billion / raw rupees are *rescaled* into crore
+    rather than dropped — Indian filings legitimately mix scales (segment
+    tables in lakh, headline P&L in crore) and downstream metrics assume a
+    single canonical scale.
+    """
     kept: list[ExtractedLineItem] = []
     for item in items:
         raw = (item.unit or "").strip()
-        canonical = _UNIT_ALIASES.get(raw.lower())
-        if canonical is None and raw in _CANONICAL_UNITS:
-            canonical = raw
-        if canonical is None:
+        resolved = _resolve_unit(raw)
+        if resolved is None:
             report.unit_dropped.append(
                 {
                     "normalized_code": item.normalized_code,
@@ -186,15 +274,29 @@ def canonicalize_units(
                 }
             )
             continue
-        if canonical != raw:
+        if resolved.scale != 1.0:
+            old_value = float(item.value)
+            item.value = old_value * resolved.scale
+            report.unit_rescaled.append(
+                {
+                    "normalized_code": item.normalized_code,
+                    "from_unit": raw,
+                    "to_unit": resolved.unit,
+                    "scale": resolved.scale,
+                    "from_value": old_value,
+                    "to_value": item.value,
+                }
+            )
+            item.unit = resolved.unit
+        elif resolved.unit != raw:
             report.unit_normalised.append(
                 {
                     "normalized_code": item.normalized_code,
                     "from": raw,
-                    "to": canonical,
+                    "to": resolved.unit,
                 }
             )
-            item.unit = canonical
+            item.unit = resolved.unit
         kept.append(item)
     return kept
 

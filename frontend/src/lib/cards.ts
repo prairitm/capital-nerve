@@ -5,6 +5,8 @@ import type {
   IntelligenceObject,
   IntelligenceObjectBrief,
   PeriodBrief,
+  SeverityLevel,
+  SignalDirection,
   TimelineEvent,
 } from "@/api/types";
 import { eventTitleToPeriodLabel, resolveQuarterPeriodLabel } from "@/lib/format";
@@ -98,8 +100,8 @@ export function intelligenceObjectBriefToCardBrief(
     event_date: d.event_date,
     metrics_json: [],
     watch_next: null,
-    source_label: null,
-    document_id: null,
+    source_label: d.source_label,
+    document_id: d.document_id,
     created_at: d.created_at,
   };
 }
@@ -337,8 +339,8 @@ export interface QuarterTimelineEvent {
   event_type: EventType;
   event_title: string;
   event_date: string;
-  overall_signal?: string | null;
-  overall_severity?: string | null;
+  overall_signal?: SignalDirection | null;
+  overall_severity?: SeverityLevel | null;
   summary_text?: string | null;
   period?: PeriodBrief | null;
 }

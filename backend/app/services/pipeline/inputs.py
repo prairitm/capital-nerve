@@ -56,6 +56,34 @@ _SUPPORTED_SCOPES = {
 }
 
 
+# Comparator-integrity guard: substrings in ``column_label`` that mark a fact
+# as a YTD / half-year / nine-month aggregate. A PQ or PY lookup against
+# these would divide a quarter by a year-to-date, producing the 700+%
+# Revenue QoQ figures seen during the analyst review.
+_AGGREGATE_COLUMN_TOKENS: tuple[str, ...] = (
+    "ytd",
+    "year to date",
+    "year-to-date",
+    "9m",
+    "nine month",
+    "nine-month",
+    "h1",
+    "half year",
+    "half-year",
+    "h2",
+    "full year",
+    "fy ",
+    "annual",
+)
+
+
+def _is_aggregate_column(label: str | None) -> bool:
+    if not label:
+        return False
+    needle = label.strip().lower()
+    return any(token in needle for token in _AGGREGATE_COLUMN_TOKENS)
+
+
 @dataclass
 class _InputSpec:
     name: str
@@ -120,14 +148,20 @@ class InputResolver:
             return self._value(spec, self._period_id)
         if spec.scope == "PQ":
             pid = self._prior_quarter_id(self._period)
-            return self._value(spec, pid) if pid else None
+            if pid is None:
+                return None
+            return self._comparator_value(spec, pid, scope="PQ")
         if spec.scope == "PY":
             pid = self._prior_year_id(self._period)
-            return self._value(spec, pid) if pid else None
+            if pid is None:
+                return None
+            return self._comparator_value(spec, pid, scope="PY")
         if spec.scope == "PY_PQ":
             py = self._prior_year(self._period)
             pid = self._prior_quarter_id(py) if py else None
-            return self._value(spec, pid) if pid else None
+            if pid is None:
+                return None
+            return self._comparator_value(spec, pid, scope="PY_PQ")
         if spec.scope == "TTM":
             return self._ttm(spec, mode="sum")
         if spec.scope == "TTM_AVG":
@@ -135,11 +169,52 @@ class InputResolver:
         if spec.scope == "AVG_2_OPENING_CLOSING":
             cq = self._value(spec, self._period_id)
             py_id = self._prior_year_id(self._period)
-            py = self._value(spec, py_id) if py_id else None
+            py = self._comparator_value(spec, py_id, scope="PY") if py_id else None
             if cq is None or py is None:
                 return None
             return (cq + py) / 2
         return None
+
+    def _comparator_value(
+        self, spec: _InputSpec, period_id: int, *, scope: str
+    ) -> float | None:
+        """Read a PQ/PY/PY_PQ fact, refusing YTD/9M/H1 columns.
+
+        If the only fact we have for the prior period is a year-to-date or
+        nine-month aggregate, returning it would silently turn a QoQ ratio
+        into a quarter-vs-YTD ratio (the root cause of the 708 %% Revenue
+        QoQ on RELIANCE). Better to return ``None`` so the dependent metric
+        is skipped — the signal simply does not fire.
+        """
+        if spec.kind == "fact":
+            label = self._fact_column_label(spec.code, period_id)
+            if _is_aggregate_column(label):
+                logger.info(
+                    "Skipping %s comparator for %s: prior fact lives in aggregate column %r",
+                    scope, spec.code, label,
+                )
+                return None
+        return self._value(spec, period_id)
+
+    def _fact_column_label(self, code: str, period_id: int) -> str | None:
+        li_def_id = self._li_def_id_by_code.get(code)
+        if li_def_id is None:
+            li_def_id = self._db.scalar(
+                select(FinancialLineItemDefinition.line_item_def_id).where(
+                    FinancialLineItemDefinition.normalized_code == code
+                )
+            )
+            if li_def_id is None:
+                return None
+            self._li_def_id_by_code[code] = li_def_id
+        return self._db.scalar(
+            select(FinancialStatementFact.column_label).where(
+                FinancialStatementFact.company_id == self._company_id,
+                FinancialStatementFact.period_id == period_id,
+                FinancialStatementFact.line_item_def_id == li_def_id,
+                FinancialStatementFact.period_value_type == "CURRENT",
+            )
+        )
 
     # ------------------------------------------------------------------
     # Period walking

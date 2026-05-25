@@ -13,8 +13,8 @@ Single derivation point for the v1 `IntelligenceObject` shape. Every v1 router t
 
 ## Contract
 
-- `build_intelligence_object(db, card, company, period, event, document) -> IntelligenceObject` — full join including evidence rows and metric comparisons.
-- `build_intelligence_object_brief(card, company, period, event) -> IntelligenceObjectBrief` — lighter projection for list endpoints (no evidence / metric comparison / signal join).
+- `build_intelligence_object(db, card, company, period, event, document) -> IntelligenceObject` — full join including evidence rows, metric comparisons, and the structured `calculation_chain` (Signal → Metric → Inputs with source quotes).
+- `build_intelligence_object_brief(card, company, period, event, document=None) -> IntelligenceObjectBrief` — lighter projection for list endpoints (no evidence / metric comparison / signal join / calculation chain). Optional `document` lets callers pass the canonical `SourceDocument` so the brief carries a useful `source_label`; when omitted the label falls back to event / period.
 
 Module-level mappings (treat as product rules):
 
@@ -41,3 +41,7 @@ Module-level mappings (treat as product rules):
 - [ ] All five derived fields (`importance_score`, `time_horizon`, `investor_relevance`, `suggested_actions`, `display`) are populated in both the brief and the full builder when applicable
 - [ ] No `HTTPException` raised here — return what can be computed; callers handle 404s
 - [ ] `_normalize_importance` clamps to `0–100`
+- [ ] `calculation_chain.metric.inputs[*]` carry `source_text` + `page_number` for current-period facts so the frontend "Why it fired" panel renders without extra requests.
+- [ ] `calculation_chain.signal.rule_text` is populated from `signal_definitions.rule_text` — never falls back to the rule_json blob.
+- [ ] `IntelligenceObjectBrief.document_id` mirrors `card.document_id` so feed rows show a PDF-jump chip without an extra round-trip.
+- [ ] When `document` is passed to `build_intelligence_object_brief`, `source_label` shows the document title; without it, falls back to event title / period label.

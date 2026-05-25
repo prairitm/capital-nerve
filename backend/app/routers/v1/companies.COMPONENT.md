@@ -21,6 +21,12 @@ endpoints.
 - `GET /v1/companies/{symbol}` — returns `CompanyHubV1` with badges, latest
   event verdict, top intelligence objects, financial snapshot,
   8-quarter trends, event timeline, and source documents.
+- `GET /v1/companies/{symbol}/metric-trend?codes=&quarters=` — returns
+  `list[FinancialTrend]` for the requested metric codes (defaults to the
+  analyst signal set: `revenue_yoy_growth`, `ebitda_margin`, `pat_margin`,
+  `primary_segment_margin`). Excludes quarantined `calculated_metrics`
+  rows and orders points chronologically (oldest first). Powers the
+  Signal Trend chart on the company page.
 
 ## Dependencies
 
@@ -62,3 +68,8 @@ endpoints.
       fact exists.
 - [ ] `watchlist_status` reflects whether the current user has the company
       in their default watchlist.
+- [ ] `GET /v1/companies/{symbol}/metric-trend` returns at most one
+      `FinancialTrend` per requested code, drops codes with no usable rows,
+      and never includes quarantined metric rows.
+- [ ] Default metric set lives in `_DEFAULT_METRIC_TREND_CODES` — keep in
+      sync with the analyst signal set used by `SignalTrendChart.tsx`.

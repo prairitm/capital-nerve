@@ -149,6 +149,7 @@ def run_metrics(db: Session, *, document: SourceDocument) -> int:
         comparison = _comparison_metadata(inputs_decl, resolved, current_period, db)
         steps = _build_steps(md.formula_text, resolved, result.value, md.unit)
 
+        quarantine_reason = _bounds_breach_reason(md, result.value)
         db.add(
             CalculatedMetric(
                 company_id=document.company_id,
@@ -166,13 +167,48 @@ def run_metrics(db: Session, *, document: SourceDocument) -> int:
                 confidence_score=88.0,
                 input_values=steps["inputs"],
                 calculation_steps=steps,
+                is_quarantined=quarantine_reason is not None,
+                quarantine_reason=quarantine_reason,
             )
         )
+        if quarantine_reason:
+            logger.warning(
+                "metric %s quarantined: %s", md.metric_code, quarantine_reason
+            )
         written += 1
         # Flush so the next metric in topo order can read this metric back via
         # the resolver's ``kind="metric"`` lookup (e.g. fcf depends on cfo).
         db.flush()
     return written
+
+
+def _bounds_breach_reason(md: MetricDefinition, value: float) -> str | None:
+    """Return a human-readable reason when ``value`` is outside the metric's bounds.
+
+    ``MetricDefinition.validation_min`` / ``validation_max`` are seeded from
+    [`backend/app/seed/seed_catalog.py`](../../seed/seed_catalog.py) ``_m(bounds=...)``.
+    NULL bounds mean unbounded on that side. Quarantined values are still
+    persisted so the Review Queue surfaces the breach.
+    """
+    v_min = md.validation_min
+    v_max = md.validation_max
+    if v_min is None and v_max is None:
+        return None
+    unit = md.unit or ""
+    pretty_value = _format_value(value, unit)
+    if v_min is not None and value < float(v_min):
+        return (
+            f"Value {pretty_value} is below plausible minimum "
+            f"{_format_value(float(v_min), unit)} — likely a unit-scale or "
+            f"period-comparator error upstream."
+        )
+    if v_max is not None and value > float(v_max):
+        return (
+            f"Value {pretty_value} is above plausible maximum "
+            f"{_format_value(float(v_max), unit)} — likely a unit-scale or "
+            f"period-comparator error upstream."
+        )
+    return None
 
 
 def _topo_sort(defs: list[MetricDefinition]) -> list[MetricDefinition] | None:

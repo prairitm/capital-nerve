@@ -146,6 +146,7 @@ def _extract_stacked_quarter_block(text: str, page_no: int) -> list[ExtractedLin
                     page_number=page_no,
                     source_text=_source_quote(raw_label, value, unit),
                     confidence=88.0,
+                    column_label="Quarter Ended",
                 )
             )
             break
@@ -161,6 +162,7 @@ def _extract_stacked_quarter_block(text: str, page_no: int) -> list[ExtractedLin
                 page_number=page_no,
                 source_text=_source_quote("Tax Expense", tax_value, "crore"),
                 confidence=88.0,
+                column_label="Quarter Ended",
             )
         )
 
@@ -320,6 +322,7 @@ def _extract_inline_quarter_rows(text: str, page_no: int) -> list[ExtractedLineI
                     page_number=page_no,
                     source_text=_source_quote(raw_label, value, unit),
                     confidence=82.0,
+                    column_label="Quarter Ended",
                 )
             )
             break
