@@ -15,6 +15,10 @@ Nothing in this package may be imported by routers — the CLI is the only
 caller.
 """
 from app.services.ir_discovery.agent import find_period_assets
+from app.services.ir_discovery.exchange import (
+    DiscoveryResult,
+    discover_period_assets,
+)
 from app.services.ir_discovery.ingest import IngestOutcome, ingest_one
 from app.services.ir_discovery.periods import expand_range
 from app.services.ir_discovery.schemas import (
@@ -27,9 +31,11 @@ from app.services.ir_discovery.schemas import (
 __all__ = [
     "AssetMatch",
     "CompanyRef",
+    "DiscoveryResult",
     "IngestOutcome",
     "PeriodAssetSet",
     "PeriodSpec",
+    "discover_period_assets",
     "expand_range",
     "find_period_assets",
     "ingest_one",

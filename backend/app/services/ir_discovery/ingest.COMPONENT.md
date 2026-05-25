@@ -19,15 +19,35 @@ calls `services.pipeline.runner.run_pipeline_for_document` in-process.
 ## Contract
 
 - `ingest_one(db, *, company, period, assets, queued_by_user_id,
-  asset_keys=None, skip_pipeline=False) -> IngestOutcome`.
-- `assets` is a `PeriodAssetSet` returned by the agent. `asset_keys`
+  asset_keys=None, skip_pipeline=False, force_reextract=False,
+  discovery_source_by_key=None, fallback_by_asset_key=None) -> IngestOutcome`.
+- `assets` is a `PeriodAssetSet` returned by either the exchange tier
+  (`exchange.discover_period_assets`) or the agent fallback. `asset_keys`
   optionally filters which slots are processed (used by `--doc-types`).
+- `discovery_source_by_key` (asset_key -> `"bse" | "nse" | "agent"`)
+  is recorded on each `AssetIngestResult.discovery_source` and on
+  `SourceDocument.meta.ir_discovery.discovery_source`. The recorded
+  source is the one that *actually downloaded* — if the primary URL
+  fails and a fallback succeeds, the fallback's source wins.
+- `fallback_by_asset_key` (asset_key -> list of `(AssetMatch, source)`)
+  is the tier-1 → tier-2 candidate chain. The primary URL on `assets`
+  is tried first; on `FetchError` the function walks the fallback list
+  in order and keeps the first one that downloads. `result.url` /
+  `result.discovery_source` reflect the chosen candidate.
 - Per-asset behaviour:
   - Annual / quarterly mismatch → asset skipped with `error` set.
-  - Download failure → status `failed`, `error` populated, no DB row.
+  - Every candidate (primary + fallbacks) raises `FetchError` →
+    status `failed`, `error` populated with the *last* candidate's
+    error, no DB row.
   - First-time successful download + pipeline run → status `ingested`.
   - Re-download of an already-stored file → status `duplicate`
-    (`SourceDocument` reused via `file_hash`).
+    (`SourceDocument` reused via `file_hash`). If the document already
+    completed extraction (`COMPLETED` + `page_count > 0`) and
+    `force_reextract` is false, no new `ExtractionJob` is created and
+    the pipeline is not re-run (prevents races with the in-process worker).
+  - Inline pipeline runs create jobs as `PROCESSING` (not `PENDING`) so
+    the dev worker does not claim the same row while `bulk_ingest` runs
+    the pipeline in-process.
   - `skip_pipeline=True` → status `queued` and the worker (or a later
     `ingest_one` call) drains the row.
 - `IngestOutcome` aggregates per-pair results and exposes
@@ -81,3 +101,13 @@ calls `services.pipeline.runner.run_pipeline_for_document` in-process.
 - [ ] On pipeline failure, the asset row carries `status=failed` and
       the error message; the `SourceDocument` survives so an admin can
       retry.
+- [ ] `AssetIngestResult.discovery_source` is populated on every
+      `to_jsonable()` row when the caller supplied
+      `discovery_source_by_key`.
+- [ ] When the primary URL fails to download, each
+      `fallback_by_asset_key[asset_key]` candidate is tried in order
+      and the successful one's `source` becomes the recorded
+      `discovery_source` (test:
+      `test_primary_html_wrapper_falls_through_to_fallback`).
+- [ ] If every candidate fails, the result is `failed` with the last
+      candidate's error message; no DB rows are written.

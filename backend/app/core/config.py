@@ -60,6 +60,10 @@ class Settings(BaseSettings):
     # alongside `STORAGE_DIR` so an S3 swap on the canonical path leaves the
     # local mirror behind for inspection.
     IR_AGENT_RUNS_DIR: str = "var/ingest_runs"
+    # How long the on-disk BSE master-list cache (used by the exchange-tier
+    # discovery to resolve `Company.bse_code`) is considered fresh before it
+    # is refreshed from `api.bseindia.com/...ListofScripData/w`.
+    BSE_MASTER_TTL_DAYS: int = 7
 
     # Worker tunables. The worker polls `extraction_jobs` for PENDING rows.
     WORKER_POLL_INTERVAL_SECONDS: float = 2.0

@@ -65,11 +65,9 @@ def test_standard_document_basename():
     from app.db.enums import DocumentType
 
     stem = ingest_common.standard_document_basename(
-        symbol="RELIANCE",
-        period_slug="Q3_FY2025-26",
         document_type=DocumentType.FINANCIAL_RESULT,
     )
-    assert stem == "RELIANCE_Q3_FY2025-26_financial_result"
+    assert stem == "financial_result"
 
 
 def test_standard_document_title():
@@ -107,6 +105,104 @@ def test_suffix_for_falls_back_to_content_type():
 
 def test_suffix_for_unknown_defaults_to_bin():
     assert suffix_for(None, None) == ".bin"
+
+
+# ---------------------------------------------------------------------------
+# fetch_document_from_url validation
+# ---------------------------------------------------------------------------
+
+
+def test_fetch_document_from_url_rejects_html_masquerading_as_pdf(monkeypatch):
+    """BSE's CDN returns 200 OK with an HTML wrapper when an attachment id
+    is missing. We must reject it instead of storing it as a `.pdf`."""
+    import httpx
+
+    html_body = (
+        b"<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\">\n"
+        b"<html><head><title>BSE Ltd.</title></head><body>nope</body></html>"
+    )
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(
+            200,
+            content=html_body,
+            headers={"content-type": "text/html; charset=utf-8"},
+        )
+
+    transport = httpx.MockTransport(handler)
+    real_client = httpx.Client
+
+    def fake_client(*args, **kwargs):
+        kwargs["transport"] = transport
+        return real_client(*args, **kwargs)
+
+    monkeypatch.setattr(ingest_common.httpx, "Client", fake_client)
+
+    with pytest.raises(ingest_common.FetchError, match="looks like HTML"):
+        ingest_common.fetch_document_from_url(
+            "https://www.bseindia.com/xml-data/corpfiling/AttachLive/missing.pdf"
+        )
+
+
+def test_fetch_document_from_url_accepts_real_pdf(monkeypatch):
+    import httpx
+
+    pdf_body = b"%PDF-1.7\n%\xe2\xe3\xcf\xd3\n" + b"\x00" * 64 + b"\n%%EOF\n"
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(
+            200,
+            content=pdf_body,
+            headers={"content-type": "application/pdf"},
+        )
+
+    transport = httpx.MockTransport(handler)
+    real_client = httpx.Client
+
+    def fake_client(*args, **kwargs):
+        kwargs["transport"] = transport
+        return real_client(*args, **kwargs)
+
+    monkeypatch.setattr(ingest_common.httpx, "Client", fake_client)
+
+    data, filename, content_type = ingest_common.fetch_document_from_url(
+        "https://www.example.com/foo.pdf"
+    )
+    assert data.startswith(b"%PDF-")
+    assert filename == "foo.pdf"
+    assert content_type == "application/pdf"
+
+
+def test_download_headers_for_nse_uses_browser_ua():
+    headers = ingest_common._download_headers_for("nsearchives.nseindia.com")
+    assert "Mozilla" in headers["User-Agent"]
+    assert headers["Referer"] == "https://www.nseindia.com/"
+
+
+def test_download_headers_for_bse_uses_browser_ua():
+    headers = ingest_common._download_headers_for("www.bseindia.com")
+    assert "Mozilla" in headers["User-Agent"]
+    assert headers["Referer"] == "https://www.bseindia.com/"
+
+
+def test_download_headers_for_other_hosts_returns_empty():
+    assert ingest_common._download_headers_for("www.example.com") == {}
+    assert ingest_common._download_headers_for("api.openai.com") == {}
+
+
+def test_download_timeout_for_exchange_hosts_is_generous():
+    timeout = ingest_common._download_timeout_for("nsearchives.nseindia.com")
+    # Exchange CDNs get 60s read window; everyone else stays at 30s.
+    assert timeout.read == 60.0
+    other = ingest_common._download_timeout_for("www.example.com")
+    assert other.read == 30.0
+
+
+def test_looks_like_html_detection():
+    assert ingest_common._looks_like_html(b"<!DOCTYPE html><html><body></body></html>")
+    assert ingest_common._looks_like_html(b"\n\n  <HTML><head>boo</head></HTML>")
+    assert not ingest_common._looks_like_html(b"%PDF-1.7\nSome PDF data")
+    assert not ingest_common._looks_like_html(b"Just some plain text")
 
 
 # ---------------------------------------------------------------------------

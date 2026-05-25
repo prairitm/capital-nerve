@@ -39,7 +39,8 @@ ingested filings the same way it renders seeded ones.
 
 ## Verification checklist
 
-- [ ] `persist_pages` clears prior rows for the document (re-runs are idempotent).
+- [ ] `persist_pages` clears prior rows for the document (re-runs are idempotent):
+      DELETE + flush + `expire_all()` before INSERT.
 - [ ] `SourceDocument.page_count` matches the inserted row count.
 - [ ] PDF parsing failures on a single page don't abort the whole document.
 - [ ] No LLM imports.

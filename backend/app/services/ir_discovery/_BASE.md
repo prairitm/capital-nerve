@@ -25,12 +25,23 @@ package calls `run_pipeline_for_document`.
 
 | File | Owns |
 |------|------|
-| [`__init__.py`](__init__.py) | Re-exports `expand_range`, `find_period_assets`, `ingest_one`. |
+| [`__init__.py`](__init__.py) | Re-exports `expand_range`, `find_period_assets`, `discover_period_assets`, `ingest_one`. |
 | [`schemas.py`](schemas.py) | `PeriodSpec`, `CompanyRef`, `AssetMatch`, `PeriodAssetSet`. |
 | [`periods.py`](periods.py) | Quarter / date / last-N range expansion. Indian FY math. |
-| [`agent.py`](agent.py) | OpenAI Agents SDK + WebSearchTool runner. |
+| [`agent.py`](agent.py) | OpenAI Agents SDK + WebSearchTool runner — **tier-2 fallback**. |
+| [`exchange/`](exchange/_BASE.md) | BSE / NSE corporate-filings clients — **tier-1 primary**. |
 | [`download.py`](download.py) | sha256 storage + human-browsable mirror. |
 | [`ingest.py`](ingest.py) | Per-pair end-to-end: download + tables + pipeline. |
+
+Two-tier discovery flow (driven by `bulk_ingest`):
+
+```
+exchange.discover_period_assets(company, period)
+        │
+        ├── slots filled → use as-is
+        └── slots still null → agent.find_period_assets(company, period)
+                              → exchange.merge_with_agent(...)
+```
 
 ## Cross-cutting rules
 

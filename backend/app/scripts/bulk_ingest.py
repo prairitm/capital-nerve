@@ -43,10 +43,16 @@ from app.db.session import SessionLocal
 from app.models.master import Company
 from app.models.user import AppUser
 from app.services.ir_discovery.agent import find_period_assets
+from app.services.ir_discovery.exchange import (
+    DiscoveryResult,
+    discover_period_assets,
+)
+from app.services.ir_discovery.exchange.discover import merge_with_agent
 from app.services.ir_discovery.ingest import IngestOutcome, ingest_one
 from app.services.ir_discovery.periods import PeriodRangeError, expand_range
 from app.services.ir_discovery.schemas import (
     DOC_TYPE_BY_ASSET_KEY,
+    CompanyRef,
     CompanyTarget,
     PeriodAssetSet,
     PeriodSpec,
@@ -134,6 +140,31 @@ def run(
         "--skip-pipeline",
         help="Persist SourceDocument / ExtractionJob rows but do not run the pipeline. Worker will drain.",
     ),
+    force_reextract: bool = typer.Option(
+        False,
+        "--force-reextract",
+        help=(
+            "Re-run the pipeline even when the same file hash was already "
+            "extracted successfully. Default: skip pipeline for completed duplicates."
+        ),
+    ),
+    no_agent_fallback: bool = typer.Option(
+        False,
+        "--no-agent-fallback",
+        help=(
+            "Skip the OpenAI Agents WebSearch fallback for asset slots the BSE / NSE "
+            "tier-1 didn't cover. Useful for a deterministic, free, exchange-only run."
+        ),
+    ),
+    agent_only: bool = typer.Option(
+        False,
+        "--agent-only",
+        help=(
+            "Skip the BSE / NSE tier-1 entirely and rely solely on the OpenAI "
+            "Agents WebSearch path. Mirrors `--no-agent-fallback`; mutually "
+            "exclusive with it."
+        ),
+    ),
     admin_email: Optional[str] = typer.Option(
         None,
         "--admin-email",
@@ -154,11 +185,20 @@ def run(
         format="%(asctime)s %(levelname)s %(name)s :: %(message)s",
     )
 
-    try:
-        ensure_openai_api_key()
-    except RuntimeError as exc:
-        typer.echo(str(exc), err=True)
-        raise typer.Exit(code=2) from exc
+    if no_agent_fallback and agent_only:
+        typer.echo(
+            "--no-agent-fallback and --agent-only are mutually exclusive: "
+            "the first disables tier-2, the second disables tier-1.",
+            err=True,
+        )
+        raise typer.Exit(code=2)
+
+    if not no_agent_fallback:
+        try:
+            ensure_openai_api_key()
+        except RuntimeError as exc:
+            typer.echo(str(exc), err=True)
+            raise typer.Exit(code=2) from exc
 
     try:
         period_specs = expand_range(
@@ -199,6 +239,10 @@ def run(
         typer.echo(f"Asset keys: {list(asset_keys)}")
         typer.echo(f"Concurrency: {concurrency}")
         typer.echo(f"Dry run: {dry_run}; skip pipeline: {skip_pipeline}")
+        typer.echo(
+            f"Tiers: exchange={'off' if agent_only else 'on'}, "
+            f"agent={'off' if no_agent_fallback else 'on'}"
+        )
         typer.echo(f"Run log: {log_path}")
     finally:
         db.close()
@@ -213,6 +257,9 @@ def run(
             log_path=log_path,
             dry_run=dry_run,
             skip_pipeline=skip_pipeline,
+            no_agent_fallback=no_agent_fallback,
+            agent_only=agent_only,
+            force_reextract=force_reextract,
             admin_user_id=admin_id,
         )
     )
@@ -238,9 +285,22 @@ async def _run_async(
     log_path: Path,
     dry_run: bool,
     skip_pipeline: bool,
+    no_agent_fallback: bool,
+    agent_only: bool,
+    force_reextract: bool,
     admin_user_id: Optional[int],
 ) -> int:
-    """Returns the count of pair-level failures."""
+    """Returns the count of pair-level failures.
+
+    Two-tier discovery per pair (either tier may be disabled):
+
+    1. ``exchange.discover_period_assets`` — deterministic BSE-first,
+       NSE-fallback corporate-filings client. Skipped entirely when
+       ``--agent-only`` is set.
+    2. ``agent.find_period_assets`` — invoked when at least one slot
+       is still missing. Skipped entirely when ``--no-agent-fallback``
+       is set.
+    """
     semaphore = asyncio.Semaphore(max(1, concurrency))
     failures = 0
     log_fh = log_path.open("a", encoding="utf-8")
@@ -248,33 +308,66 @@ async def _run_async(
     async def _process_pair(company: CompanyTarget, period: PeriodSpec) -> None:
         nonlocal failures
         async with semaphore:
-            try:
-                assets = await find_period_assets(company, period)
-            except Exception as exc:
-                failures += 1
-                logger.exception(
-                    "Agent call crashed for %s / %s",
-                    company.nse_symbol or company.company_name,
-                    period.display_label,
-                )
-                _log(log_fh, _agent_error_record(run_id, company, period, exc))
-                return
+            # ---- Tier 1: BSE/NSE corporate filings ----
+            if agent_only:
+                discovery = _empty_discovery(company, period)
+            else:
+                discovery = await _run_exchange_tier(company, period, asset_keys)
+
+            # ---- Tier 2: agent fallback ----
+            # The agent runs whenever any slot is missing; we then merge
+            # its results so empty slots get a primary URL AND already-
+            # filled slots get an agent URL stashed as a download-time
+            # fallback (see merge_with_agent).
+            missing = discovery.missing_keys(asset_keys)
+            if missing and not no_agent_fallback:
+                try:
+                    agent_assets = await find_period_assets(company, period)
+                except Exception as exc:
+                    failures += 1
+                    logger.exception(
+                        "Agent fallback crashed for %s / %s",
+                        company.nse_symbol or company.company_name,
+                        period.display_label,
+                    )
+                    _log(
+                        log_fh,
+                        _agent_error_record(run_id, company, period, exc, missing),
+                    )
+                    # We still have the exchange-tier hits; carry on.
+                else:
+                    discovery = merge_with_agent(
+                        discovery,
+                        agent_assets,
+                        keys_to_fill=asset_keys,
+                    )
 
         if dry_run:
-            _log(log_fh, _dry_run_record(run_id, company, period, assets, asset_keys))
+            _log(
+                log_fh,
+                _dry_run_record(
+                    run_id,
+                    company,
+                    period,
+                    discovery.assets,
+                    asset_keys,
+                    discovery.source_by_asset_key,
+                    discovery.fallback_by_asset_key,
+                ),
+            )
             return
 
-        # Each pair gets its own session — short-lived, mirrors the
-        # in-process pipeline worker pattern in
-        # ``app/workers/pipeline_worker.py``.
         outcome = await asyncio.to_thread(
             _ingest_pair_blocking,
             company,
             period,
-            assets,
+            discovery.assets,
             asset_keys,
             admin_user_id,
             skip_pipeline,
+            discovery.source_by_asset_key,
+            discovery.fallback_by_asset_key,
+            force_reextract,
         )
         if outcome.failures:
             failures += outcome.failures
@@ -290,6 +383,56 @@ async def _run_async(
     return failures
 
 
+async def _run_exchange_tier(
+    company: CompanyTarget,
+    period: PeriodSpec,
+    asset_keys: tuple[str, ...],
+) -> DiscoveryResult:
+    """Run tier-1 with a short-lived session for lazy ``bse_code`` resolution.
+
+    Failures degrade to an empty ``DiscoveryResult`` so the agent
+    fallback (or simply-empty result, with ``--no-agent-fallback``) takes
+    over.
+    """
+    db = await asyncio.to_thread(SessionLocal)
+    try:
+        try:
+            return await discover_period_assets(
+                company,
+                period,
+                db=db,
+                asset_keys=asset_keys,
+            )
+        except Exception:
+            logger.exception(
+                "Tier-1 discovery crashed for %s / %s",
+                company.nse_symbol or company.company_name,
+                period.display_label,
+            )
+            return _empty_discovery(company, period)
+    finally:
+        await asyncio.to_thread(db.close)
+
+
+def _empty_discovery(
+    company: CompanyTarget, period: PeriodSpec
+) -> DiscoveryResult:
+    """The "no tier-1 data" baseline used by ``--agent-only`` and by the
+    tier-1 crash branch. Every slot starts empty so the agent fills them
+    all as primaries on the next merge step."""
+    return DiscoveryResult(
+        assets=PeriodAssetSet(
+            company=CompanyRef(
+                symbol=company.nse_symbol,
+                name=company.company_name,
+            ),
+            period=period.display_label,
+        ),
+        source_by_asset_key={},
+        fallback_by_asset_key={},
+    )
+
+
 def _ingest_pair_blocking(
     company: CompanyTarget,
     period: PeriodSpec,
@@ -297,6 +440,9 @@ def _ingest_pair_blocking(
     asset_keys: tuple[str, ...],
     admin_user_id: Optional[int],
     skip_pipeline: bool,
+    discovery_source_by_key: dict[str, str],
+    fallback_by_asset_key: dict[str, list],
+    force_reextract: bool,
 ) -> IngestOutcome:
     """Sync wrapper used inside ``asyncio.to_thread`` so DB calls don't block the loop."""
     db = SessionLocal()
@@ -310,6 +456,9 @@ def _ingest_pair_blocking(
             asset_keys=asset_keys,
             queued_by_user_id=admin_user_id,
             skip_pipeline=skip_pipeline,
+            discovery_source_by_key=discovery_source_by_key,
+            fallback_by_asset_key=fallback_by_asset_key,
+            force_reextract=force_reextract,
         )
     finally:
         db.close()
@@ -408,12 +557,14 @@ def _agent_error_record(
     company: CompanyTarget,
     period: PeriodSpec,
     exc: BaseException,
+    missing_keys: list[str] | None = None,
 ) -> dict:
     return {
         "run_id": run_id,
         "kind": "agent_error",
         "company": {"company_id": company.company_id, "nse_symbol": company.nse_symbol},
         "period": {"display_label": period.display_label},
+        "missing_keys": missing_keys or [],
         "error": str(exc),
         "logged_at": datetime.now(timezone.utc),
     }
@@ -425,7 +576,11 @@ def _dry_run_record(
     period: PeriodSpec,
     assets: PeriodAssetSet,
     asset_keys: tuple[str, ...],
+    source_by_key: dict[str, str] | None = None,
+    fallback_by_key: dict[str, list] | None = None,
 ) -> dict:
+    sources = source_by_key or {}
+    fallbacks = fallback_by_key or {}
     discovered = {}
     for key in asset_keys:
         match = getattr(assets, key, None)
@@ -434,6 +589,15 @@ def _dry_run_record(
                 "url": match.url,
                 "title": match.title,
                 "source_page": match.source_page,
+                "discovery_source": sources.get(key),
+                "fallbacks": [
+                    {
+                        "url": alt.url,
+                        "title": alt.title,
+                        "source": src,
+                    }
+                    for alt, src in fallbacks.get(key, [])
+                ],
             }
     return {
         "run_id": run_id,

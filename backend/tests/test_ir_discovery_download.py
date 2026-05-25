@@ -102,7 +102,7 @@ def test_fetch_to_storage_writes_canonical_and_mirror(monkeypatch, fake_storage)
     assert result.mirror_path.read_bytes() == _FAKE_PDF
     assert result.mirror_path.parts[-3] == "RELIANCE"
     assert result.mirror_path.parts[-2] == "Q3_FY2025-26"
-    assert result.mirror_path.name == "RELIANCE_Q3_FY2025-26_financial_result.pdf"
+    assert result.mirror_path.name == "financial_result.pdf"
 
 
 def test_fetch_to_storage_dedupes_on_repeat(monkeypatch, fake_storage):
@@ -151,7 +151,7 @@ def test_fetch_to_storage_uses_company_id_when_no_symbol(monkeypatch, fake_stora
     )
     assert result.mirror_path is not None
     assert result.mirror_path.parts[-3] == "company_99"
-    assert result.mirror_path.name == "Q3_FY2025-26_concall_transcript.pdf"
+    assert result.mirror_path.name == "concall_transcript.pdf"
 
 
 def test_fetch_to_storage_propagates_fetch_error(monkeypatch, fake_storage):

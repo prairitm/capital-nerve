@@ -37,8 +37,8 @@ from app.models.master import FinancialPeriod
 # Filesystem slug = display_label with spaces -> underscores:
 #   Q3_FY2025-26, FY2025-26
 #
-# Mirror / export filename stem:
-#   {SYMBOL}_{slug}_{document_type}   e.g. RELIANCE_Q3_FY2025-26_financial_result
+# Mirror / export filename stem (company + period live in parent directories):
+#   {document_type}   e.g. financial_result
 # ---------------------------------------------------------------------------
 
 
@@ -64,18 +64,13 @@ def period_slug_from_display_label(display_label: str) -> str:
 
 def standard_document_basename(
     *,
-    symbol: str | None,
-    period_slug: str,
     document_type: DocumentType,
 ) -> str:
     """Standard mirror filename stem (no extension).
 
-    Example: ``RELIANCE_Q3_FY2025-26_financial_result``.
+    Example: ``financial_result``.
     """
-    code = document_type.value.lower()
-    if symbol:
-        return f"{symbol.strip().upper()}_{period_slug}_{code}"
-    return f"{period_slug}_{code}"
+    return document_type.value.lower()
 
 
 def standard_document_title(
@@ -110,6 +105,33 @@ _DOCUMENT_TYPE_TITLES: dict[DocumentType, str] = {
 
 MAX_URL_BYTES = 50 * 1024 * 1024
 
+# Hosts that require a browser-style User-Agent + Referer to download
+# attachments. Both BSE's CDN (`bseindia.com`) and NSE's archives
+# (`nseindia.com` / `nsearchives.nseindia.com`) silently return HTML
+# error pages or simply hang when called with an httpx default UA.
+_BROWSER_DOWNLOAD_HOSTS = (
+    "bseindia.com",
+    "nseindia.com",
+    "nsearchives.nseindia.com",
+)
+
+_BROWSER_DOWNLOAD_HEADERS = {
+    "User-Agent": (
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+        "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+    ),
+    "Accept": (
+        "text/html,application/xhtml+xml,application/xml;q=0.9,"
+        "application/pdf;q=0.9,image/avif,image/webp,*/*;q=0.8"
+    ),
+    "Accept-Language": "en-US,en;q=0.9",
+}
+
+
+# Magic-byte signatures we use to verify that a `.pdf` URL really
+# returned a PDF and not an HTML error page.
+_PDF_MAGIC = b"%PDF-"
+
 
 class FetchError(ValueError):
     """Raised when the remote URL cannot be downloaded as a usable document."""
@@ -123,15 +145,22 @@ def fetch_document_from_url(url: str) -> tuple[bytes, str | None, str | None]:
     Raises :class:`FetchError` (a `ValueError` subclass) on any failure mode
     so callers can surface a clean message to the user — the FastAPI router
     converts these into HTTP 400 and the CLI prints them to the run log.
+
+    Also rejects responses that *look* like a PDF by URL extension but
+    aren't actually PDFs (BSE's CDN routinely serves a 200 OK HTML
+    homepage when an attachment id no longer exists, instead of a 404).
     """
     parsed = urlparse(url.strip())
     if parsed.scheme not in ("http", "https") or not parsed.netloc:
         raise FetchError("document_url must be a valid http or https URL")
 
+    headers = _download_headers_for(parsed.netloc)
+    timeout = _download_timeout_for(parsed.netloc)
     try:
         with httpx.Client(
             follow_redirects=True,
-            timeout=httpx.Timeout(30.0, connect=10.0),
+            timeout=timeout,
+            headers=headers,
         ) as client:
             with client.stream("GET", url) as response:
                 response.raise_for_status()
@@ -160,12 +189,60 @@ def fetch_document_from_url(url: str) -> tuple[bytes, str | None, str | None]:
         raise FetchError("Remote document is empty")
 
     filename = filename_from_url(parsed.path) or filename_from_content_type(content_type)
-    if suffix_for(filename, content_type) not in (".pdf", ".txt", ".md"):
+    suffix = suffix_for(filename, content_type)
+    if suffix not in (".pdf", ".txt", ".md"):
         raise FetchError(
             "Remote document must be a PDF or plain text file "
             "(check the URL extension or Content-Type header)"
         )
+
+    # If the URL / content-type promised a PDF, the body must actually be
+    # one. BSE's CDN routinely returns a 200 OK with an HTML wrapper page
+    # when an attachment id is missing — without this guard we'd happily
+    # store that HTML as a `.pdf` and the pipeline would then run on
+    # garbage.
+    if suffix == ".pdf" and not data.startswith(_PDF_MAGIC):
+        sniffed = _looks_like_html(data)
+        detail = "looks like HTML" if sniffed else "is not a PDF (no %PDF- header)"
+        raise FetchError(
+            f"Remote document at {url} {detail}; refusing to ingest a non-PDF "
+            f"response. content-type={content_type!r}"
+        )
+
     return data, filename, content_type
+
+
+def _download_headers_for(netloc: str) -> dict[str, str]:
+    """Browser-style headers for hosts that block default httpx UAs."""
+    host = (netloc or "").lower().rsplit(":", 1)[0]
+    if any(host == suffix or host.endswith("." + suffix) for suffix in _BROWSER_DOWNLOAD_HOSTS):
+        headers = dict(_BROWSER_DOWNLOAD_HEADERS)
+        # Origin / Referer match the parent landing page so NSE / BSE
+        # don't reject the request as cross-origin abuse.
+        if "nseindia.com" in host:
+            headers["Referer"] = "https://www.nseindia.com/"
+        elif "bseindia.com" in host:
+            headers["Referer"] = "https://www.bseindia.com/"
+        return headers
+    return {}
+
+
+def _download_timeout_for(netloc: str) -> httpx.Timeout:
+    """Generous timeouts for exchange CDNs which can be slow under load."""
+    host = (netloc or "").lower().rsplit(":", 1)[0]
+    if any(host == suffix or host.endswith("." + suffix) for suffix in _BROWSER_DOWNLOAD_HOSTS):
+        return httpx.Timeout(60.0, connect=15.0)
+    return httpx.Timeout(30.0, connect=10.0)
+
+
+def _looks_like_html(data: bytes) -> bool:
+    """Cheap sniff for HTML masquerading as PDF.
+
+    Inspects only the first 1 KB so this stays O(1) regardless of
+    payload size.
+    """
+    head = data[:1024].lstrip().lower()
+    return head.startswith(b"<!doctype html") or head.startswith(b"<html") or b"<head" in head[:512]
 
 
 def filename_from_url(path: str) -> str | None:

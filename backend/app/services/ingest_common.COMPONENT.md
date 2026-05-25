@@ -31,13 +31,20 @@ without dragging FastAPI into the call graph.
   - Annual: `format_annual_display_label(fy_year)` → `FY2025-26`
   - Slug: `period_slug_from_display_label(display_label)` → `Q3_FY2025-26`
 - **Standard document naming** (bulk ingest mirror + DB titles):
-  - `standard_document_basename(symbol, period_slug, document_type)` →
-    `RELIANCE_Q3_FY2025-26_financial_result`
+  - `standard_document_basename(document_type)` → `financial_result`
   - `standard_document_title(symbol, display_label, document_type)` →
     `RELIANCE Q3 FY2025-26 Financial Results`
 - `fetch_document_from_url(url) -> (bytes, filename, content_type)` —
   raises `FetchError` on bad scheme, oversize body, HTTP/network errors,
-  empty bodies, and non-PDF/text content.
+  empty bodies, and non-PDF/text content. Also rejects responses that
+  *claim* to be a PDF (URL ends in `.pdf` or `Content-Type: application/pdf`)
+  but whose body does not start with the `%PDF-` magic header — BSE's
+  CDN returns a 200 OK HTML wrapper page when an attachment id is
+  missing, and we will not store that as a fake `.pdf`.
+- For known exchange CDN hosts (`bseindia.com`, `nseindia.com`,
+  `nsearchives.nseindia.com`) the fetcher uses a browser-style
+  `User-Agent` + `Referer` and a 60s read timeout. Without these,
+  NSE archive downloads silently hang.
 - `suffix_for(filename, content_type) -> str` — returns one of
   `.pdf` / `.md` / `.txt` / `.bin`.
 - `resolve_period_id(db, *, period_id, period_label, event_date) -> int | None`
@@ -76,7 +83,10 @@ without dragging FastAPI into the call graph.
 ## Verification checklist
 
 - [ ] `fetch_document_from_url` rejects non-http(s) schemes, oversize
-      bodies, and non-PDF/text payloads.
+      bodies, non-PDF/text payloads, and HTML pages served with a
+      `.pdf` URL or `application/pdf` content-type (PDF magic check).
+- [ ] `fetch_document_from_url` sends browser-style headers + a 60s
+      read timeout for hosts under `nseindia.com` / `bseindia.com`.
 - [ ] `resolve_period_id` returns the existing row's id for an exact
       `display_label` match, parses `Q4 FY25-26` style labels, and creates
       a quarterly row from `event_date` when no other input matches.

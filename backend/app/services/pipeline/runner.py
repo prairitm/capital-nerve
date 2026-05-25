@@ -14,6 +14,7 @@ import logging
 from dataclasses import dataclass
 from datetime import datetime, timezone
 
+from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
@@ -73,6 +74,17 @@ def run_pipeline_for_document(db: Session, *, job_id: int) -> PipelineSummary:
     if not document or not event:
         _fail(db, job, "Document or event missing for job")
         return _summary_from(job, document, status=ExtractionStatus.FAILED)
+
+    # Only one pipeline run per document at a time. bulk_ingest runs the
+    # pipeline inline while the dev worker also polls PENDING jobs — without
+    # this lock both can call persist_pages concurrently and trip
+    # uq_document_pages.
+    _acquire_document_pipeline_lock(db, document.document_id)
+
+    if job.status == ExtractionStatus.PENDING:
+        job.status = ExtractionStatus.PROCESSING
+        job.started_at = datetime.now(timezone.utc)
+        db.flush()
 
     try:
         # ---- Parsing ----
@@ -243,6 +255,18 @@ def run_pipeline_for_document(db: Session, *, job_id: int) -> PipelineSummary:
             status=ExtractionStatus.FAILED,
             error=str(exc),
         )
+
+
+def _acquire_document_pipeline_lock(db: Session, document_id: int) -> None:
+    """Serialize pipeline runs that share a ``document_id``.
+
+    Uses a PostgreSQL transaction-scoped advisory lock when available.
+    On other dialects (e.g. in-memory SQLite in unit tests) this is a no-op.
+    """
+    bind = db.get_bind()
+    if bind.dialect.name != "postgresql":
+        return
+    db.execute(text("SELECT pg_advisory_xact_lock(:lock_key)"), {"lock_key": document_id})
 
 
 def _fail(db: Session, job: ExtractionJob, message: str) -> None:

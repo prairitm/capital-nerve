@@ -3,7 +3,7 @@
 Canonical path: ``var/storage/aa/bb/<sha256>.pdf`` (sha256 content addressed,
 managed by `services.pipeline.storage.LocalStorage`).
 
-Human mirror: ``var/ingest_runs/<symbol>/<period_slug>/<SYMBOL>_<period_slug>_<document_type>.pdf``
+Human mirror: ``var/ingest_runs/<symbol>/<period_slug>/<document_type>.pdf``
 — a parallel, browsable layout that lets the operator inspect what was
 ingested per (company, period) without having to query the DB. The mirror
 is best-effort; failures to write it are logged and do not abort the
@@ -123,6 +123,9 @@ def _write_human_mirror(
 ) -> Optional[Path]:
     """Copy the canonical file to the human-readable mirror layout.
 
+    Layout: ``<symbol>/<period_slug>/<document_type>.<ext>`` — e.g.
+    ``RELIANCE/Q3_FY2025-26/financial_result.pdf``.
+
     Returns the absolute mirror path on success, ``None`` if the copy
     fails (we never abort an ingest because of mirror issues — the
     canonical sha256 store is the source of truth).
@@ -131,11 +134,7 @@ def _write_human_mirror(
         period_slug = period.slug
         target_dir = _mirror_root() / _company_segment(company) / period_slug
         target_dir.mkdir(parents=True, exist_ok=True)
-        stem = standard_document_basename(
-            symbol=company.nse_symbol or company.bse_code,
-            period_slug=period_slug,
-            document_type=document_type,
-        )
+        stem = standard_document_basename(document_type=document_type)
         target = target_dir / f"{stem}{suffix}"
         if target.exists() and target.stat().st_size == canonical_path.stat().st_size:
             return target

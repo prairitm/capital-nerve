@@ -40,18 +40,32 @@ def persist_pages(db: Session, document: SourceDocument, pages: list[ParsedPage]
 
     The pipeline is allowed to re-run on a failed document, so we wipe and
     re-insert rather than upsert page by page.
+
+    ``SessionLocal`` uses ``autoflush=False``, so we must flush the DELETE
+    before INSERTing the new batch — otherwise two concurrent pipeline runs
+    (e.g. bulk_ingest inline + the in-process worker) can both INSERT and hit
+    ``uq_document_pages``. We also expire the identity map so stale
+    ``DocumentPage`` rows from a prior load cannot confuse the unit of work.
     """
-    db.execute(delete(DocumentPage).where(DocumentPage.document_id == document.document_id))
+    doc_id = document.document_id
+    db.execute(
+        delete(DocumentPage)
+        .where(DocumentPage.document_id == doc_id)
+        .execution_options(synchronize_session=False)
+    )
+    db.flush()
+    db.expire_all()
     for p in pages:
         db.add(
             DocumentPage(
-                document_id=document.document_id,
+                document_id=doc_id,
                 page_number=p.page_number,
                 page_text=p.text,
                 page_markdown=p.markdown,
             )
         )
     document.page_count = len(pages)
+    db.flush()
     return len(pages)
 
 

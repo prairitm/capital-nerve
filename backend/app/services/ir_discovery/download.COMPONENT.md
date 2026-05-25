@@ -10,8 +10,8 @@ Pulls one asset URL and lands it in two places:
    [`services/pipeline/storage.LocalStorage`](../pipeline/storage.py). This
    is the path the rest of the pipeline reads from. Swapping to S3 only
    touches that module.
-2. **Human mirror** — `var/ingest_runs/<symbol>/<period_slug>/<SYMBOL>_<period_slug>_<document_type>.<ext>`,
-   e.g. `RELIANCE/Q3_FY2025-26/RELIANCE_Q3_FY2025-26_financial_result.pdf`.
+2. **Human mirror** — `var/ingest_runs/<symbol>/<period_slug>/<document_type>.<ext>`,
+   e.g. `RELIANCE/Q3_FY2025-26/financial_result.pdf`.
    Period slug is always the canonical display label with spaces replaced by
    underscores (`Q3 FY2025-26` → `Q3_FY2025-26`).
    a parallel browsable layout for operators. Best-effort; failures here

@@ -298,25 +298,17 @@ def company_hub(
         if latest_event
         else None
     )
-    main_issue = (
-        latest_event.main_issue
-        or (
-            pick_main_issue(
-                sigs_by_event.get(latest_event.event_id, []),
-                cards_by_event.get(latest_event.event_id, []),
-            )
-            if latest_event
-            else None
+    if latest_event is None:
+        main_issue = None
+        watch_next = None
+    else:
+        main_issue = latest_event.main_issue or pick_main_issue(
+            sigs_by_event.get(latest_event.event_id, []),
+            cards_by_event.get(latest_event.event_id, []),
         )
-    )
-    watch_next = (
-        latest_event.watch_next
-        or (
-            pick_watch_next(cards_by_event.get(latest_event.event_id, []))
-            if latest_event
-            else None
+        watch_next = latest_event.watch_next or pick_watch_next(
+            cards_by_event.get(latest_event.event_id, []),
         )
-    )
 
     return CompanyHubV1(
         company=company_brief(company),

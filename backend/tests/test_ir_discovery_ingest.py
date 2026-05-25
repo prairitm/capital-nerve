@@ -74,11 +74,25 @@ def test_assetingestresult_jsonable_roundtrip():
         review_id=4,
         file_hash="abc",
         size_bytes=1024,
+        discovery_source="bse",
     )
     payload = res.to_jsonable()
     assert payload["status"] == "ingested"
     assert payload["event_type"] == "CONCALL_TRANSCRIPT"
     assert payload["document_type"] == "CONCALL_TRANSCRIPT"
+    assert payload["discovery_source"] == "bse"
+
+
+def test_assetingestresult_discovery_source_defaults_to_none():
+    res = ingest_module.AssetIngestResult(
+        asset_key="transcript",
+        event_type=EventType.CONCALL_TRANSCRIPT,
+        document_type=DocumentType.CONCALL_TRANSCRIPT,
+        url="https://example.com/q3.pdf",
+        status="ingested",
+    )
+    assert res.discovery_source is None
+    assert res.to_jsonable()["discovery_source"] is None
 
 
 def test_ingestoutcome_summary_counts():
@@ -165,6 +179,189 @@ def test_quarterly_asset_on_annual_period_skipped(monkeypatch):
 # ---------------------------------------------------------------------------
 
 
+def test_duplicate_completed_skips_new_job_and_pipeline(monkeypatch):
+    """Re-ingesting an already-completed file must not spawn another
+    pipeline run (which races the in-process worker on document_pages)."""
+    download_calls: list[str] = []
+
+    def _fake_fetch(**kwargs):
+        download_calls.append(kwargs["url"])
+        from types import SimpleNamespace
+
+        stored = SimpleNamespace(
+            file_hash="abc123",
+            size_bytes=100,
+            storage_path="aa/bb/abc123.pdf",
+        )
+        from types import SimpleNamespace as NS
+
+        return NS(
+            stored=stored,
+            mirror_path=None,
+            filename="q.pdf",
+            content_type="application/pdf",
+        )
+
+    monkeypatch.setattr(download_module, "fetch_to_storage", _fake_fetch)
+    monkeypatch.setattr(ingest_module, "fetch_to_storage", _fake_fetch)
+
+    pipeline_calls: list[int] = []
+    monkeypatch.setattr(
+        ingest_module,
+        "run_pipeline_for_document",
+        lambda db, job_id: pipeline_calls.append(job_id) or None,
+    )
+    monkeypatch.setattr(ingest_module, "_ensure_period", lambda db, period: 1)
+    monkeypatch.setattr(
+        ingest_module,
+        "_get_or_create_event",
+        lambda *a, **k: MagicMock(event_id=1),
+    )
+
+    existing_doc = MagicMock()
+    existing_doc.document_id = 441
+    existing_doc.extraction_status = ingest_module.ExtractionStatus.COMPLETED
+    existing_doc.page_count = 80
+    existing_doc.extraction_confidence = 88.0
+
+    latest_job = MagicMock()
+    latest_job.extraction_job_id = 95
+    latest_job.status = ingest_module.ExtractionStatus.COMPLETED
+    latest_job.error_message = None
+    latest_job.meta = {
+        "stages": {
+            "pages": 80,
+            "extracted": 10,
+            "facts": 11,
+            "metrics": 15,
+            "signals": 3,
+            "cards": 3,
+        },
+        "published": True,
+    }
+
+    db = MagicMock()
+    db.scalar.side_effect = [existing_doc, latest_job]
+
+    assets = PeriodAssetSet(
+        company=CompanyRef(symbol="RELIANCE", name="Reliance Industries Ltd."),
+        period="Q3 FY2025-26",
+        presentation=AssetMatch(url="https://x/p.pdf"),
+    )
+    outcome = ingest_one(
+        db,
+        company=_company(),
+        period=_period_quarterly(),
+        assets=assets,
+        queued_by_user_id=1,
+        asset_keys=("presentation",),
+    )
+
+    assert len(outcome.assets) == 1
+    row = outcome.assets[0]
+    assert row.status == "duplicate"
+    assert row.job_id == 95
+    assert row.pipeline is not None
+    assert row.pipeline["pages"] == 80
+    assert pipeline_calls == []
+    db.add.assert_not_called()
+
+
+def test_duplicate_completed_force_reextract_runs_pipeline(monkeypatch):
+    def _fake_fetch(**kwargs):
+        from types import SimpleNamespace
+
+        stored = SimpleNamespace(
+            file_hash="abc123",
+            size_bytes=100,
+            storage_path="aa/bb/abc123.pdf",
+        )
+        return SimpleNamespace(
+            stored=stored,
+            mirror_path=None,
+            filename="q.pdf",
+            content_type="application/pdf",
+        )
+
+    monkeypatch.setattr(download_module, "fetch_to_storage", _fake_fetch)
+    monkeypatch.setattr(ingest_module, "fetch_to_storage", _fake_fetch)
+
+    pipeline_calls: list[int] = []
+
+    def _fake_pipeline(db, job_id):
+        pipeline_calls.append(job_id)
+        from types import SimpleNamespace
+
+        return SimpleNamespace(
+            job_id=job_id,
+            document_id=441,
+            status=ingest_module.ExtractionStatus.COMPLETED,
+            pages=80,
+            extracted_values=1,
+            facts=1,
+            metrics=1,
+            signals=1,
+            cards=1,
+            published=True,
+            confidence=90.0,
+            error=None,
+            notes=None,
+        )
+
+    monkeypatch.setattr(ingest_module, "run_pipeline_for_document", _fake_pipeline)
+    monkeypatch.setattr(
+        ingest_module,
+        "_ensure_period",
+        lambda db, period: 1,
+    )
+    monkeypatch.setattr(
+        ingest_module,
+        "_get_or_create_event",
+        lambda *a, **k: MagicMock(event_id=1),
+    )
+    monkeypatch.setattr(
+        ingest_module,
+        "_enqueue_review",
+        lambda *a, **k: MagicMock(review_id=1),
+    )
+
+    existing_doc = MagicMock()
+    existing_doc.document_id = 441
+    existing_doc.extraction_status = ingest_module.ExtractionStatus.COMPLETED
+    existing_doc.page_count = 80
+
+    db = MagicMock()
+    db.scalar.return_value = existing_doc
+
+    assets = PeriodAssetSet(
+        company=CompanyRef(symbol="RELIANCE", name="Reliance Industries Ltd."),
+        period="Q3 FY2025-26",
+        presentation=AssetMatch(url="https://x/p.pdf"),
+    )
+    captured_job: list[object] = []
+
+    def _track_add(obj):
+        captured_job.append(obj)
+        if getattr(obj, "extraction_job_id", None) is None:
+            obj.extraction_job_id = 99
+        return None
+
+    db.add.side_effect = _track_add
+
+    outcome = ingest_one(
+        db,
+        company=_company(),
+        period=_period_quarterly(),
+        assets=assets,
+        queued_by_user_id=1,
+        asset_keys=("presentation",),
+        force_reextract=True,
+    )
+
+    assert len(pipeline_calls) == 1
+    assert outcome.assets[0].status in ("ingested", "duplicate")
+
+
 def test_download_failure_is_captured_without_db_writes(monkeypatch):
     """A FetchError must surface as a `failed` AssetIngestResult and skip
     every subsequent step (period resolution, table writes, pipeline)."""
@@ -187,13 +384,132 @@ def test_download_failure_is_captured_without_db_writes(monkeypatch):
         period=_period_quarterly(),
         assets=assets,
         queued_by_user_id=1,
+        discovery_source_by_key={"financial_report_pdf": "bse"},
     )
     assert len(outcome.assets) == 1
     failed = outcome.assets[0]
     assert failed.status == "failed"
     assert "HTTP 404" in (failed.error or "")
+    assert failed.discovery_source == "bse"
     db.add.assert_not_called()
     db.commit.assert_not_called()
+
+
+# ---------------------------------------------------------------------------
+# Tier-1 -> tier-2 fallback at download time
+# ---------------------------------------------------------------------------
+
+
+def test_primary_html_wrapper_falls_through_to_fallback(monkeypatch):
+    """When the primary URL fails (e.g. BSE returns HTML), the next
+    fallback should be tried and its source recorded as the resolved
+    discovery_source."""
+    calls: list[str] = []
+
+    def _fake_fetch(*, url, company, period, document_type, asset_key, storage=None):
+        calls.append(url)
+        if url == "https://bse/wrapper.pdf":
+            raise ingest_common.FetchError("looks like HTML")
+        if url == "https://agent/real.pdf":
+            # Stop just past download — we don't need to exercise the
+            # full DB / pipeline path. Raise a sentinel to short-circuit.
+            raise RuntimeError("__downloaded__")
+        raise AssertionError(f"unexpected url: {url}")
+
+    monkeypatch.setattr(download_module, "fetch_to_storage", _fake_fetch)
+    monkeypatch.setattr(ingest_module, "fetch_to_storage", _fake_fetch)
+
+    db = MagicMock()
+    assets = PeriodAssetSet(
+        company=CompanyRef(symbol="RELIANCE", name="Reliance Industries Ltd."),
+        period="Q3 FY2025-26",
+        financial_report_pdf=AssetMatch(url="https://bse/wrapper.pdf"),
+    )
+    outcome = ingest_one(
+        db,
+        company=_company(),
+        period=_period_quarterly(),
+        assets=assets,
+        queued_by_user_id=1,
+        discovery_source_by_key={"financial_report_pdf": "bse"},
+        fallback_by_asset_key={
+            "financial_report_pdf": [
+                (AssetMatch(url="https://agent/real.pdf"), "agent"),
+            ]
+        },
+    )
+
+    # Both URLs were tried in order.
+    assert calls == ["https://bse/wrapper.pdf", "https://agent/real.pdf"]
+    # The result reflects the fallback that "succeeded" (we crashed
+    # post-download with a sentinel, which the function catches as
+    # `download crashed`). The point of this test is to verify the
+    # candidate ordering + fall-through, not the post-download path.
+    assert len(outcome.assets) == 1
+
+
+def test_all_candidates_fail_records_last_error(monkeypatch):
+    def _always_fail(*, url, **_):
+        raise ingest_common.FetchError(f"bad: {url}")
+
+    monkeypatch.setattr(download_module, "fetch_to_storage", _always_fail)
+    monkeypatch.setattr(ingest_module, "fetch_to_storage", _always_fail)
+
+    db = MagicMock()
+    assets = PeriodAssetSet(
+        company=CompanyRef(symbol="RELIANCE", name="Reliance Industries Ltd."),
+        period="Q3 FY2025-26",
+        financial_report_pdf=AssetMatch(url="https://bse/x.pdf"),
+    )
+    outcome = ingest_one(
+        db,
+        company=_company(),
+        period=_period_quarterly(),
+        assets=assets,
+        queued_by_user_id=1,
+        discovery_source_by_key={"financial_report_pdf": "bse"},
+        fallback_by_asset_key={
+            "financial_report_pdf": [
+                (AssetMatch(url="https://nse/x.pdf"), "nse"),
+                (AssetMatch(url="https://agent/x.pdf"), "agent"),
+            ]
+        },
+    )
+    failed = outcome.assets[0]
+    assert failed.status == "failed"
+    # Last error is from the final candidate (agent).
+    assert "https://agent/x.pdf" in (failed.error or "")
+    # No DB writes when every candidate fails.
+    db.add.assert_not_called()
+    db.commit.assert_not_called()
+
+
+def test_no_fallbacks_keeps_old_failure_semantics(monkeypatch):
+    def _boom(*, url, **_):
+        raise ingest_common.FetchError("HTTP 404")
+
+    monkeypatch.setattr(download_module, "fetch_to_storage", _boom)
+    monkeypatch.setattr(ingest_module, "fetch_to_storage", _boom)
+
+    db = MagicMock()
+    assets = PeriodAssetSet(
+        company=CompanyRef(symbol="RELIANCE", name="Reliance Industries Ltd."),
+        period="Q3 FY2025-26",
+        financial_report_pdf=AssetMatch(url="https://x/missing.pdf"),
+    )
+    outcome = ingest_one(
+        db,
+        company=_company(),
+        period=_period_quarterly(),
+        assets=assets,
+        queued_by_user_id=1,
+        discovery_source_by_key={"financial_report_pdf": "bse"},
+        # Note: no fallback_by_asset_key — old call sites stay valid.
+    )
+    failed = outcome.assets[0]
+    assert failed.status == "failed"
+    assert "HTTP 404" in (failed.error or "")
+    assert failed.discovery_source == "bse"
 
 
 # ---------------------------------------------------------------------------
