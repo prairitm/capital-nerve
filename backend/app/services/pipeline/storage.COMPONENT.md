@@ -15,10 +15,15 @@ them back. Today the only backend is the local filesystem; the
 
 ## Contract
 
-- `LocalStorage.put_bytes(data, suffix=...) -> StoredFile` — writes to
-  `STORAGE_DIR/<hash[:2]>/<hash[2:4]>/<hash><suffix>`, returns
-  `(storage_path, file_hash, size_bytes)`.
-- `LocalStorage.open_bytes(storage_path) -> bytes` — reads back.
+- `LocalStorage.put_bytes(data, suffix=...) -> StoredFile` — content-addressed
+  write to `STORAGE_DIR/<hash[:2]>/<hash[2:4]>/<hash><suffix>`. Used for
+  uploaded source documents so duplicate uploads naturally dedupe.
+- `LocalStorage.put_bytes_at(data, *, path) -> StoredFile` — path-addressed
+  write to an arbitrary `STORAGE_DIR/<path>`. Used by `parsing.persist_pages`
+  to lay out rendered page PNGs at the predictable
+  `page_images/<document_id>/<NNNN>.png` location so the extraction stage
+  can load them by `DocumentPage.image_path` without an extra lookup.
+- `LocalStorage.open_bytes(storage_path) -> bytes` — reads back either form.
 - `LocalStorage.exists(storage_path) -> bool`.
 - `get_storage() -> LocalStorage` — the only call site outside this module.
 

@@ -19,7 +19,9 @@ Indian-locale formatters for numbers, currency in Crores, percentages, signed de
   - `formatCr(value)` — switches to `L Cr` (`value / 100000`) when `|value| >= 100000`.
   - `formatPct(value, fractionDigits = 1)` — appends `%`.
   - `formatEvidenceValue(value)` — preserves pre-formatted evidence strings; strips float noise like `37146.000000` → `37,146`.
-  - `evidenceHighlightPatterns(evidence)` / `highlightMatchInText(text, patterns)` — PDF and text-layer highlighting for mapped evidence values.
+  - `buildEvidenceHighlights(evidence)` — full `source_text` quotes only; `highlightMatchInText` (plain text) and `applyPdfPageHighlights` (PDF text layer, contiguous match).
+  - `dedupePageEvidenceRows(rows)` — one panel row per distinct label+value (prefers source quotes over calculated_metric).
+  - `groupEvidenceBySourceText(rows)` — groups deduped rows that share the same source quote.
   - `formatDate(d)` — `dd MMM yyyy` in `en-IN`.
   - `relativeDate(d)` — `today / yesterday / Nd / Nw / Nmo / Ny ago`.
   - `eventTypeLabel(type)` — lower-cases and replaces `_` with space.

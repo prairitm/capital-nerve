@@ -35,7 +35,7 @@ from app.services.pipeline import presentation as presentation_stage
 from app.services.pipeline import segment as segment_stage
 from app.services.pipeline import shareholding as shareholding_stage
 from app.services.pipeline import signals as signals_stage
-from app.services.pipeline.llm import get_provider
+from app.services.pipeline.llm import get_provider, select_extraction_model
 from app.services.pipeline.storage import get_storage
 from app.services.event_summary import build_event_summary_text, pick_main_issue, pick_watch_next
 
@@ -101,9 +101,13 @@ def run_pipeline_for_document(db: Session, *, job_id: int) -> PipelineSummary:
         indexing_stage.index_document_pages(db, document_id=document.document_id)
 
         # ---- Extraction (LLM) ----
-        provider = get_provider()
+        # Pick model per document_type so transcripts / press releases /
+        # presentations / annual reports route through `LLM_MODEL_FAST` when
+        # set, while `FINANCIAL_RESULT` PDFs stay on the premium tier.
+        active_model = select_extraction_model(document)
+        provider = get_provider(model=active_model)
         extraction = extraction_stage.run_extraction(
-            db, document=document, job=job, provider=provider
+            db, document=document, job=job, provider=provider, model=active_model
         )
 
         # ---- Doc-type-specific extractors ----
@@ -222,6 +226,8 @@ def run_pipeline_for_document(db: Session, *, job_id: int) -> PipelineSummary:
                 signals_fired=fired,
                 rules_evaluable=evaluable,
                 signal_diag=signal_diag,
+                cache_hit=bool((job.meta or {}).get("cache_hit")),
+                validator_report=job.validator_report or {},
             ),
         )
 
@@ -320,6 +326,8 @@ def _review_description(
     signals_fired: int,
     rules_evaluable: int,
     signal_diag: dict,
+    cache_hit: bool = False,
+    validator_report: dict | None = None,
 ) -> str:
     threshold = float(settings.AUTO_PUBLISH_CONFIDENCE)
     signal_line = (
@@ -333,10 +341,25 @@ def _review_description(
             signal_line = "Signals skipped — document has no financial period"
         elif blocker == "no_metrics":
             signal_line = "Signals skipped — no calculated metrics for this period"
+
+    suffix_parts: list[str] = []
+    if cache_hit:
+        suffix_parts.append("replayed from extraction cache")
+    if validator_report:
+        breaches = len(validator_report.get("totals_breaches") or [])
+        dropped = len(validator_report.get("source_text_dropped") or [])
+        bad_units = len(validator_report.get("unit_dropped") or [])
+        if breaches or dropped or bad_units:
+            suffix_parts.append(
+                f"validators: {breaches} totals breaches, "
+                f"{dropped} unanchored, {bad_units} bad-unit"
+            )
+    suffix = f" ({'; '.join(suffix_parts)})" if suffix_parts else ""
+
     if publish:
         return (
             f"Auto-published: {cards} cards, {signal_line}, "
-            f"{overall_conf:.0f}% extraction confidence (≥ {threshold:.0f}%)."
+            f"{overall_conf:.0f}% extraction confidence (≥ {threshold:.0f}%)." + suffix
         )
     reasons: list[str] = []
     if overall_conf < threshold:
@@ -346,9 +369,11 @@ def _review_description(
         )
     if signals_fired == 0 and not signal_diag.get("blockers"):
         reasons.append("no metric rules breached — cards may be minimal")
+    if validator_report and validator_report.get("totals_breaches"):
+        reasons.append("totals math breach in extracted values")
     if not reasons:
         reasons.append("awaiting admin approval")
-    return f"Needs review: {signal_line}; {cards} cards; " + "; ".join(reasons) + "."
+    return f"Needs review: {signal_line}; {cards} cards; " + "; ".join(reasons) + "." + suffix
 
 
 def _populate_event_summary(

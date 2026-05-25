@@ -28,11 +28,12 @@ Split-view document viewer rendered inside the Document page. Left pane stacks p
 - Left pane renders every `DocumentPage` as a bordered sheet with a sticky `Page N` header and an evidence-count chip when rows map to that page number.
 - Desktop page index (narrow rail) and mobile page strip both call `selectPage`, which scrolls the sheet and updates `?page=`.
 - When `has_source_file` and `source_content_type` includes `pdf`, fetch `/documents/{id}/file` via `apiBlob`, render pages with `react-pdf` (`Document` + `Page`). Seeded filings without storage fall back to `MarkdownLite` / `whitespace-pre-wrap`.
-- PDF pages use `customTextRenderer` + `evidenceHighlightPatterns` / `highlightMatchInText` from `@/lib/format` to mark evidence values in the text layer (`.evidence-highlight` in `styles.css`).
+- PDF pages call `applyPdfPageHighlights` after the text layer renders (`onRenderTextLayerSuccess`) so only **contiguous** source-quote matches are marked — not isolated short phrases elsewhere on the page.
 - PDF documents expose a **Full screen** control (`Maximize2`) that opens `PdfFullscreenOverlay` — fixed overlay with page rail, prev/next, evidence highlights, Escape/backdrop to close.
 - Page-switcher controls use `btn-brand-active` for the active page and `bg-surface-2 text-ink-mute hover:text-ink` for inactive ones.
 - Metadata block uses a 2-column grid with a small `Meta` subcomponent — reuse this helper rather than inlining label/value pairs.
 - Source quotes render with `border-l-2 border-line pl-3 italic` to match the rest of the evidence treatment.
+- Active-page panel: `dedupePageEvidenceRows` then `groupEvidenceBySourceText` — each fact once per page; shared quotes grouped under one card. PDF highlighting uses the **same deduped** evidence plus parsed `page_text` as reference when the PDF text layer diverges from extraction.
 
 ## UI / UX
 

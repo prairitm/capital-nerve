@@ -39,6 +39,8 @@ intelligence objects all surface ingested data identically to the seeded data.
     primary `CalculatedMetric`,
   - one `CardEvidence(evidence_type="source_quote")` per `ExtractedValue` that
     fed the metric inputs — keeps the drawer's evidence panel populated.
+    Formula variable names (`s`, `now`, `revenue`, …) are resolved through
+    `MetricDefinition.inputs_json` (`name` → `code`, `CURRENT` scope only).
 - `metrics_json` always carries the primary metric in the first slot. The
   drawer reads `metrics_json[0]` for the hero badge — do not reorder.
 - `card_priority` is set from severity using the same weights the seed uses.

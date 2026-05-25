@@ -1,10 +1,10 @@
 """Turn raw uploaded bytes into `DocumentPage` rows.
 
-The downstream extraction stage reads from `DocumentPage.page_text`. Anything
-that produces page-level text (PDF, plain text, markdown) is acceptable; the
-existing demo seeder writes markdown to `page_markdown`, we keep the same
-convention so the evidence viewer renders uploaded documents identically to
-seeded ones.
+The downstream extraction stage reads from `DocumentPage.page_text` for FTS /
+evidence and from `DocumentPage.image_path` for the LLM vision call. We render
+each PDF page to a PNG once at parse time so the extraction stage can hand the
+provider stable, layout-preserving images instead of pypdf's variable text
+dumps (which were the dominant source of run-to-run extraction drift).
 """
 from __future__ import annotations
 
@@ -17,15 +17,26 @@ from sqlalchemy import delete
 from sqlalchemy.orm import Session
 
 from app.models.events import DocumentPage, SourceDocument
+from app.services.pipeline.storage import get_storage
 
 logger = logging.getLogger(__name__)
+
+
+# Bumped whenever the parse output (text shape or image rendering) changes in
+# a way that should invalidate the extraction cache on ``extraction_jobs``.
+PARSER_VERSION = "parsing.v2"
+
+# DPI for rendered page PNGs. 200 keeps row labels readable on dense Indian
+# quarterly-result tables while staying under a few MB per page.
+_PAGE_IMAGE_DPI = 200
 
 
 @dataclass
 class ParsedPage:
     page_number: int
-    text: str  # plain text — fed to the LLM
+    text: str  # plain text — also fed to FTS / RAG
     markdown: str  # display copy — rendered in the evidence viewer
+    image_bytes: bytes | None = None  # PNG; persisted to storage by persist_pages
 
 
 def parse_document_bytes(data: bytes, *, content_type: str | None) -> list[ParsedPage]:
@@ -55,13 +66,22 @@ def persist_pages(db: Session, document: SourceDocument, pages: list[ParsedPage]
     )
     db.flush()
     db.expire_all()
+    storage = get_storage()
     for p in pages:
+        image_path: str | None = None
+        if p.image_bytes:
+            stored = storage.put_bytes_at(
+                p.image_bytes,
+                path=f"page_images/{doc_id}/{p.page_number:04d}.png",
+            )
+            image_path = stored.storage_path
         db.add(
             DocumentPage(
                 document_id=doc_id,
                 page_number=p.page_number,
                 page_text=p.text,
                 page_markdown=p.markdown,
+                image_path=image_path,
             )
         )
     document.page_count = len(pages)
@@ -77,23 +97,58 @@ def _looks_like_pdf(data: bytes, content_type: str | None) -> bool:
 
 def _parse_pdf(data: bytes) -> list[ParsedPage]:
     reader = PdfReader(io.BytesIO(data))
-    out: list[ParsedPage] = []
+    text_pages: list[str] = []
     for i, page in enumerate(reader.pages, start=1):
         try:
             text = page.extract_text() or ""
         except Exception as exc:  # pypdf can throw on malformed pages
             logger.warning("pypdf failed on page %s: %s", i, exc)
             text = ""
-        text = text.strip()
+        text_pages.append(text.strip())
+
+    images = _render_pdf_pages_to_png(data, page_count=len(text_pages))
+
+    out: list[ParsedPage] = []
+    for i, text in enumerate(text_pages, start=1):
         out.append(
             ParsedPage(
                 page_number=i,
                 text=text,
-                # `page_markdown` is what the evidence viewer renders. Plain
+                # ``page_markdown`` is what the evidence viewer renders. Plain
                 # PDF text already round-trips reasonably as markdown.
                 markdown=text or "*(no extractable text on this page)*",
+                image_bytes=images[i - 1] if i - 1 < len(images) else None,
             )
         )
+    return out
+
+
+def _render_pdf_pages_to_png(data: bytes, *, page_count: int) -> list[bytes]:
+    """Render every PDF page to a PNG using poppler via ``pdf2image``.
+
+    Returns one PNG byte-string per page in 1-based order. If poppler is not
+    installed on the host the call raises ``pdf2image.exceptions.PDFInfoNotInstalledError``;
+    we log and return an empty list so the pipeline degrades to the text-only
+    path instead of crashing.
+    """
+    if page_count == 0:
+        return []
+    try:
+        from pdf2image import convert_from_bytes  # lazy import — heavy dep
+    except ImportError:
+        logger.warning("pdf2image is not installed; page-image rendering disabled.")
+        return []
+    try:
+        pil_pages = convert_from_bytes(data, dpi=_PAGE_IMAGE_DPI, fmt="png")
+    except Exception as exc:
+        # Most commonly poppler-utils is missing on the host.
+        logger.warning("pdf2image rendering failed (poppler missing?): %s", exc)
+        return []
+    out: list[bytes] = []
+    for pil in pil_pages:
+        buf = io.BytesIO()
+        pil.save(buf, format="PNG", optimize=True)
+        out.append(buf.getvalue())
     return out
 
 
@@ -108,6 +163,6 @@ def _parse_text(data: bytes) -> list[ParsedPage]:
         # downstream stages still get something to chew on.
         chunks = [raw]
     return [
-        ParsedPage(page_number=i, text=c.strip(), markdown=c.strip())
+        ParsedPage(page_number=i, text=c.strip(), markdown=c.strip(), image_bytes=None)
         for i, c in enumerate(chunks, start=1)
     ]

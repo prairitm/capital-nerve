@@ -7,10 +7,16 @@ import { apiBlob } from "@/api/client";
 import type { DocumentDetail } from "@/api/types";
 import { PageLoader } from "@/components/common/Spinner";
 import {
-  evidenceHighlightPatterns,
+  applyPdfPageHighlights,
+  buildEvidenceHighlights,
   formatEvidenceValue,
+  dedupePageEvidenceRows,
+  groupEvidenceBySourceText,
   highlightMatchInText,
   type EvidenceHighlightInput,
+  type EvidenceHighlights,
+  type GroupedPageEvidence,
+  type PageEvidenceRow,
 } from "@/lib/format";
 
 import "react-pdf/dist/Page/AnnotationLayer.css";
@@ -65,23 +71,49 @@ export function EvidenceViewer({ doc }: Props) {
   const [pdfExpanded, setPdfExpanded] = useState(false);
 
   const evidenceCountByPage = useMemo(() => {
-    const counts = new Map<number, number>();
+    const byPage = new Map<number, PageEvidenceRow[]>();
     for (const e of doc.evidence) {
       if (e.page_number == null) continue;
-      counts.set(e.page_number, (counts.get(e.page_number) ?? 0) + 1);
+      const list = byPage.get(e.page_number) ?? [];
+      list.push(e as PageEvidenceRow);
+      byPage.set(e.page_number, list);
+    }
+    const counts = new Map<number, number>();
+    for (const [page, rows] of byPage) {
+      counts.set(page, dedupePageEvidenceRows(rows).length);
     }
     return counts;
   }, [doc.evidence]);
 
+  const pageTextByNumber = useMemo(() => {
+    const m = new Map<number, string>();
+    for (const p of doc.pages) {
+      const text = p.page_markdown || p.page_text || "";
+      if (text.trim()) m.set(p.page_number, text);
+    }
+    return m;
+  }, [doc.pages]);
+
+  /** Same deduped facts as the panel — highlights stay aligned with what you see on the right. */
   const evidenceByPage = useMemo(() => {
-    const byPage = new Map<number, EvidenceHighlightInput[]>();
+    const raw = new Map<number, PageEvidenceRow[]>();
     for (const e of doc.evidence) {
       if (e.page_number == null) continue;
-      const list = byPage.get(e.page_number) ?? [];
-      list.push({ evidence_value: e.evidence_value, source_text: e.source_text });
-      byPage.set(e.page_number, list);
+      const list = raw.get(e.page_number) ?? [];
+      list.push(e as PageEvidenceRow);
+      raw.set(e.page_number, list);
     }
-    return byPage;
+    const deduped = new Map<number, EvidenceHighlightInput[]>();
+    for (const [page, rows] of raw) {
+      deduped.set(
+        page,
+        dedupePageEvidenceRows(rows).map((r) => ({
+          evidence_value: r.evidence_value,
+          source_text: r.source_text,
+        })),
+      );
+    }
+    return deduped;
   }, [doc.evidence]);
 
   const pageNumbers = useMemo(() => {
@@ -92,7 +124,14 @@ export function EvidenceViewer({ doc }: Props) {
     return doc.pages.map((p) => p.page_number);
   }, [showPdf, pdfNumPages, doc.pages]);
 
-  const pageEvidence = doc.evidence.filter((e) => e.page_number === activePage);
+  const pageEvidenceGroups = useMemo(() => {
+    const onPage = doc.evidence.filter((e) => e.page_number === activePage) as PageEvidenceRow[];
+    return groupEvidenceBySourceText(dedupePageEvidenceRows(onPage));
+  }, [doc.evidence, activePage]);
+  const pageEvidenceCount = useMemo(
+    () => pageEvidenceGroups.reduce((n, g) => n + g.items.length, 0),
+    [pageEvidenceGroups],
+  );
   const totalPages = showPdf && pdfNumPages > 0 ? pdfNumPages : doc.page_count ?? doc.pages.length;
 
   useEffect(() => {
@@ -310,6 +349,7 @@ export function EvidenceViewer({ doc }: Props) {
                 activePage={activePage}
                 evidenceCountByPage={evidenceCountByPage}
                 evidenceByPage={evidenceByPage}
+                pageTextByNumber={pageTextByNumber}
                 registerPageRef={registerPageRef}
                 onDocumentLoad={setPdfNumPages}
               />
@@ -356,32 +396,13 @@ export function EvidenceViewer({ doc }: Props) {
           <p className="text-xs text-ink-mute mb-3">
             Evidence rows mapped to this page number in the source filing.
           </p>
-          {pageEvidence.length === 0 ? (
+          {pageEvidenceCount === 0 ? (
             <p className="text-sm text-ink-mute">No extracted evidence highlighted on this page.</p>
           ) : (
             <div className="space-y-2">
-              {pageEvidence.map((e) => {
-                const displayValue = formatEvidenceValue(e.evidence_value);
-                return (
-                <div key={e.card_evidence_id} className="card-2 p-3">
-                  <div className="flex items-center justify-between mb-1">
-                    <div className="text-sm font-medium">{e.evidence_label}</div>
-                    {e.confidence_score !== null && (
-                      <span className="text-[11px] text-ink-soft">{e.confidence_score.toFixed(0)}%</span>
-                    )}
-                  </div>
-                  {displayValue && <div className="text-sm num">{displayValue}</div>}
-                  {e.source_text && (
-                    <p className="mt-2 text-xs text-ink-mute italic border-l-2 border-line pl-3">
-                      "{e.source_text}"
-                    </p>
-                  )}
-                  {e.calculation_text && (
-                    <p className="mt-1.5 text-xs text-ink-mute font-mono">{e.calculation_text}</p>
-                  )}
-                </div>
-              );
-              })}
+              {pageEvidenceGroups.map((group) => (
+                <PageEvidenceGroupCard key={group.groupKey} group={group} />
+              ))}
             </div>
           )}
         </div>
@@ -433,8 +454,10 @@ export function EvidenceViewer({ doc }: Props) {
           pageNumbers={pageNumbers}
           activePage={activePage}
           totalPages={totalPages}
+          pageWidth={pageWidth}
           evidenceCountByPage={evidenceCountByPage}
           evidenceByPage={evidenceByPage}
+          pageTextByNumber={pageTextByNumber}
           onClose={() => setPdfExpanded(false)}
           onSelectPage={selectPage}
           onDocumentLoad={setPdfNumPages}
@@ -454,6 +477,7 @@ function PdfFullscreenOverlay({
   totalPages,
   evidenceCountByPage,
   evidenceByPage,
+  pageTextByNumber,
   onClose,
   onSelectPage,
   onDocumentLoad,
@@ -468,6 +492,7 @@ function PdfFullscreenOverlay({
   pageWidth: number | undefined;
   evidenceCountByPage: Map<number, number>;
   evidenceByPage: Map<number, EvidenceHighlightInput[]>;
+  pageTextByNumber: Map<number, string>;
   onClose: () => void;
   onSelectPage: (pageNumber: number) => void;
   onDocumentLoad: (numPages: number) => void;
@@ -627,6 +652,7 @@ function PdfFullscreenOverlay({
               activePage={activePage}
               evidenceCountByPage={evidenceCountByPage}
               evidenceByPage={evidenceByPage}
+              pageTextByNumber={pageTextByNumber}
               registerPageRef={registerPageRef}
               onDocumentLoad={onDocumentLoad}
             />
@@ -667,6 +693,7 @@ function PdfDocumentStack({
   activePage,
   evidenceCountByPage,
   evidenceByPage,
+  pageTextByNumber,
   registerPageRef,
   onDocumentLoad,
 }: {
@@ -678,6 +705,7 @@ function PdfDocumentStack({
   activePage: number;
   evidenceCountByPage: Map<number, number>;
   evidenceByPage: Map<number, EvidenceHighlightInput[]>;
+  pageTextByNumber: Map<number, string>;
   registerPageRef: (pageNumber: number, el: HTMLElement | null) => void;
   onDocumentLoad: (numPages: number) => void;
 }) {
@@ -736,6 +764,7 @@ function PdfDocumentStack({
                 pageNumber={pageNumber}
                 pageWidth={pageWidth}
                 pageEvidence={evidenceByPage.get(pageNumber) ?? []}
+                pageText={pageTextByNumber.get(pageNumber) ?? null}
               />
             </div>
           </section>
@@ -749,26 +778,44 @@ function PdfPageWithHighlights({
   pageNumber,
   pageWidth,
   pageEvidence,
+  pageText,
 }: {
   pageNumber: number;
   pageWidth: number | undefined;
   pageEvidence: EvidenceHighlightInput[];
+  pageText: string | null;
 }) {
-  const patterns = useMemo(() => evidenceHighlightPatterns(pageEvidence), [pageEvidence]);
-  const customTextRenderer = useCallback(
-    (item: { str: string }) => highlightMatchInText(item.str, patterns),
-    [patterns],
-  );
+  const pageWrapRef = useRef<HTMLDivElement>(null);
+  const highlights = useMemo(() => buildEvidenceHighlights(pageEvidence), [pageEvidence]);
+
+  const paintHighlights = useCallback(() => {
+    const layer = pageWrapRef.current?.querySelector(".react-pdf__Page__textContent");
+    if (layer instanceof HTMLElement) {
+      applyPdfPageHighlights(layer, highlights, pageText);
+    }
+  }, [highlights, pageText]);
+
+  useEffect(() => {
+    paintHighlights();
+    const raf = requestAnimationFrame(() => paintHighlights());
+    const retry = window.setTimeout(() => paintHighlights(), 200);
+    return () => {
+      cancelAnimationFrame(raf);
+      clearTimeout(retry);
+    };
+  }, [paintHighlights, pageNumber]);
 
   return (
-    <Page
-      pageNumber={pageNumber}
-      width={pageWidth}
-      renderTextLayer
-      renderAnnotationLayer
-      className="shadow-card"
-      customTextRenderer={patterns.length > 0 ? customTextRenderer : undefined}
-    />
+    <div ref={pageWrapRef}>
+      <Page
+        pageNumber={pageNumber}
+        width={pageWidth}
+        renderTextLayer
+        renderAnnotationLayer
+        className="shadow-card"
+        onRenderTextLayerSuccess={paintHighlights}
+      />
+    </div>
   );
 }
 
@@ -793,6 +840,9 @@ function TextDocumentStack({
     <>
       {doc.pages.map((p) => {
         const content = p.page_markdown || p.page_text || "";
+        const pageHighlights = buildEvidenceHighlights(
+          evidenceByPage.get(p.page_number) ?? [],
+        );
         const evidenceOnPage = evidenceCountByPage.get(p.page_number) ?? 0;
         return (
           <section
@@ -817,12 +867,7 @@ function TextDocumentStack({
               )}
             </header>
             <div className="px-4 py-5">
-              <DocumentPageContent
-                content={content}
-                highlightPatterns={evidenceHighlightPatterns(
-                  evidenceByPage.get(p.page_number) ?? [],
-                )}
-              />
+              <DocumentPageContent content={content} highlights={pageHighlights} />
             </div>
           </section>
         );
@@ -833,26 +878,27 @@ function TextDocumentStack({
 
 function DocumentPageContent({
   content,
-  highlightPatterns,
+  highlights,
 }: {
   content: string;
-  highlightPatterns: string[];
+  highlights?: EvidenceHighlights;
 }) {
+  const patterns = highlights?.patterns ?? [];
   if (!content.trim()) {
     return <p className="text-sm text-ink-mute italic">No extractable text on this page.</p>;
   }
   if (looksLikeMarkdown(content)) {
     return (
       <article className="max-w-none">
-        <MarkdownLite content={content} highlightPatterns={highlightPatterns} />
+        <MarkdownLite content={content} highlightPatterns={patterns} />
       </article>
     );
   }
-  if (highlightPatterns.length > 0) {
+  if (patterns.length > 0) {
     return (
       <div
         className="text-sm text-ink-mute leading-relaxed whitespace-pre-wrap break-words font-sans"
-        dangerouslySetInnerHTML={{ __html: highlightMatchInText(content, highlightPatterns) }}
+        dangerouslySetInnerHTML={{ __html: highlightMatchInText(content, patterns) }}
       />
     );
   }
@@ -873,6 +919,51 @@ function looksLikeMarkdown(content: string): boolean {
     if (/^\*\*.+\*\*$/.test(t)) return true;
   }
   return false;
+}
+
+function PageEvidenceGroupCard({ group }: { group: GroupedPageEvidence }) {
+  const multi = group.items.length > 1;
+
+  return (
+    <div className="card-2 p-3">
+      <div className={clsx("space-y-2", multi && group.sourceText && "mb-0")}>
+        {group.items.map((e, idx) => {
+          const displayValue = formatEvidenceValue(e.evidence_value);
+          return (
+            <div
+              key={e.card_evidence_id}
+              className={clsx(
+                multi && idx < group.items.length - 1 && "pb-2 border-b border-line/40",
+              )}
+            >
+              <div className="flex items-center justify-between gap-2 mb-0.5">
+                <div className="text-sm font-medium">{e.evidence_label ?? "Evidence"}</div>
+                {e.confidence_score !== null && (
+                  <span className="text-[11px] text-ink-soft shrink-0">
+                    {e.confidence_score.toFixed(0)}%
+                  </span>
+                )}
+              </div>
+              {displayValue && <div className="text-sm num">{displayValue}</div>}
+              {e.calculation_text && (
+                <p className="mt-1.5 text-xs text-ink-mute font-mono">{e.calculation_text}</p>
+              )}
+              {!group.sourceText && e.source_text && (
+                <p className="mt-2 text-xs text-ink-mute italic border-l-2 border-line pl-3">
+                  &ldquo;{e.source_text}&rdquo;
+                </p>
+              )}
+            </div>
+          );
+        })}
+      </div>
+      {group.sourceText && (
+        <p className="mt-2 text-xs text-ink-mute italic border-l-2 border-line pl-3">
+          &ldquo;{group.sourceText}&rdquo;
+        </p>
+      )}
+    </div>
+  );
 }
 
 function Meta({ label, value }: { label: string; value: string }) {

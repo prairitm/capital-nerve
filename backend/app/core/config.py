@@ -42,7 +42,18 @@ class Settings(BaseSettings):
     # the default for local development; production startup refuses to run it
     # (see `assert_production_ready`).
     LLM_PROVIDER: str = "mock"  # one of: "mock", "anthropic", "openai"
-    LLM_MODEL: str = "claude-sonnet-4-5-20250929"
+    LLM_MODEL: str = "claude-sonnet-4-6"
+    # Optional cheap-tier model. When set, the extraction stage routes
+    # non-`FINANCIAL_RESULT` documents (concall transcripts, press releases,
+    # investor presentations, annual reports) through this model instead of
+    # `LLM_MODEL`. Quarterly P&L tables stay on the premium tier where
+    # multi-column "Quarter Ended vs Nine Months Ended" precision matters most.
+    # Leave unset (None / empty string) to route everything through `LLM_MODEL`.
+    LLM_MODEL_FAST: str | None = None
+    # Sampling seed surfaced into OpenAI's `seed` arg and into the request-hash
+    # cache key. Pinning this + temperature=0 makes structured extraction
+    # deterministic across re-runs of the same document.
+    LLM_SEED: int = 42
     ANTHROPIC_API_KEY: str | None = None
     OPENAI_API_KEY: str | None = None
 

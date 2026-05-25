@@ -35,6 +35,11 @@ whether to auto-publish the resulting cards.
   extractors** → normalization → metrics → signals → cards. Skipping or
   reordering breaks evidence traceability — see
   [AGENTS.md](../../../../AGENTS.md) for the rule.
+- The extraction-model decision lives here, not in `extraction.run_extraction`:
+  the runner calls `llm.select_extraction_model(document)` to choose between
+  `LLM_MODEL` and `LLM_MODEL_FAST`, then passes that string both into
+  `get_provider(model=...)` and into `run_extraction(model=...)` so the
+  request-hash cache keys on the actually-used model.
 - The doc-type extractors run conditionally between LLM extraction and
   normalization:
   - [`shareholding`](shareholding.py) when `event.event_type ==

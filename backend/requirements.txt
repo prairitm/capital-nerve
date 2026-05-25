@@ -12,6 +12,9 @@ bcrypt>=4.0,<4.1
 python-multipart>=0.0.12,<1
 email-validator>=2.2,<3
 pypdf>=5.0,<6
+# poppler — system binary for pdf2image (not pip): macOS `brew install poppler`, Linux `apt install poppler-utils`
+pdf2image>=1.17,<2
+Pillow>=10.4,<12
 httpx>=0.27,<0.29
 anthropic>=0.40,<0.50
 openai>=1.55,<2

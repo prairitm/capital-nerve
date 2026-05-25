@@ -45,7 +45,21 @@ Without those vars no users are created automatically; use `POST /auth/signup` o
 
 ## Local development (no Docker)
 
-Postgres is the only external dep. Start it via Docker if you don't have it:
+The ingestion pipeline renders each PDF page to PNG before sending it to the
+LLM (vision input is what makes extraction deterministic for column-aligned
+Indian financial-result tables). That requires `poppler-utils` on the host:
+
+```bash
+# macOS
+brew install poppler
+
+# Debian / Ubuntu
+sudo apt-get install poppler-utils
+```
+
+The Docker image already bundles it.
+
+Postgres is the only other external dep. Start it via Docker if you don't have it:
 
 ```bash
 docker run -d --name capitalnerve-db -p 5432:5432 \

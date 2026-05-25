@@ -454,6 +454,7 @@ export interface DocumentDetail {
   evidence: {
     card_evidence_id: number;
     card_id: number;
+    evidence_type?: string | null;
     evidence_label: string | null;
     evidence_value: string | null;
     source_text: string | null;

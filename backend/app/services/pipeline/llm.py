@@ -7,26 +7,44 @@ are wired in:
 - `MockProvider` — deterministic regex parser. The default; lets the pipeline
   run end-to-end with zero external dependencies. Useful for tests, CI, and
   local development without an API key.
-- `AnthropicProvider` — calls `claude-*` with a structured JSON prompt.
-  Activated by setting `LLM_PROVIDER=anthropic` and `ANTHROPIC_API_KEY` in env.
-- `OpenAIProvider` — calls OpenAI chat completions with the same JSON prompt.
-  Activated by setting `LLM_PROVIDER=openai` and `OPENAI_API_KEY` in env.
+- `AnthropicProvider` — calls `claude-*` with **tool use** so the model is
+  forced to emit a JSON Schema-validated payload. Temperature is pinned to 0
+  on models that still accept it; omitted on Opus 4.7+ (API rejects it).
+  Multimodal: rendered page PNGs are sent alongside the text so the model
+  reads tabular Indian financial-result PDFs from the image, not from pypdf's
+  variable text dump.
+- `OpenAIProvider` — calls OpenAI chat completions with the same JSON schema
+  via `response_format={"type":"json_schema","strict":true}` and
+  `temperature=0` + `seed`. Same multimodal contract as Anthropic.
 
 All providers return the same shape: `ExtractionResult`. Pipeline downstream
 stages cannot tell which provider produced the data.
+
+Determinism contract: given the same (document bytes, prompt version, model,
+seed, parser version) the providers return the same `ExtractionResult`. The
+extraction stage exploits this with a request-hash cache on
+`extraction_jobs.request_hash` so re-extract is a replay, not a re-call.
 """
 from __future__ import annotations
 
+import base64
+import io
 import json
 import logging
 import os
 import re
 from dataclasses import dataclass, field
-from typing import Protocol
+from typing import Any, Protocol
 
 from app.core.config import settings
 
 logger = logging.getLogger(__name__)
+
+
+# Bump whenever the prompt / schema changes in a way that should invalidate the
+# extraction cache on ``extraction_jobs.request_hash``. The extraction stage
+# folds this into the cache key.
+PROMPT_VERSION = "extract.v2"
 
 
 # ---------------------------------------------------------------------------
@@ -59,20 +77,155 @@ class ExtractionResult:
     overall_confidence: float = 90.0
     raw_response: str | None = None
     notes: list[str] = field(default_factory=list)
+    # Stamped onto ``extraction_jobs`` for the request-hash cache.
+    temperature: float | None = None
+    seed: int | None = None
+    provider_used: str | None = None
+
+
+@dataclass
+class ProviderPage:
+    """One page handed to the LLM provider: text + optional rendered image."""
+
+    page_number: int
+    text: str
+    image_bytes: bytes | None = None
 
 
 class LLMProvider(Protocol):
-    """Anything that can turn `DocumentPage` text into `ExtractedLineItem`s."""
+    """Anything that can turn `ProviderPage`s into `ExtractedLineItem`s."""
 
     name: str
 
     def extract_financial_facts(
-        self, *, pages: list[tuple[int, str]], document_title: str
+        self, *, pages: list[ProviderPage], document_title: str
     ) -> ExtractionResult: ...
 
 
 # ---------------------------------------------------------------------------
-# Provider: deterministic mock
+# JSON Schema — the single source of truth for structured-output mode.
+# Both Anthropic tool_use and OpenAI strict json_schema consume this dict so
+# prompt and validation can never drift relative to each other.
+# ---------------------------------------------------------------------------
+
+
+_NORMALIZED_CODES: tuple[str, ...] = (
+    "revenue_from_operations",
+    "other_income",
+    "total_income",
+    "employee_cost",
+    "finance_cost",
+    "depreciation",
+    "other_expenses",
+    "cogs",
+    "exceptional_items",
+    "ebitda",
+    "ebitda_margin",
+    "ebit",
+    "pbt",
+    "tax_expense",
+    "pat",
+    "eps_basic",
+    "eps_diluted",
+    "cfo",
+    "capex_ppe",
+    "capex_intangibles",
+    "dividend_paid",
+    "dividend_per_share",
+    "interest_paid",
+    "borrowings_raised",
+    "trade_receivables",
+    "inventory",
+    "trade_payables",
+    "current_assets",
+    "current_liabilities",
+    "short_term_borrowings",
+    "long_term_borrowings",
+    "lease_liabilities",
+    "cash_and_equivalents",
+    "current_investments",
+    "share_capital",
+    "other_equity",
+    "shareholders_equity",
+    "total_assets",
+    "total_liabilities",
+    "promoter_holding_pct",
+    "promoter_pledge_pct",
+    "fii_holding_pct",
+    "dii_holding_pct",
+    "public_holding_pct",
+    "revenue_guidance_lower",
+    "revenue_guidance_upper",
+    "ebitda_margin_guidance_lower",
+    "ebitda_margin_guidance_upper",
+    "opening_order_book",
+    "closing_order_book",
+    "order_inflow",
+    "executed_orders",
+    "cancelled_orders",
+    "top_customer_orders",
+    "new_order_value",
+    "acquisition_value",
+    "revenue_contribution_pct",
+    "new_capacity",
+    "existing_capacity",
+    "capacity_utilization_pct",
+    "tam_market_size",
+    "tam_market_size_prior",
+    "high_margin_revenue_pct",
+    "top_client_revenue_pct",
+    "region_revenue_pct",
+    "management_target_value",
+    "primary_segment_revenue",
+    "primary_segment_ebit",
+    "share_price_close",
+    "market_cap",
+)
+
+# Units the extraction stage accepts. ``validators.canonicalize_units`` maps
+# common variants ("Cr", "INR cr", "Rs.") onto these canonical forms before
+# the allow-list is enforced.
+_ALLOWED_UNITS: tuple[str, ...] = ("crore", "%", "Rs", "bps", "days", "x")
+
+
+_EXTRACTION_JSON_SCHEMA: dict[str, Any] = {
+    "type": "object",
+    "additionalProperties": False,
+    "required": ["items", "overall_confidence", "notes"],
+    "properties": {
+        "items": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "additionalProperties": False,
+                "required": [
+                    "normalized_code",
+                    "raw_label",
+                    "value",
+                    "unit",
+                    "page_number",
+                    "source_text",
+                    "confidence",
+                ],
+                "properties": {
+                    "normalized_code": {"type": "string", "enum": list(_NORMALIZED_CODES)},
+                    "raw_label": {"type": "string"},
+                    "value": {"type": "number"},
+                    "unit": {"type": "string", "enum": list(_ALLOWED_UNITS)},
+                    "page_number": {"type": "integer", "minimum": 1},
+                    "source_text": {"type": "string"},
+                    "confidence": {"type": "number", "minimum": 0, "maximum": 100},
+                },
+            },
+        },
+        "overall_confidence": {"type": "number", "minimum": 0, "maximum": 100},
+        "notes": {"type": "array", "items": {"type": "string"}},
+    },
+}
+
+
+# ---------------------------------------------------------------------------
+# Regex patterns — shared by MockProvider and quarter_column heuristics.
 # ---------------------------------------------------------------------------
 
 
@@ -84,6 +237,13 @@ _LABEL_PATTERNS: list[tuple[re.Pattern[str], str, str, str]] = [
     # ---------------- P&L ----------------
     (re.compile(r"\bEBITDA\s*margin\b", re.IGNORECASE), "ebitda_margin", "EBITDA Margin", "%"),
     (re.compile(r"\bEBITDA\b", re.IGNORECASE), "ebitda", "EBITDA", "crore"),
+    (re.compile(r"\bEBIT\b", re.IGNORECASE), "ebit", "EBIT", "crore"),
+    (
+        re.compile(r"\bgross\s+revenue\b", re.IGNORECASE),
+        "revenue_from_operations",
+        "Gross Revenue",
+        "crore",
+    ),
     (
         re.compile(r"revenue\s+from\s+operations|revenue\s+from\s+ops", re.IGNORECASE),
         "revenue_from_operations",
@@ -105,6 +265,7 @@ _LABEL_PATTERNS: list[tuple[re.Pattern[str], str, str, str]] = [
         "Depreciation & Amortisation",
         "crore",
     ),
+    (re.compile(r"\bdepreciation\b", re.IGNORECASE), "depreciation", "Depreciation", "crore"),
     (re.compile(r"\bother\s+expenses\b", re.IGNORECASE), "other_expenses", "Other Expenses", "crore"),
     (
         re.compile(r"\bexceptional\s+item(?:s)?\b", re.IGNORECASE),
@@ -238,6 +399,34 @@ _NUMBER_RE = re.compile(
 )
 
 
+def _format_value_for_source_quote(value: float, unit: str) -> str:
+    """Document-style number for evidence quotes (label + this value only)."""
+    u = unit.strip().lower()
+    if u == "%":
+        return f"{value:.1f}%"
+    if u == "bps":
+        return f"{value:+.0f} bps"
+    if u in ("rs", "inr"):
+        if abs(value - round(value)) < 1e-6:
+            return f"Rs {int(round(value)):,}"
+        return f"Rs {value:,.2f}".rstrip("0").rstrip(".")
+    if abs(value - round(value)) < 1e-6:
+        return f"{int(round(value)):,}"
+    text = f"{value:.4f}".rstrip("0").rstrip(".")
+    whole, _, frac = text.partition(".")
+    return f"{int(whole):,}.{frac}" if frac else f"{int(whole):,}"
+
+
+def _source_quote(raw_label: str, value: float, unit: str) -> str:
+    """Single-value excerpt for evidence — not a full multi-column table row."""
+    return f"{raw_label} {_format_value_for_source_quote(value, unit)}"
+
+
+# ---------------------------------------------------------------------------
+# Provider: deterministic mock
+# ---------------------------------------------------------------------------
+
+
 class MockProvider:
     """Best-effort regex-based extractor.
 
@@ -249,12 +438,13 @@ class MockProvider:
     name = "mock-regex-v1"
 
     def extract_financial_facts(
-        self, *, pages: list[tuple[int, str]], document_title: str
+        self, *, pages: list[ProviderPage], document_title: str
     ) -> ExtractionResult:
+        del document_title
         seen: dict[str, ExtractedLineItem] = {}
         notes: list[str] = []
-        for page_no, text in pages:
-            for line in text.splitlines():
+        for page in pages:
+            for line in (page.text or "").splitlines():
                 line_clean = line.strip()
                 if not line_clean or len(line_clean) > 240:
                     continue
@@ -264,9 +454,6 @@ class MockProvider:
                     value = _extract_number(line_clean, after=pattern)
                     if value is None:
                         continue
-                    # Prefer the first hit on the earliest page — quarterly
-                    # results typically print the headline number once at the
-                    # top of the P&L.
                     if code in seen:
                         continue
                     seen[code] = ExtractedLineItem(
@@ -274,8 +461,8 @@ class MockProvider:
                         raw_label=raw_label,
                         value=value,
                         unit=unit,
-                        page_number=page_no,
-                        source_text=line_clean,
+                        page_number=page.page_number,
+                        source_text=_source_quote(raw_label, value, unit),
                         confidence=78.0,  # honest about being a regex
                     )
                     break
@@ -283,11 +470,18 @@ class MockProvider:
         if not seen:
             notes.append("Mock extractor found no recognisable financial line items.")
 
+        items = _finalize_quarter_items(
+            list(seen.values()),
+            pages=[(p.page_number, p.text or "") for p in pages],
+        )
         return ExtractionResult(
-            items=list(seen.values()),
+            items=items,
             model_name=self.name,
-            overall_confidence=78.0 if seen else 40.0,
+            overall_confidence=78.0 if items else 40.0,
             notes=notes,
+            temperature=0.0,
+            seed=None,
+            provider_used="mock",
         )
 
 
@@ -297,8 +491,6 @@ def _extract_number(line: str, *, after: re.Pattern[str]) -> float | None:
     if not match:
         return None
     tail = line[match.end():]
-    # Walk through every number candidate so we can skip year-like junk
-    # ("2025", "Q4 FY26") that follows the label before the real value.
     for m in _NUMBER_RE.finditer(tail):
         raw = (m.group("num") or "").replace(",", "")
         if not raw:
@@ -307,10 +499,8 @@ def _extract_number(line: str, *, after: re.Pattern[str]) -> float | None:
             val = float(raw)
         except ValueError:
             continue
-        # Treat (123) as negative — accountants love brackets.
         if "(" in m.group(0) and ")" in m.group(0):
             val = -abs(val)
-        # Drop calendar years which often trail labels in PDF dumps.
         if 1900 <= val <= 2099 and val == int(val):
             continue
         return val
@@ -318,29 +508,20 @@ def _extract_number(line: str, *, after: re.Pattern[str]) -> float | None:
 
 
 # ---------------------------------------------------------------------------
-# Shared LLM prompt + helpers (Anthropic / OpenAI)
+# Shared LLM prompt + multimodal helpers (Anthropic / OpenAI)
 # ---------------------------------------------------------------------------
 
 
 _EXTRACTION_SYSTEM_PROMPT = """You are CapitalNerve's financial document extractor.
 
-Return ONLY valid JSON matching this schema (no prose, no markdown fences):
+You will receive the source document as a sequence of page images (rendered at
+200 DPI) accompanied by the OCR text of each page. Trust the IMAGE for numeric
+values when text and image disagree — the text comes from pypdf and is known
+to mis-order columns on stacked-table layouts.
 
-{
-  "items": [
-    {
-      "normalized_code": "<one of: revenue_from_operations, other_income, total_income, employee_cost, finance_cost, depreciation, other_expenses, cogs, exceptional_items, ebitda, ebitda_margin, ebit, pbt, tax_expense, pat, eps_basic, eps_diluted, cfo, capex_ppe, capex_intangibles, dividend_paid, dividend_per_share, interest_paid, borrowings_raised, trade_receivables, inventory, trade_payables, current_assets, current_liabilities, short_term_borrowings, long_term_borrowings, lease_liabilities, cash_and_equivalents, current_investments, share_capital, other_equity, shareholders_equity, total_assets, total_liabilities, promoter_holding_pct, promoter_pledge_pct, fii_holding_pct, dii_holding_pct, public_holding_pct, revenue_guidance_lower, revenue_guidance_upper, ebitda_margin_guidance_lower, ebitda_margin_guidance_upper, opening_order_book, closing_order_book, order_inflow, executed_orders, cancelled_orders, top_customer_orders, new_order_value, acquisition_value, revenue_contribution_pct, new_capacity, existing_capacity, capacity_utilization_pct, tam_market_size, tam_market_size_prior, high_margin_revenue_pct, top_client_revenue_pct, region_revenue_pct, management_target_value, primary_segment_revenue, primary_segment_ebit, share_price_close, market_cap>",
-      "raw_label": "<the exact label as printed in the document>",
-      "value": <number>,
-      "unit": "<crore | % | Rs | bps | days | x>",
-      "page_number": <integer page index, 1-based>,
-      "source_text": "<the source line, verbatim>",
-      "confidence": <0..100>
-    }
-  ],
-  "overall_confidence": <0..100>,
-  "notes": ["<optional caveats>"]
-}
+Emit the result by calling the `emit_financial_facts` tool (Anthropic) /
+returning the structured JSON object (OpenAI). The schema is enforced
+server-side; only the values you fill in are up to you.
 
 Rules:
 - Only include line items present in the document. Skip anything you're unsure of.
@@ -348,123 +529,311 @@ Rules:
 - For percentages (margins, holdings, guidance ranges) use unit "%".
 - For EPS in rupees, use unit "Rs".
 - Shareholding pattern values (promoter / FII / DII / public / pledge) are percentages (0..100).
-- Guidance fields: emit `revenue_guidance_lower`/`upper` (and `ebitda_margin_guidance_lower`/`upper`) only when management gives an explicit range; if it's a point estimate, set lower = upper = the point.
+- Guidance fields: emit `revenue_guidance_lower`/`upper` (and `ebitda_margin_guidance_lower`/`upper`)
+  only when management gives an explicit range; if it's a point estimate, set lower = upper = the point.
 - Order-book fields are in INR crore unless the document quotes a different unit.
 - Negative values use a leading minus, not parentheses.
+- `source_text` is `"<raw_label> <formatted_value>"` — never the full multi-column table row.
+- Indian quarterly / nine-months results: use ONLY the **Quarter Ended** column for the
+  latest quarter (first period column under "Quarter Ended"). NEVER use Nine Months Ended,
+  Year Ended, YTD, half-year, or annual cumulative figures.
+- When a row shows multiple numbers, take the current quarter ended value only — not prior
+  quarter, not prior-year quarter, not nine-month cumulative.
 """
 
 
-def _build_extraction_user_message(
-    *, pages: list[tuple[int, str]], document_title: str
-) -> str:
-    joined = "\n\n".join(f"--- PAGE {p} ---\n{t}" for p, t in pages[:30])
-    return (
-        f"Document title: {document_title}\n"
-        f"Total pages: {len(pages)}\n\n"
-        f"Extract the financial line items.\n\n{joined}"
-    )
+# Max pages we hand to the model. Anthropic allows >20 images only when each is
+# ≤2000px and the whole Messages body stays under 32 MB; 20 pages of resized
+# JPEGs plus OCR text fits Indian quarterly-result PDFs without 413s.
+_MAX_PAGES_TO_SEND = 20
+
+# Anthropic: >20 images per request → 2000px max dimension; Messages API → 32 MB body.
+_MAX_LLM_IMAGE_DIMENSION = 2000
+_LLM_JPEG_QUALITY = 85
+
+# Cap OCR text per page so transcript PDFs do not blow the request budget.
+_MAX_PAGE_TEXT_CHARS = 12_000
 
 
-def _parse_llm_json_response(raw: str) -> tuple[list[ExtractedLineItem], float, list[str]]:
-    """Defensive parser — strips markdown fences and tolerates trailing prose."""
-    cleaned = raw.strip()
-    if cleaned.startswith("```"):
-        cleaned = re.sub(r"^```(?:json)?\s*", "", cleaned)
-        cleaned = re.sub(r"\s*```$", "", cleaned)
-    m = re.search(r"\{.*\}", cleaned, re.DOTALL)
-    if not m:
-        return [], 0.0, ["LLM returned no JSON object."]
-    try:
-        data = json.loads(m.group(0))
-    except json.JSONDecodeError as exc:
-        return [], 0.0, [f"LLM JSON parse failed: {exc}"]
+def _fit_page_image_for_llm(image_bytes: bytes) -> tuple[bytes, str]:
+    """Downscale and JPEG-compress a page PNG for the provider wire format."""
+    from PIL import Image
+
+    img = Image.open(io.BytesIO(image_bytes))
+    if img.mode != "RGB":
+        img = img.convert("RGB")
+    w, h = img.size
+    longest = max(w, h)
+    if longest > _MAX_LLM_IMAGE_DIMENSION:
+        scale = _MAX_LLM_IMAGE_DIMENSION / longest
+        img = img.resize((int(w * scale), int(h * scale)), Image.Resampling.LANCZOS)
+    buf = io.BytesIO()
+    img.save(buf, format="JPEG", quality=_LLM_JPEG_QUALITY, optimize=True)
+    return buf.getvalue(), "image/jpeg"
+
+
+def _b64_image(image_bytes: bytes) -> str:
+    return base64.b64encode(image_bytes).decode("ascii")
+
+
+def _build_anthropic_content_blocks(
+    *, pages: list[ProviderPage], document_title: str
+) -> list[dict[str, Any]]:
+    """Multimodal Anthropic message content: header text + per-page image+text blocks."""
+    blocks: list[dict[str, Any]] = [
+        {
+            "type": "text",
+            "text": (
+                f"Document title: {document_title}\n"
+                f"Total pages: {len(pages)} (sending first {min(len(pages), _MAX_PAGES_TO_SEND)})\n\n"
+                "Extract the financial line items by calling the emit_financial_facts tool."
+            ),
+        }
+    ]
+    for page in pages[:_MAX_PAGES_TO_SEND]:
+        if page.image_bytes:
+            jpeg_bytes, media_type = _fit_page_image_for_llm(page.image_bytes)
+            blocks.append(
+                {
+                    "type": "image",
+                    "source": {
+                        "type": "base64",
+                        "media_type": media_type,
+                        "data": _b64_image(jpeg_bytes),
+                    },
+                }
+            )
+        ocr = page.text or "(no text)"
+        if len(ocr) > _MAX_PAGE_TEXT_CHARS:
+            ocr = ocr[:_MAX_PAGE_TEXT_CHARS] + "\n…(truncated)"
+        blocks.append(
+            {
+                "type": "text",
+                "text": f"--- PAGE {page.page_number} OCR ---\n{ocr}",
+            }
+        )
+    return blocks
+
+
+def _build_openai_content_parts(
+    *, pages: list[ProviderPage], document_title: str
+) -> list[dict[str, Any]]:
+    """Multimodal OpenAI user-message parts mirroring the Anthropic layout."""
+    parts: list[dict[str, Any]] = [
+        {
+            "type": "text",
+            "text": (
+                f"Document title: {document_title}\n"
+                f"Total pages: {len(pages)} (sending first {min(len(pages), _MAX_PAGES_TO_SEND)})\n\n"
+                "Extract the financial line items as JSON matching the financial_facts schema."
+            ),
+        }
+    ]
+    for page in pages[:_MAX_PAGES_TO_SEND]:
+        if page.image_bytes:
+            jpeg_bytes, media_type = _fit_page_image_for_llm(page.image_bytes)
+            parts.append(
+                {
+                    "type": "image_url",
+                    "image_url": {
+                        "url": f"data:{media_type};base64,{_b64_image(jpeg_bytes)}",
+                        "detail": "high",
+                    },
+                }
+            )
+        ocr = page.text or "(no text)"
+        if len(ocr) > _MAX_PAGE_TEXT_CHARS:
+            ocr = ocr[:_MAX_PAGE_TEXT_CHARS] + "\n…(truncated)"
+        parts.append(
+            {
+                "type": "text",
+                "text": f"--- PAGE {page.page_number} OCR ---\n{ocr}",
+            }
+        )
+    return parts
+
+
+# ---------------------------------------------------------------------------
+# Response parsing (works for tool_use payloads and json_schema responses)
+# ---------------------------------------------------------------------------
+
+
+def _items_from_payload(
+    payload: dict[str, Any]
+) -> tuple[list[ExtractedLineItem], float, list[str]]:
+    """Turn a schema-validated dict into typed `ExtractedLineItem`s."""
     items: list[ExtractedLineItem] = []
-    for entry in data.get("items", []):
+    for entry in payload.get("items", []):
         try:
+            raw_label = str(entry.get("raw_label", entry["normalized_code"]))
+            value = float(entry["value"])
+            unit = str(entry.get("unit", "crore"))
             items.append(
                 ExtractedLineItem(
                     normalized_code=str(entry["normalized_code"]).strip(),
-                    raw_label=str(entry.get("raw_label", entry["normalized_code"])),
-                    value=float(entry["value"]),
-                    unit=str(entry.get("unit", "crore")),
+                    raw_label=raw_label,
+                    value=value,
+                    unit=unit,
                     page_number=int(entry["page_number"]) if entry.get("page_number") else None,
-                    source_text=entry.get("source_text"),
+                    source_text=_source_quote(raw_label, value, unit),
                     confidence=float(entry.get("confidence", 85.0)),
                 )
             )
         except (KeyError, TypeError, ValueError) as exc:
             logger.warning("Skipping malformed item from LLM: %s (%s)", entry, exc)
-    overall = float(data.get("overall_confidence", 85.0))
-    notes = list(data.get("notes", []))
+    overall = float(payload.get("overall_confidence", 85.0))
+    notes = list(payload.get("notes", []))
     return items, overall, notes
 
 
-def _fallback_to_mock(
+def parse_extraction_payload(
+    raw_response: str,
+) -> tuple[list[ExtractedLineItem], float, list[str]]:
+    """Public entry point used by the extraction cache replay path."""
+    try:
+        payload = json.loads(raw_response)
+    except json.JSONDecodeError as exc:
+        return [], 0.0, [f"Cached LLM payload is not valid JSON: {exc}"]
+    return _items_from_payload(payload)
+
+
+def _finalize_quarter_items(
+    items: list[ExtractedLineItem],
     *,
     pages: list[tuple[int, str]],
-    document_title: str,
-    provider_label: str,
-    exc: Exception,
-) -> ExtractionResult:
-    """Fall back to the regex extractor when an upstream LLM call fails.
+) -> list[ExtractedLineItem]:
+    from app.services.pipeline.quarter_column import enforce_quarter_ended_only
 
-    In production we re-raise instead: a silent fallback would hide upstream
-    outages and ship low-confidence cards that look identical to real
-    extractions. The pipeline runner catches the exception and surfaces the
-    job in the Review Queue.
+    return enforce_quarter_ended_only(items, pages=pages)
+
+
+# ---------------------------------------------------------------------------
+# Provider: Anthropic Claude (tool use)
+# ---------------------------------------------------------------------------
+
+
+_ANTHROPIC_TOOL = {
+    "name": "emit_financial_facts",
+    "description": (
+        "Emit every financial line item that appears in the document, scoped to "
+        "the latest Quarter Ended column. Call this tool exactly once."
+    ),
+    "input_schema": _EXTRACTION_JSON_SCHEMA,
+}
+
+
+def _anthropic_omit_sampling_params(model: str) -> bool:
+    """True when the Messages API rejects ``temperature`` (e.g. Opus 4.7)."""
+    return "opus-4-7" in model.lower()
+
+
+def _anthropic_sampling_temperature(model: str) -> float | None:
+    """Requested temperature for bookkeeping; ``None`` when omitted from the API."""
+    return None if _anthropic_omit_sampling_params(model) else 0.0
+
+
+# Anthropic prompt caching. The system prompt + tool schema are byte-identical
+# on every extraction call, so marking them as ``ephemeral`` cache breakpoints
+# turns the input cost on those blocks from $3/MTok (Sonnet 4.6 input) down to
+# $0.30/MTok on cache hits. Cache writes cost 1.25× input — break-even is
+# reached after ~2 calls within the 5-minute TTL.
+_CACHE_BREAKPOINT: dict[str, str] = {"type": "ephemeral"}
+
+
+def _cached_anthropic_system(prompt: str) -> list[dict[str, Any]]:
+    """System prompt as a single cached text block."""
+    return [{"type": "text", "text": prompt, "cache_control": _CACHE_BREAKPOINT}]
+
+
+def _cached_anthropic_tools(tool: dict[str, Any]) -> list[dict[str, Any]]:
+    """Tool list with the cache breakpoint on the last tool entry."""
+    return [{**tool, "cache_control": _CACHE_BREAKPOINT}]
+
+
+# Document types that prefer the cheap-tier model when ``LLM_MODEL_FAST`` is
+# set. ``FINANCIAL_RESULT`` always uses ``LLM_MODEL`` so dense Quarter-Ended
+# extraction stays on the premium tier.
+_FAST_LANE_DOCUMENT_TYPES: frozenset[str] = frozenset(
+    {
+        "CONCALL_TRANSCRIPT",
+        "INVESTOR_PRESENTATION",
+        "PRESS_RELEASE",
+        "ANNUAL_REPORT",
+    }
+)
+
+
+def select_extraction_model(document: Any) -> str:
+    """Pick the active LLM_MODEL for ``document.document_type``.
+
+    Returns ``settings.LLM_MODEL_FAST`` for transcript / presentation /
+    press-release / annual-report documents when that env var is set,
+    otherwise ``settings.LLM_MODEL``.
     """
-    if settings.is_production:
-        raise exc
-    logger.exception("%s call failed; falling back to mock", provider_label)
-    mock = MockProvider().extract_financial_facts(pages=pages, document_title=document_title)
-    mock.notes.append(f"{provider_label} call failed: {exc}; used mock extractor instead.")
-    return mock
-
-
-# ---------------------------------------------------------------------------
-# Provider: Anthropic Claude (structured output)
-# ---------------------------------------------------------------------------
+    fast_model = (settings.LLM_MODEL_FAST or "").strip()
+    if not fast_model:
+        return settings.LLM_MODEL
+    doc_type = getattr(document, "document_type", None)
+    type_value = getattr(doc_type, "value", doc_type)
+    if type_value in _FAST_LANE_DOCUMENT_TYPES:
+        return fast_model
+    return settings.LLM_MODEL
 
 
 class AnthropicProvider:
-    """Calls Claude with the system prompt above and parses JSON back."""
+    """Calls Claude with structured tool use and parses the tool-call payload."""
 
     name: str
 
-    def __init__(self, model: str, api_key: str) -> None:
+    def __init__(self, model: str, api_key: str, *, seed: int | None = None) -> None:
         # Imported lazily so installs that never set ANTHROPIC_API_KEY don't
         # pay the import cost.
         from anthropic import Anthropic  # type: ignore
 
         self._client = Anthropic(api_key=api_key)
         self._model = model
+        self._seed = seed
         self.name = f"anthropic:{model}"
 
     def extract_financial_facts(
-        self, *, pages: list[tuple[int, str]], document_title: str
+        self, *, pages: list[ProviderPage], document_title: str
     ) -> ExtractionResult:
-        user_message = _build_extraction_user_message(
+        content = _build_anthropic_content_blocks(
             pages=pages, document_title=document_title
         )
 
-        try:
-            resp = self._client.messages.create(
-                model=self._model,
-                max_tokens=4096,
-                system=_EXTRACTION_SYSTEM_PROMPT,
-                messages=[{"role": "user", "content": user_message}],
-            )
-        except Exception as exc:
-            return _fallback_to_mock(
-                pages=pages,
-                document_title=document_title,
-                provider_label="Anthropic",
-                exc=exc,
+        create_kwargs: dict[str, Any] = {
+            "model": self._model,
+            "max_tokens": 4096,
+            "system": _cached_anthropic_system(_EXTRACTION_SYSTEM_PROMPT),
+            "tools": _cached_anthropic_tools(_ANTHROPIC_TOOL),
+            "tool_choice": {"type": "tool", "name": _ANTHROPIC_TOOL["name"]},
+            "messages": [{"role": "user", "content": content}],
+        }
+        if not _anthropic_omit_sampling_params(self._model):
+            create_kwargs["temperature"] = 0
+        resp = self._client.messages.create(**create_kwargs)
+
+        tool_payload: dict[str, Any] | None = None
+        for block in resp.content:
+            if getattr(block, "type", None) == "tool_use" and block.name == _ANTHROPIC_TOOL["name"]:
+                tool_payload = dict(block.input or {})
+                break
+
+        if tool_payload is None:
+            # Model failed to call the tool. Surface as a hard error so the
+            # extraction job lands in the Review Queue instead of pretending
+            # to succeed with zero items.
+            raise RuntimeError(
+                "Anthropic response did not include the expected tool_use call "
+                f"({_ANTHROPIC_TOOL['name']})."
             )
 
-        text_chunks = [b.text for b in resp.content if getattr(b, "type", None) == "text"]
-        raw = "".join(text_chunks).strip()
-        items, overall, notes = _parse_llm_json_response(raw)
+        raw = json.dumps(tool_payload, sort_keys=True)
+        items, overall, notes = _items_from_payload(tool_payload)
+        items = _finalize_quarter_items(
+            items, pages=[(p.page_number, p.text or "") for p in pages]
+        )
 
         return ExtractionResult(
             items=items,
@@ -474,52 +843,75 @@ class AnthropicProvider:
             overall_confidence=overall,
             raw_response=raw,
             notes=notes,
+            temperature=_anthropic_sampling_temperature(self._model),
+            seed=self._seed,
+            provider_used="anthropic",
         )
 
 
 # ---------------------------------------------------------------------------
-# Provider: OpenAI (structured output)
+# Provider: OpenAI (structured output via json_schema strict)
 # ---------------------------------------------------------------------------
 
 
 class OpenAIProvider:
-    """Calls OpenAI chat completions with the shared extraction prompt."""
+    """Calls OpenAI chat completions with strict JSON-schema response format."""
 
     name: str
 
-    def __init__(self, model: str, api_key: str) -> None:
+    def __init__(self, model: str, api_key: str, *, seed: int | None = None) -> None:
         from openai import OpenAI  # type: ignore
 
         self._client = OpenAI(api_key=api_key)
         self._model = model
+        self._seed = seed
         self.name = f"openai:{model}"
 
     def extract_financial_facts(
-        self, *, pages: list[tuple[int, str]], document_title: str
+        self, *, pages: list[ProviderPage], document_title: str
     ) -> ExtractionResult:
-        user_message = _build_extraction_user_message(
+        user_parts = _build_openai_content_parts(
             pages=pages, document_title=document_title
         )
 
-        try:
-            resp = self._client.chat.completions.create(
-                model=self._model,
-                max_tokens=4096,
-                messages=[
-                    {"role": "system", "content": _EXTRACTION_SYSTEM_PROMPT},
-                    {"role": "user", "content": user_message},
-                ],
-            )
-        except Exception as exc:
-            return _fallback_to_mock(
-                pages=pages,
-                document_title=document_title,
-                provider_label="OpenAI",
-                exc=exc,
-            )
+        request_kwargs: dict[str, Any] = {
+            "model": self._model,
+            "max_tokens": 4096,
+            "temperature": 0,
+            "messages": [
+                {"role": "system", "content": _EXTRACTION_SYSTEM_PROMPT},
+                {"role": "user", "content": user_parts},
+            ],
+            "response_format": {
+                "type": "json_schema",
+                "json_schema": {
+                    "name": "financial_facts",
+                    "strict": True,
+                    "schema": _EXTRACTION_JSON_SCHEMA,
+                },
+            },
+        }
+        if self._seed is not None:
+            request_kwargs["seed"] = self._seed
+
+        resp = self._client.chat.completions.create(**request_kwargs)
 
         raw = (resp.choices[0].message.content or "").strip()
-        items, overall, notes = _parse_llm_json_response(raw)
+        if not raw:
+            raise RuntimeError("OpenAI response message is empty.")
+        try:
+            payload = json.loads(raw)
+        except json.JSONDecodeError as exc:
+            raise RuntimeError(f"OpenAI returned non-JSON payload: {exc}") from exc
+
+        # Re-serialize so the cached `raw_response` is canonical (key order
+        # independent of the provider's choice) — keeps the request-hash cache
+        # stable across model versions that re-order top-level keys.
+        canonical_raw = json.dumps(payload, sort_keys=True)
+        items, overall, notes = _items_from_payload(payload)
+        items = _finalize_quarter_items(
+            items, pages=[(p.page_number, p.text or "") for p in pages]
+        )
         usage = resp.usage
 
         return ExtractionResult(
@@ -528,8 +920,11 @@ class OpenAIProvider:
             input_tokens=getattr(usage, "prompt_tokens", None) if usage else None,
             output_tokens=getattr(usage, "completion_tokens", None) if usage else None,
             overall_confidence=overall,
-            raw_response=raw,
+            raw_response=canonical_raw,
             notes=notes,
+            temperature=0.0,
+            seed=self._seed,
+            provider_used="openai",
         )
 
 
@@ -679,12 +1074,15 @@ def _mock_rag_answer(question: str, chunks: list[RAGChunk]) -> RAGAnswerResult:
 
 
 def _anthropic_rag_raw(provider: AnthropicProvider, user_message: str) -> str:
-    resp = provider._client.messages.create(
-        model=provider._model,
-        max_tokens=2048,
-        system=_RAG_SYSTEM_PROMPT,
-        messages=[{"role": "user", "content": user_message}],
-    )
+    create_kwargs: dict[str, Any] = {
+        "model": provider._model,
+        "max_tokens": 2048,
+        "system": _cached_anthropic_system(_RAG_SYSTEM_PROMPT),
+        "messages": [{"role": "user", "content": user_message}],
+    }
+    if not _anthropic_omit_sampling_params(provider._model):
+        create_kwargs["temperature"] = 0
+    resp = provider._client.messages.create(**create_kwargs)
     text_chunks = [b.text for b in resp.content if getattr(b, "type", None) == "text"]
     return "".join(text_chunks).strip()
 
@@ -693,6 +1091,8 @@ def _openai_rag_raw(provider: OpenAIProvider, user_message: str) -> str:
     resp = provider._client.chat.completions.create(
         model=provider._model,
         max_tokens=2048,
+        temperature=0,
+        seed=provider._seed,
         messages=[
             {"role": "system", "content": _RAG_SYSTEM_PROMPT},
             {"role": "user", "content": user_message},
@@ -706,8 +1106,15 @@ def _openai_rag_raw(provider: OpenAIProvider, user_message: str) -> str:
 # ---------------------------------------------------------------------------
 
 
-def get_provider() -> LLMProvider:
+def get_provider(*, model: str | None = None) -> LLMProvider:
+    """Build an `LLMProvider` for the configured `LLM_PROVIDER`.
+
+    Pass ``model`` to override ``settings.LLM_MODEL`` for a single call (used
+    by the per-document-type fast lane in `extraction.run_extraction`).
+    """
     provider_name = (settings.LLM_PROVIDER or "mock").lower()
+    seed = int(getattr(settings, "LLM_SEED", 42))
+    chosen_model = model or settings.LLM_MODEL
     if provider_name == "anthropic":
         api_key = settings.ANTHROPIC_API_KEY or os.environ.get("ANTHROPIC_API_KEY")
         if not api_key:
@@ -719,7 +1126,7 @@ def get_provider() -> LLMProvider:
                 "LLM_PROVIDER=anthropic but ANTHROPIC_API_KEY is not set; using mock extractor."
             )
             return MockProvider()
-        return AnthropicProvider(model=settings.LLM_MODEL, api_key=api_key)
+        return AnthropicProvider(model=chosen_model, api_key=api_key, seed=seed)
     if provider_name == "openai":
         api_key = settings.OPENAI_API_KEY or os.environ.get("OPENAI_API_KEY")
         if not api_key:
@@ -731,7 +1138,7 @@ def get_provider() -> LLMProvider:
                 "LLM_PROVIDER=openai but OPENAI_API_KEY is not set; using mock extractor."
             )
             return MockProvider()
-        return OpenAIProvider(model=settings.LLM_MODEL, api_key=api_key)
+        return OpenAIProvider(model=chosen_model, api_key=api_key, seed=seed)
     if settings.is_production:
         raise RuntimeError(
             "APP_ENV=production cannot use LLM_PROVIDER=mock. "

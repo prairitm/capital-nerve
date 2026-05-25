@@ -52,6 +52,23 @@ class LocalStorage:
             size_bytes=len(data),
         )
 
+    def put_bytes_at(self, data: bytes, *, path: str) -> StoredFile:
+        """Write ``data`` to an explicit ``path`` relative to the storage root.
+
+        Unlike :meth:`put_bytes` (which is content-addressed and dedupes by
+        sha256), this is path-addressed: derived artefacts like rendered page
+        images need a predictable layout (``page_images/<doc>/<page>.png``)
+        so the extraction stage can look them up by ``DocumentPage.image_path``.
+        """
+        target = self._resolve(path)
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_bytes(data)
+        return StoredFile(
+            storage_path=str(target.relative_to(self._root)),
+            file_hash=hashlib.sha256(data).hexdigest(),
+            size_bytes=len(data),
+        )
+
     def open_bytes(self, storage_path: str) -> bytes:
         target = self._resolve(storage_path)
         return target.read_bytes()

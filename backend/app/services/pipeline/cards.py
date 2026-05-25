@@ -152,9 +152,12 @@ def run_cards(
             )
 
         # Evidence rows 2+: every extracted value that fed the metric inputs.
+        inputs_decl = list(md.inputs_json or []) if md else []
         if cm and isinstance(cm.input_values, dict):
             for input_key in cm.input_values.keys():
-                ev = _match_extracted(extracted_by_code, input_key)
+                ev = _match_extracted_for_metric_input(
+                    extracted_by_code, input_key, inputs_decl
+                )
                 if not ev:
                     continue
                 db.add(
@@ -376,6 +379,35 @@ def _extracted_by_code(db: Session, document_id: int) -> dict[str, ExtractedValu
     return {ev.normalized_label or ev.raw_label: ev for ev in rows}
 
 
+def _match_extracted_for_metric_input(
+    by_code: dict[str, ExtractedValue],
+    input_key: str,
+    inputs_decl: list,
+) -> ExtractedValue | None:
+    """Resolve a formula variable (e.g. ``s``, ``now``) to an ``ExtractedValue``.
+
+    ``CalculatedMetric.input_values`` keys are *formula names* from
+    ``MetricDefinition.inputs_json``, not normalized fact codes. Concall tone
+    metrics use ``{"name": "s", "code": "concall_demand_score", ...}`` — without
+    this lookup, source-quote evidence never gets ``page_number`` / ``source_text``.
+    """
+    if not input_key:
+        return None
+    for decl in inputs_decl:
+        if not isinstance(decl, dict) or decl.get("name") != input_key:
+            continue
+        scope = (decl.get("scope") or "CURRENT").upper()
+        if scope != "CURRENT":
+            return None
+        if (decl.get("kind") or "fact").lower() != "fact":
+            return None
+        code = decl.get("code")
+        if code:
+            return by_code.get(code)
+        return None
+    return _match_extracted(by_code, input_key)
+
+
 def _match_extracted(by_code: dict[str, ExtractedValue], key: str) -> ExtractedValue | None:
     """Best-effort match between a metric input name and an extracted line item.
 
@@ -388,16 +420,16 @@ def _match_extracted(by_code: dict[str, ExtractedValue], key: str) -> ExtractedV
     if not key:
         return None
     aliases = _BY_INPUT_NAME
-    code = aliases.get(key)
-    if code is None:
-        # Unrecognized name — try the raw key (handles new metrics whose input
-        # names already match a normalized_code, e.g. `cogs`, `inventory`).
-        if any(s in key for s in _PRIOR_PERIOD_SUFFIXES):
+    if key in aliases:
+        code = aliases[key]
+        if code is None:
             return None
-        code = key
-    if not code:
+        return by_code.get(code)
+    # Unrecognized name — try the raw key (handles new metrics whose input
+    # names already match a normalized_code, e.g. `cogs`, `inventory`).
+    if any(s in key for s in _PRIOR_PERIOD_SUFFIXES):
         return None
-    return by_code.get(code)
+    return by_code.get(key)
 
 
 _PRIOR_PERIOD_SUFFIXES: tuple[str, ...] = ("_py", "_pq", "_lyq", "_ttm")

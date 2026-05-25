@@ -65,32 +65,149 @@ export type EvidenceHighlightInput = {
   source_text: string | null;
 };
 
-/** Search strings for highlighting evidence values in PDF text layers and text fallbacks. */
-export function evidenceHighlightPatterns(evidence: EvidenceHighlightInput[]): string[] {
-  const patterns = new Set<string>();
+/** One row in the document evidence panel (subset of `DocumentDetail.evidence`). */
+export type PageEvidenceRow = {
+  card_evidence_id: number;
+  evidence_type?: string | null;
+  evidence_label: string | null;
+  evidence_value: string | null;
+  source_text: string | null;
+  calculation_text: string | null;
+  confidence_score: number | null;
+};
 
-  const add = (raw: string | null | undefined) => {
-    if (!raw) return;
-    const trimmed = raw.trim();
-    if (trimmed.length < 2) return;
-    patterns.add(trimmed);
-    const noComma = trimmed.replace(/,/g, "");
-    if (noComma.length >= 2 && noComma !== trimmed) patterns.add(noComma);
-  };
+function factDedupeKey(row: PageEvidenceRow): string {
+  const label = (row.evidence_label ?? "").trim().toLowerCase();
+  const value = (row.evidence_value ?? "").trim().toLowerCase();
+  if (!label && !value) return `row:${row.card_evidence_id}`;
+  return `${label}\x00${value}`;
+}
 
-  for (const e of evidence) {
-    add(e.evidence_value);
-    add(formatEvidenceValue(e.evidence_value));
-    if (e.source_text) {
-      for (const m of e.source_text.match(/\d[\d,]*(?:\.\d+)?/g) ?? []) {
-        add(m);
-      }
-      const quote = e.source_text.trim();
-      if (quote.length >= 4 && quote.length <= 120) add(quote);
+function evidenceRowRank(row: PageEvidenceRow): number {
+  let rank = row.confidence_score ?? 0;
+  if (row.source_text?.trim()) rank += 100;
+  const t = row.evidence_type ?? "";
+  if (t === "source_quote" || t === "extracted_value") rank += 50;
+  if (t === "calculated_metric") rank -= 40;
+  if (row.calculation_text?.trim()) rank += 10;
+  return rank;
+}
+
+/** One panel row per distinct label+value (cards, supplemental, and calculated_metric duplicates). */
+export function dedupePageEvidenceRows(rows: PageEvidenceRow[]): PageEvidenceRow[] {
+  const order: string[] = [];
+  const best = new Map<string, PageEvidenceRow>();
+
+  for (const row of rows) {
+    const key = factDedupeKey(row);
+    const prev = best.get(key);
+    if (!prev) {
+      best.set(key, row);
+      order.push(key);
+      continue;
+    }
+    if (evidenceRowRank(row) > evidenceRowRank(prev)) {
+      best.set(key, row);
     }
   }
 
-  return [...patterns].sort((a, b) => b.length - a.length);
+  return order.map((k) => best.get(k)!);
+}
+
+/** Evidence rows that share the same `source_text` on a page, shown as one card. */
+export type GroupedPageEvidence = {
+  groupKey: string;
+  sourceText: string | null;
+  items: PageEvidenceRow[];
+};
+
+/** Collapse duplicate source quotes on the active page (e.g. EBITDA + margin from one sentence). */
+export function groupEvidenceBySourceText(rows: PageEvidenceRow[]): GroupedPageEvidence[] {
+  const order: string[] = [];
+  const groups = new Map<string, GroupedPageEvidence>();
+
+  for (const row of rows) {
+    const quote = row.source_text?.trim() ?? "";
+    const key = quote.length >= 4 ? `quote:${normalizeQuoteText(quote)}` : `row:${row.card_evidence_id}`;
+
+    let group = groups.get(key);
+    if (!group) {
+      group = {
+        groupKey: key,
+        sourceText: quote.length >= 4 ? normalizeQuoteText(quote) : null,
+        items: [],
+      };
+      groups.set(key, group);
+      order.push(key);
+    }
+    const factKey = factDedupeKey(row);
+    if (!group.items.some((i) => factDedupeKey(i) === factKey)) {
+      group.items.push(row);
+    }
+  }
+
+  return order.map((k) => groups.get(k)!).filter((g) => g.items.length > 0);
+}
+
+/** Patterns + full quotes for PDF text-layer and plain-text highlighting. */
+export type EvidenceHighlights = {
+  patterns: string[];
+  quoteTexts: string[];
+};
+
+const MAX_QUOTE_LEN = 600;
+
+export function normalizeQuoteText(raw: string): string {
+  return raw.replace(/\s+/g, " ").trim();
+}
+
+function isNumericToken(value: string): boolean {
+  const compact = value.replace(/,/g, "").trim();
+  return /^-?\d+(\.\d+)?%?$/.test(compact);
+}
+
+function addFullQuotePattern(quote: string, patterns: Set<string>) {
+  patterns.add(quote);
+}
+
+/** Build regex patterns and quote corpus from mapped evidence on a page. */
+export function buildEvidenceHighlights(evidence: EvidenceHighlightInput[]): EvidenceHighlights {
+  const patterns = new Set<string>();
+  const quoteTexts: string[] = [];
+
+  const addQuote = (raw: string | null | undefined) => {
+    if (!raw) return;
+    const quote = normalizeQuoteText(raw);
+    if (quote.length < 4) return;
+    const clipped = quote.length > MAX_QUOTE_LEN ? quote.slice(0, MAX_QUOTE_LEN) : quote;
+    quoteTexts.push(clipped);
+    addFullQuotePattern(clipped, patterns);
+  };
+
+  for (const e of evidence) {
+    addQuote(e.source_text);
+    const formatted = formatEvidenceValue(e.evidence_value);
+    const value = formatted ?? e.evidence_value?.trim() ?? null;
+    if (!value || isNumericToken(value)) continue;
+    addQuote(value);
+  }
+
+  // One entry per unique quote (panel dedupe may still pass overlapping rows).
+  const uniqueQuotes = [...new Set(quoteTexts)];
+  quoteTexts.length = 0;
+  quoteTexts.push(...uniqueQuotes);
+  patterns.clear();
+  for (const q of uniqueQuotes) addFullQuotePattern(q, patterns);
+
+  return {
+    patterns: [...patterns].sort((a, b) => b.length - a.length),
+    quoteTexts,
+  };
+}
+
+/** @deprecated Prefer `buildEvidenceHighlights` — returns regex patterns only. */
+export function evidenceHighlightPatterns(evidence: EvidenceHighlightInput[]): string[] {
+  return buildEvidenceHighlights(evidence).patterns;
 }
 
 function escapeHtml(text: string): string {
@@ -116,19 +233,175 @@ function numericFlexibleRegex(digits: string): string | null {
   return frac != null ? `${wholePart}(?:[.]?${frac.split("").join("[,]?")})?` : wholePart;
 }
 
+function flexibleTextRegex(text: string): string | null {
+  const words = text.trim().split(/\s+/).filter((w) => w.length > 0);
+  if (words.length < 2) return null;
+  const gap = "[\\s\\-–—,;.:()]*";
+  return words
+    .map((w) => escapeRegex(w).replace(/\\-/g, "[\\s\\-–—]*"))
+    .join(gap);
+}
+
+function normalizeMatchToken(raw: string): string {
+  return raw.toLowerCase().replace(/[^a-z0-9%]/g, "");
+}
+
+function tokensMatch(spanToken: string, wordToken: string): boolean {
+  if (!spanToken || !wordToken) return false;
+  if (spanToken === wordToken) return true;
+  if (spanToken.length >= 3 && wordToken.length >= 3) {
+    return spanToken.includes(wordToken) || wordToken.includes(spanToken);
+  }
+  return false;
+}
+
+/** Walk PDF text-layer spans in order to mark a multi-word quote when regex on joined text fails. */
+function matchQuoteToPdfSpans(
+  spans: HTMLElement[],
+  quote: string,
+  hit: Set<HTMLElement>,
+): boolean {
+  const words = quote.split(/\s+/).map(normalizeMatchToken).filter((w) => w.length > 1);
+  if (words.length < 2) return false;
+
+  const spanTokens = spans.map((s) => normalizeMatchToken(s.textContent ?? ""));
+  let matchedAny = false;
+  let wi = 0;
+  let startIdx = -1;
+
+  for (let si = 0; si < spanTokens.length; si++) {
+    const st = spanTokens[si];
+    if (!st) {
+      if (startIdx >= 0) {
+        wi = 0;
+        startIdx = -1;
+      }
+      continue;
+    }
+
+    if (tokensMatch(st, words[wi])) {
+      if (startIdx < 0) startIdx = si;
+      wi += 1;
+      if (wi >= words.length) {
+        for (let j = startIdx; j <= si; j++) hit.add(spans[j]);
+        matchedAny = true;
+        wi = 0;
+        startIdx = -1;
+      }
+      continue;
+    }
+
+    if (startIdx >= 0) {
+      si = startIdx;
+      wi = 0;
+      startIdx = -1;
+    }
+  }
+
+  return matchedAny;
+}
+
 function buildHighlightRegex(patterns: string[]): RegExp | null {
   const parts: string[] = [];
   for (const pattern of patterns) {
     if (pattern.length < 2) continue;
     const noComma = pattern.replace(/,/g, "");
-    const flex = numericFlexibleRegex(noComma);
-    parts.push(flex ?? escapeRegex(pattern));
+    const numeric = numericFlexibleRegex(noComma);
+    if (numeric) {
+      parts.push(numeric);
+      continue;
+    }
+    const textual =
+      pattern.length >= 8 && /[a-zA-Z]/.test(pattern) ? flexibleTextRegex(pattern) : null;
+    parts.push(textual ?? escapeRegex(pattern));
   }
   if (parts.length === 0) return null;
   return new RegExp(`(${parts.join("|")})`, "gi");
 }
 
-/** Wrap pattern matches in `<mark class="evidence-highlight">` for PDF text layers. */
+type SpanRange = { el: HTMLElement; start: number; end: number };
+
+function joinPdfTextSpans(spans: HTMLElement[]): { text: string; ranges: SpanRange[] } {
+  let text = "";
+  const ranges: SpanRange[] = [];
+  for (const el of spans) {
+    const piece = el.textContent ?? "";
+    if (!piece) continue;
+    if (
+      text.length > 0 &&
+      !/\s$/.test(text) &&
+      !/^\s/.test(piece) &&
+      /[\w%]$/.test(text) &&
+      /^[\w%]/.test(piece)
+    ) {
+      text += " ";
+    }
+    const start = text.length;
+    text += piece;
+    ranges.push({ el, start, end: text.length });
+  }
+  return { text, ranges };
+}
+
+function quoteRegex(quote: string): RegExp | null {
+  const flex = flexibleTextRegex(quote);
+  if (flex) return new RegExp(flex, "gi");
+  const single = quote.trim();
+  if (single.length >= 6 && /[a-zA-Z]/.test(single)) {
+    return new RegExp(escapeRegex(single), "gi");
+  }
+  return null;
+}
+
+function markSpanRange(ranges: SpanRange[], start: number, end: number, hit: Set<HTMLElement>) {
+  for (const r of ranges) {
+    if (r.end > start && r.start < end) hit.add(r.el);
+  }
+}
+
+/**
+ * Highlight only contiguous source-quote matches on a rendered PDF text layer.
+ * Uses parsed `referenceText` (pipeline page_text) when the PDF text layer diverges.
+ */
+export function applyPdfPageHighlights(
+  textLayer: HTMLElement,
+  highlights: EvidenceHighlights,
+  referenceText?: string | null,
+): void {
+  const spans = [...textLayer.querySelectorAll('[role="presentation"]')] as HTMLElement[];
+  spans.forEach((el) => el.classList.remove("evidence-highlight"));
+
+  if (spans.length === 0 || highlights.quoteTexts.length === 0) return;
+
+  const { text: pdfText, ranges } = joinPdfTextSpans(spans);
+  const hit = new Set<HTMLElement>();
+  const refNorm = referenceText ? normalizeQuoteText(referenceText) : "";
+
+  for (const quote of highlights.quoteTexts) {
+    let matched = false;
+    const re = quoteRegex(quote);
+    if (re && pdfText) {
+      for (const match of pdfText.matchAll(re)) {
+        matched = true;
+        const start = match.index ?? 0;
+        markSpanRange(ranges, start, start + match[0].length, hit);
+      }
+    }
+    if (!matched) {
+      matched = matchQuoteToPdfSpans(spans, quote, hit);
+    }
+    if (!matched && refNorm) {
+      const qNorm = normalizeQuoteText(quote);
+      if (qNorm.length >= 8 && refNorm.includes(qNorm)) {
+        matchQuoteToPdfSpans(spans, quote, hit);
+      }
+    }
+  }
+
+  hit.forEach((el) => el.classList.add("evidence-highlight"));
+}
+
+/** Wrap full source-quote matches in `<mark class="evidence-highlight">`. */
 export function highlightMatchInText(text: string, patterns: string[]): string {
   const re = buildHighlightRegex(patterns);
   if (!re || !text) return escapeHtml(text);

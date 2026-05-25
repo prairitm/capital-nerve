@@ -168,7 +168,7 @@ def _count_hits(text: str, keywords: list[str]) -> int:
     return n
 
 
-def _excerpt_for(text: str, keywords: list[str], *, span: int = 80) -> str | None:
+def _excerpt_for(text: str, keywords: list[str], *, span: int = 200) -> str | None:
     if not text:
         return None
     lowered = text.lower()

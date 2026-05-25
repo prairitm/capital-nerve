@@ -153,6 +153,18 @@ class ExtractionJob(Base):
     output_tokens: Mapped[int | None] = mapped_column(Integer)
     cost_usd: Mapped[float | None] = mapped_column(Numeric(12, 4))
 
+    # Determinism + cache (0005_extraction_cache):
+    # `request_hash` is the lookup key for replay; `raw_response` is the
+    # provider payload we replay against; `llm_*` + `provider_used` are
+    # surfaced in the admin Review Queue; `validator_report` collects
+    # downstream sanity-check outcomes.
+    request_hash: Mapped[str | None] = mapped_column(String(64), index=True)
+    raw_response: Mapped[str | None] = mapped_column(Text)
+    llm_temperature: Mapped[float | None] = mapped_column(Numeric(3, 2))
+    llm_seed: Mapped[int | None] = mapped_column(Integer)
+    provider_used: Mapped[str | None] = mapped_column(String)
+    validator_report: Mapped[dict] = mapped_column(JSONB, default=dict)
+
     meta: Mapped[dict] = mapped_column("metadata", JSONB, default=dict)
 
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())

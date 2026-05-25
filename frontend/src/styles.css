@@ -129,6 +129,10 @@ body {
     background: rgba(34, 197, 94, 0.38);
     border-radius: 2px;
     box-shadow: 0 0 0 1px rgba(34, 197, 94, 0.25);
+  }
+  /* PDF text layer: hide duplicate glyph paint; canvas shows the visible text */
+  .react-pdf__Page__textContent .evidence-highlight,
+  .react-pdf__Page__textContent [role="presentation"].evidence-highlight {
     color: transparent;
   }
 }

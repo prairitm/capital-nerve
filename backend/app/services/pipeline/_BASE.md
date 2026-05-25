@@ -21,11 +21,12 @@ during ingestion. Read-side `/v1` routers must continue to go through
 | File | Owns |
 |------|------|
 | [`__init__.py`](__init__.py) | Re-exports `run_pipeline_for_document`. |
-| [`storage.py`](storage.py) | Local-filesystem object store with S3-shaped interface. |
-| [`parsing.py`](parsing.py) | PDF / text bytes → `DocumentPage` rows. |
+| [`storage.py`](storage.py) | Local-filesystem object store with S3-shaped interface; also serves rendered page PNGs. |
+| [`parsing.py`](parsing.py) | PDF / text bytes → `DocumentPage` rows (text + image). |
 | [`indexing.py`](indexing.py) | FTS + pgvector embeddings on `DocumentPage` rows. |
-| [`llm.py`](llm.py) | Pluggable LLM client (`MockProvider`, `AnthropicProvider`, `OpenAIProvider`). |
-| [`extraction.py`](extraction.py) | Stage 1 — pages → `ExtractedValue`. |
+| [`llm.py`](llm.py) | Pluggable LLM client (`MockProvider`, `AnthropicProvider`, `OpenAIProvider`); multimodal + structured-output. |
+| [`extraction.py`](extraction.py) | Stage 1 — pages → `ExtractedValue` (with request-hash cache + replay). |
+| [`validators.py`](validators.py) | Post-LLM source-text / unit / totals validators. |
 | [`normalization.py`](normalization.py) | Stage 2 — `ExtractedValue` → `FinancialStatementFact`. |
 | [`metrics.py`](metrics.py) | Stage 3 — facts → `CalculatedMetric`. |
 | [`signals.py`](signals.py) | Stage 4 — metrics → `GeneratedSignal` via `signal_definitions.rule_json`. |
@@ -49,6 +50,16 @@ during ingestion. Read-side `/v1` routers must continue to go through
   immediately; below → stay unpublished and the Review Queue stays OPEN.
 - **LLM provider isolation.** Nothing outside `llm.py` may import `anthropic` or
   `openai`. Other stages consume `ExtractionResult` only.
+- **Determinism.** The extraction stage MUST be reproducible: given the same
+  `(file_hash, PROMPT_VERSION, PARSER_VERSION, provider.name, model, seed)`,
+  re-running yields the same `ExtractedValue` rows. The mechanism is the
+  request-hash cache on `extraction_jobs.request_hash` — see
+  [extraction.COMPONENT.md](extraction.COMPONENT.md). When you change a prompt,
+  schema, or rendering policy in a way that should invalidate cached output,
+  bump the corresponding version constant (`llm.PROMPT_VERSION` or
+  `parsing.PARSER_VERSION`) in the same change. Providers must set
+  `temperature=0` and pass the configured `seed`; no silent fallbacks
+  (the dev-only `_fallback_to_mock` path was removed in 0005).
 
 ## Required reading before changes here
 
