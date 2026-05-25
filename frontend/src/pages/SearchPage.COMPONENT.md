@@ -5,8 +5,8 @@
 ## Purpose
 
 Full search results page at `/search?q=...`. Returns sectioned results for
-companies, intelligence cards, events, and filing text hits, plus an Ask panel
-for cited RAG Q&A.
+companies, intelligence cards, events, and filing text hits, plus a unified Ask
+panel (auto-routes to SQL facts or filing RAG).
 
 ## Source
 
@@ -16,7 +16,7 @@ for cited RAG Q&A.
 
 ## Contract
 
-- Data: `GET /search?q=` (`SearchResult`), `POST /search/ask` (`AskResponse`).
+- Data: `GET /search?q=` (`SearchResult`), `POST /search/ask` (`AskResponse` with `mode` `sql` | `rag`).
 - Query string `q` is the canonical state; the input syncs to it via `useSearchParams`.
 
 ## Dependencies
@@ -34,7 +34,8 @@ for cited RAG Q&A.
 
 ## UI / UX
 
-- Ask panel is always visible above results; company scope is optional via select.
+- Single Ask panel above results; optional company select scopes filing RAG only.
+- SQL answers show a results table + collapsible SQL; RAG answers show citations.
 - Filing snippets may contain `ts_headline` `<b>` markup — render with `dangerouslySetInnerHTML` in the hit card only.
 
 ## Verification checklist
@@ -43,4 +44,5 @@ for cited RAG Q&A.
 - [ ] React Query is disabled when `q.length === 0`
 - [ ] Result sections include `document_hits` when present
 - [ ] Card anchors include `id="card-:cardId"` for deep links
-- [ ] Ask citations link to `/documents/:id?page=N`
+- [ ] Ask `mode=sql` renders table + SQL details; `mode=rag` renders citations
+- [ ] RAG citations link to `/documents/:id?page=N`

@@ -1,6 +1,7 @@
 """Read-side full-text and vector search over document pages."""
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 
 from sqlalchemy import func, select
@@ -61,6 +62,83 @@ def _apply_filters(
     if document_type is not None:
         stmt = stmt.where(SourceDocument.document_type == document_type)
     return stmt
+
+
+_RETRIEVAL_STOPWORDS = frozenset(
+    {
+        "a", "an", "the", "is", "are", "was", "were", "what", "which", "who", "how",
+        "when", "where", "why", "for", "of", "on", "in", "to", "and", "or", "about",
+        "tell", "me", "give", "show", "get", "did", "do", "does", "has", "have",
+        "basic", "last", "this", "that", "from", "with", "at", "by", "be", "been",
+        "quarter", "fy", "financial", "year",
+    }
+)
+
+_SYMBOL_BLOCKLIST = frozenset(
+    {"EPS", "PAT", "EBITDA", "FY", "Q1", "Q2", "Q3", "Q4", "THE", "AND", "FOR"}
+)
+
+
+def build_retrieval_query(question: str) -> str:
+    """Shrink a natural-language question to terms that match filing FTS better."""
+    q_lower = question.lower()
+    tokens: list[str] = []
+
+    for name, sym in (
+        ("reliance", "RELIANCE"),
+        ("tcs", "TCS"),
+        ("infosys", "INFY"),
+        ("hdfc bank", "HDFCBANK"),
+    ):
+        if name in q_lower:
+            tokens.append(sym)
+
+    for m in re.finditer(r"\b([A-Z]{2,12})\b", question):
+        sym = m.group(1)
+        if sym not in _SYMBOL_BLOCKLIST:
+            tokens.append(sym)
+
+    for term in (
+        "eps",
+        "ebitda",
+        "revenue",
+        "margin",
+        "profit",
+        "demand",
+        "guidance",
+        "outlook",
+        "concall",
+        "management",
+        "order",
+        "pricing",
+        "capex",
+        "debt",
+    ):
+        if re.search(rf"\b{re.escape(term)}\b", q_lower):
+            tokens.append(term)
+
+    q_match = re.search(r"\bq\s*([1-4])\b", q_lower)
+    if q_match:
+        tokens.append(f"q{q_match.group(1)}")
+
+    fy_match = re.search(r"fy\s*20(\d{2})", q_lower)
+    if fy_match:
+        tokens.append(f"fy20{fy_match.group(1)}")
+
+    if tokens:
+        seen: set[str] = set()
+        out: list[str] = []
+        for t in tokens:
+            key = t.lower()
+            if key in seen:
+                continue
+            seen.add(key)
+            out.append(t)
+        return " ".join(out)
+
+    words = re.findall(r"[a-z0-9]{3,}", q_lower)
+    filtered = [w for w in words if w not in _RETRIEVAL_STOPWORDS]
+    return " ".join(filtered[:10]) if filtered else question
 
 
 def search_pages_fts(
@@ -131,6 +209,39 @@ def hybrid_search_pages(
     event_id: int | None = None,
     document_type: DocumentType | None = None,
     limit: int = 8,
+) -> tuple[list[DocumentPageHit], str]:
+    hits, mode = _hybrid_search_once(
+        db,
+        q,
+        company_id=company_id,
+        event_id=event_id,
+        document_type=document_type,
+        limit=limit,
+    )
+    if hits:
+        return hits, mode
+
+    compact = build_retrieval_query(q)
+    if compact.strip().lower() != q.strip().lower():
+        hits, mode = _hybrid_search_once(
+            db,
+            compact,
+            company_id=company_id,
+            event_id=event_id,
+            document_type=document_type,
+            limit=limit,
+        )
+    return hits, mode
+
+
+def _hybrid_search_once(
+    db: Session,
+    q: str,
+    *,
+    company_id: int | None,
+    event_id: int | None,
+    document_type: DocumentType | None,
+    limit: int,
 ) -> tuple[list[DocumentPageHit], str]:
     fts_hits = search_pages_fts(
         db,

@@ -1,6 +1,6 @@
 from typing import Any, Literal
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
 from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
@@ -12,8 +12,9 @@ from app.models.intelligence import IntelligenceCard
 from app.models.master import Company, Sector
 from app.models.user import AppUser
 from app.routers._helpers import company_brief
-from app.services.document_rag import ask as rag_ask
+from app.services.data_ask import DataAskError
 from app.services.document_search import search_pages_fts
+from app.services.unified_ask import UnifiedAskResult, ask_unified
 
 router = APIRouter(prefix="/search", tags=["search"])
 
@@ -45,8 +46,25 @@ class AskCitationOut(BaseModel):
 
 class AskResponse(BaseModel):
     answer: str
-    citations: list[AskCitationOut]
-    retrieval_mode: Literal["hybrid", "fts_only"]
+    mode: Literal["sql", "rag"]
+    citations: list[AskCitationOut] = []
+    retrieval_mode: Literal["hybrid", "fts_only"] | None = None
+    sql: str | None = None
+    columns: list[str] = []
+    rows: list[dict[str, Any]] = []
+    row_count: int = 0
+
+
+class DataAskRequest(BaseModel):
+    q: str = Field(min_length=1)
+
+
+class DataAskResponse(BaseModel):
+    answer: str
+    sql: str
+    columns: list[str]
+    rows: list[dict[str, Any]]
+    row_count: int
 
 
 def _document_type_param(value: str | None) -> DocumentType | None:
@@ -158,20 +176,10 @@ def search(
     }
 
 
-@router.post("/ask", response_model=AskResponse)
-def search_ask(
-    body: AskRequest,
-    db: Session = Depends(get_db),
-    user: AppUser = Depends(get_current_user),
-) -> AskResponse:
-    result = rag_ask(
-        db,
-        body.q,
-        company_id=body.company_id,
-        event_id=body.event_id,
-    )
+def _to_ask_response(result: UnifiedAskResult) -> AskResponse:
     return AskResponse(
         answer=result.answer,
+        mode=result.mode,
         citations=[
             AskCitationOut(
                 page_id=c.page_id,
@@ -182,4 +190,51 @@ def search_ask(
             for c in result.citations
         ],
         retrieval_mode=result.retrieval_mode,  # type: ignore[arg-type]
+        sql=result.sql,
+        columns=result.columns,
+        rows=result.rows,
+        row_count=result.row_count,
+    )
+
+
+@router.post("/ask", response_model=AskResponse)
+def search_ask(
+    body: AskRequest,
+    db: Session = Depends(get_db),
+    user: AppUser = Depends(get_current_user),
+) -> AskResponse:
+    try:
+        result = ask_unified(
+            db,
+            body.q,
+            company_id=body.company_id,
+            event_id=body.event_id,
+        )
+    except DataAskError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    return _to_ask_response(result)
+
+
+@router.post("/ask-data", response_model=DataAskResponse)
+def search_ask_data(
+    body: DataAskRequest,
+    db: Session = Depends(get_db),
+    user: AppUser = Depends(get_current_user),
+) -> DataAskResponse:
+    """Legacy alias — same unified ask, but requires a SQL (facts) answer."""
+    try:
+        result = ask_unified(db, body.q)
+    except DataAskError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    if result.mode != "sql":
+        raise HTTPException(
+            status_code=400,
+            detail="This question is better answered from filings. Use POST /search/ask instead.",
+        )
+    return DataAskResponse(
+        answer=result.answer,
+        sql=result.sql or "",
+        columns=result.columns,
+        rows=result.rows,
+        row_count=result.row_count,
     )

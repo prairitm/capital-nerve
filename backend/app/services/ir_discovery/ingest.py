@@ -26,6 +26,7 @@ from datetime import date, datetime, timezone
 from typing import Optional
 
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.db.enums import (
@@ -359,27 +360,34 @@ def _ingest_single_asset(
     )
 
     # ---- 4. Get-or-create SourceDocument ----
-    existing_doc = db.scalar(
-        select(SourceDocument).where(
-            SourceDocument.file_hash == download.stored.file_hash
-        )
-    )
-    if existing_doc is not None:
-        prior_status = existing_doc.extraction_status
-        prior_page_count = existing_doc.page_count or 0
-        existing_doc.event_id = event.event_id
-        existing_doc.company_id = company.company_id
-        existing_doc.period_id = period_id
-        existing_doc.document_type = document_type
-        existing_doc.document_title = _document_title(company, period, document_type)
-        existing_doc.source_url = asset.url
-        doc = existing_doc
+    def _bind_existing_doc(existing: SourceDocument) -> None:
+        nonlocal doc, was_duplicate, already_extracted
+        prior_status = existing.extraction_status
+        prior_page_count = existing.page_count or 0
+        existing.event_id = event.event_id
+        existing.company_id = company.company_id
+        existing.period_id = period_id
+        existing.document_type = document_type
+        existing.document_title = _document_title(company, period, document_type)
+        existing.source_url = asset.url
+        doc = existing
         was_duplicate = True
         already_extracted = (
             not force_reextract
             and prior_status == ExtractionStatus.COMPLETED
             and prior_page_count > 0
         )
+
+    existing_doc = db.scalar(
+        select(SourceDocument).where(
+            SourceDocument.file_hash == download.stored.file_hash
+        )
+    )
+    doc: SourceDocument
+    was_duplicate = False
+    already_extracted = False
+    if existing_doc is not None:
+        _bind_existing_doc(existing_doc)
         if already_extracted:
             # File is unchanged and the pipeline already succeeded — do not
             # reset to PENDING or spawn another job (which would race the
@@ -423,8 +431,36 @@ def _ingest_single_asset(
             },
         )
         db.add(doc)
-        db.flush()
-        was_duplicate = False
+        try:
+            with db.begin_nested():
+                db.flush()
+        except IntegrityError:
+            # Concurrent bulk-ingest workers can race on the same PDF hash
+            # (e.g. NSE mapped one press release to multiple quarters).
+            db.expunge(doc)
+            raced_doc = db.scalar(
+                select(SourceDocument).where(
+                    SourceDocument.file_hash == download.stored.file_hash
+                )
+            )
+            if raced_doc is None:
+                raise
+            _bind_existing_doc(raced_doc)
+            if already_extracted:
+                db.commit()
+                latest_job = db.scalar(
+                    select(ExtractionJob)
+                    .where(ExtractionJob.document_id == doc.document_id)
+                    .order_by(ExtractionJob.extraction_job_id.desc())
+                )
+                if latest_job is not None:
+                    result.job_id = latest_job.extraction_job_id
+                    result.pipeline = _pipeline_summary_from_job_meta(latest_job, doc)
+                result.status = "duplicate"
+                return result
+            doc.extraction_status = ExtractionStatus.PENDING
+        else:
+            was_duplicate = False
 
     result.event_id = event.event_id
     result.document_id = doc.document_id

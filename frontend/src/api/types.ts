@@ -426,8 +426,25 @@ export interface AskCitation {
 
 export interface AskResponse {
   answer: string;
+  mode: "sql" | "rag";
   citations: AskCitation[];
-  retrieval_mode: "hybrid" | "fts_only";
+  retrieval_mode: "hybrid" | "fts_only" | null;
+  sql: string | null;
+  columns: string[];
+  rows: Record<string, unknown>[];
+  row_count: number;
+}
+
+export interface DataAskRequest {
+  q: string;
+}
+
+export interface DataAskResponse {
+  answer: string;
+  sql: string;
+  columns: string[];
+  rows: Record<string, unknown>[];
+  row_count: number;
 }
 
 export interface DocumentDetail {

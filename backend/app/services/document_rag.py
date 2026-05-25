@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
-from app.services.document_search import DocumentPageHit, hybrid_search_pages
+from app.services.document_search import DocumentPageHit, build_retrieval_query, hybrid_search_pages
 from app.services.pipeline.llm import RAGAnswerResult, RAGChunk, RAGCitation, answer_from_context
 
 
@@ -32,8 +32,14 @@ def ask(
         limit=settings.RAG_TOP_K,
     )
     if not hits:
+        compact = build_retrieval_query(q)
+        hint = (
+            f" No filing pages matched{' (even with keywords: ' + compact + ')' if compact != q else ''}."
+            " Upload and process concall / result PDFs for this company, or ask a metric question"
+            " (e.g. EPS, revenue for a quarter) to query structured facts instead."
+        )
         return AskResult(
-            answer="No relevant passages found in the indexed filings.",
+            answer="No relevant passages found in the indexed filings." + hint,
             citations=[],
             retrieval_mode=retrieval_mode,
         )

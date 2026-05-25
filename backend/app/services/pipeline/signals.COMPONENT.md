@@ -37,8 +37,9 @@ metric-vs-threshold and metric-vs-metric leaves — so cross-card signals
 
 ## Patterns (symmetry)
 
-- Re-runs delete existing signals for `document_id` before inserting fresh
-  ones — keeps the read-side cards stage stable.
+- Re-runs delete `card_evidence` / `intelligence_cards` for `document_id`,
+  then existing signals, before inserting fresh ones — cards FK `signal_id`
+  and the cards stage runs after signals.
 - `metric_refs` on `GeneratedSignal` records every leaf the rule tree
   touched, including the operator + threshold; the drawer reads this to
   render "Why this fired" copy.
@@ -52,6 +53,7 @@ metric-vs-threshold and metric-vs-metric leaves — so cross-card signals
 ## Verification checklist
 
 - [ ] Re-runs do not duplicate signals.
+- [ ] Re-runs with existing cards do not hit `intelligence_cards_signal_id_fkey`.
 - [ ] Each emitted signal references a real `CalculatedMetric` via
       `primary_metric_id` and `metric_refs[0].metric_id`.
 - [ ] Composite rules with a missing metric anywhere in the tree report

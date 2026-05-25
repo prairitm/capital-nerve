@@ -70,7 +70,9 @@ calls `services.pipeline.runner.run_pipeline_for_document` in-process.
   centralized there.
 - Re-using a `SourceDocument` by `file_hash` mirrors the existing
   upload-endpoint logic — refresh `event_id`, `period_id`,
-  `document_type`, `extraction_status=PENDING`.
+  `document_type`, `extraction_status=PENDING`. Concurrent workers that
+  race on the same hash recover via a savepoint + re-select (NSE often
+  maps one PDF to multiple quarters).
 - A `CompanyEvent` is reused per `(company, period, event_type)`
   triple to avoid event row explosion when the same asset is
   re-ingested. Annual report events live on the annual period;

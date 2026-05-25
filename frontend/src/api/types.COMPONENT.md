@@ -15,7 +15,7 @@ TypeScript shapes for every backend response and shared domain enum. Mirrors the
 
 - Pure type module — no runtime exports.
 - Enums are string-literal unions (`SignalDirection`, `SeverityLevel`, `ConfidenceLevel`, `EventType`, `DocumentType`) that match [`backend/app/db/enums.py`](../../../backend/app/db/enums.py).
-- Shared interfaces: `UserPayload`, `TokenResponse`, `CompanyBrief`, `PeriodBrief`, `CardBrief`, `CardDetail`, `EvidenceItem`, `CardMetricComparison`, `ConcernHeatmapRow`, `FeedSummary`, `CompanyBadge`, `TimelineEvent`, `FinancialSnapshotRow`, `FinancialTrend`, `FinancialTrendPoint`, `DocumentBrief`, `CompanyDetail`, `EventDetail`, `SignalRow`, `SignalDetail`, `SignalEventBrief`, `WatchlistResponse`, `WatchItem`, `AlertItem`, `SearchResult`, `DocumentSearchHit`, `AskRequest`, `AskResponse`, `AskCitation`, `DocumentDetail`, `ReviewItem`, `ReviewPipelineDetail` (+ nested `ReviewPipelineExtracted`, `ReviewPipelineFact`, `ReviewPipelineMetric`, `ReviewPipelineSignal`, `ReviewPipelineCard`, `ReviewPipelineJob`).
+- Shared interfaces: `UserPayload`, `TokenResponse`, `CompanyBrief`, `PeriodBrief`, `CardBrief`, `CardDetail`, `EvidenceItem`, `CardMetricComparison`, `ConcernHeatmapRow`, `FeedSummary`, `CompanyBadge`, `TimelineEvent`, `FinancialSnapshotRow`, `FinancialTrend`, `FinancialTrendPoint`, `DocumentBrief`, `CompanyDetail`, `EventDetail`, `SignalRow`, `SignalDetail`, `SignalEventBrief`, `WatchlistResponse`, `WatchItem`, `AlertItem`, `SearchResult`, `DocumentSearchHit`, `AskRequest`, `AskResponse` (`mode` `sql`|`rag`, optional SQL rows + RAG citations), `AskCitation`, `DataAskRequest`, `DataAskResponse` (legacy), `DocumentDetail`, `ReviewItem`, `ReviewPipelineDetail` (+ nested pipeline types).
 
 ## Dependencies
 

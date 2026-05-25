@@ -48,7 +48,8 @@ export function SearchPage() {
       <div>
         <h1 className="text-xl md:text-2xl font-semibold tracking-tight">Search & Ask</h1>
         <p className="text-sm text-ink-mute">
-          Search companies, events, cards, and filing text — or ask a question across indexed documents.
+          Search companies, events, cards, and filing text — or ask anything in plain English (financial
+          facts from the database, or cited answers from filings).
         </p>
       </div>
 
@@ -72,12 +73,12 @@ export function SearchPage() {
       <section className="card p-4 space-y-3">
         <div className="flex items-center gap-2 text-sm font-semibold">
           <MessageSquare size={16} className="text-ink-soft" />
-          Ask across filings
+          Ask
         </div>
         <textarea
           value={askQ}
           onChange={(e) => setAskQ(e.target.value)}
-          placeholder="What did management say about demand on the last concall?"
+          placeholder='e.g. "EPS basic of Reliance for Q3 FY 2022-23" or "What did management say about demand on the concall?"'
           rows={3}
           className="input resize-y min-h-[4.5rem]"
         />
@@ -86,8 +87,9 @@ export function SearchPage() {
             value={companyId}
             onChange={(e) => setCompanyId(e.target.value ? Number(e.target.value) : "")}
             className="input sm:max-w-xs"
+            title="Optional: limit filing search to one company"
           >
-            <option value="">All companies</option>
+            <option value="">All companies (filings)</option>
             {(companies ?? []).map((c) => (
               <option key={c.company_id} value={c.company_id}>
                 {c.company_name}
@@ -110,11 +112,49 @@ export function SearchPage() {
         </div>
         {askMutation.data && (
           <div className="pt-2 border-t border-line space-y-3">
-            <p className="text-sm leading-relaxed whitespace-pre-wrap">{askMutation.data.answer}</p>
             <p className="text-[11px] uppercase tracking-wider text-ink-soft">
-              {askMutation.data.retrieval_mode === "hybrid" ? "Hybrid retrieval" : "Keyword retrieval only"}
+              {askMutation.data.mode === "sql"
+                ? "Answer from ingested financial facts"
+                : askMutation.data.retrieval_mode === "hybrid"
+                  ? "Answer from filings · hybrid retrieval"
+                  : "Answer from filings · keyword retrieval"}
             </p>
-            {askMutation.data.citations.length > 0 && (
+            <p className="text-sm leading-relaxed whitespace-pre-wrap">{askMutation.data.answer}</p>
+            {askMutation.data.mode === "sql" && askMutation.data.rows.length > 0 && (
+              <div className="overflow-x-auto">
+                <table className="w-full text-xs border-collapse">
+                  <thead>
+                    <tr className="text-left text-ink-soft border-b border-line">
+                      {askMutation.data.columns.map((col) => (
+                        <th key={col} className="py-1.5 pr-3 font-medium">
+                          {col}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {askMutation.data.rows.map((row, i) => (
+                      <tr key={i} className="border-b border-line/60">
+                        {askMutation.data!.columns.map((col) => (
+                          <td key={col} className="py-1.5 pr-3 text-ink-mute">
+                            {String(row[col] ?? "")}
+                          </td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+            {askMutation.data.mode === "sql" && askMutation.data.sql && (
+              <details className="text-xs text-ink-soft">
+                <summary className="cursor-pointer select-none">Generated SQL</summary>
+                <pre className="mt-2 p-2 rounded bg-surface-2 overflow-x-auto text-[11px] text-ink-mute">
+                  {askMutation.data.sql}
+                </pre>
+              </details>
+            )}
+            {askMutation.data.mode === "rag" && askMutation.data.citations.length > 0 && (
               <ul className="space-y-2 text-sm">
                 {askMutation.data.citations.map((c) => (
                   <li key={`${c.document_id}-${c.page_id}-${c.quote.slice(0, 24)}`} className="text-ink-mute">
@@ -133,18 +173,27 @@ export function SearchPage() {
           </div>
         )}
         {askMutation.isError && (
-          <p className="text-sm text-negative">Could not generate an answer. Try again.</p>
+          <p className="text-sm text-negative">
+            {askMutation.error instanceof Error
+              ? askMutation.error.message
+              : "Could not answer that question. Try rephrasing."}
+          </p>
         )}
       </section>
 
       {q.length === 0 ? (
         <div className="card p-6 text-sm text-ink-mute">
-          Examples:
-          <ul className="mt-2 space-y-1 list-disc list-inside">
+          <p className="font-medium text-ink mb-2">Try asking:</p>
+          <ul className="space-y-1 list-disc list-inside">
+            <li>EPS basic of Reliance for Q3 FY 2022-23</li>
+            <li>What did management say about demand on the last concall?</li>
+            <li>Revenue and PAT for TCS in Q2 FY 2024-25</li>
+          </ul>
+          <p className="mt-4 font-medium text-ink mb-2">Or search:</p>
+          <ul className="space-y-1 list-disc list-inside">
             <li>Route Mobile</li>
             <li>order book</li>
-            <li>pricing power</li>
-            <li>Margin compression</li>
+            <li>margin compression</li>
           </ul>
         </div>
       ) : isLoading || !data ? (

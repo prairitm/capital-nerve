@@ -29,7 +29,9 @@ from app.db.enums import SeverityLevel, SignalDirection
 from app.models.events import SourceDocument
 from app.models.intelligence import (
     CalculatedMetric,
+    CardEvidence,
     GeneratedSignal,
+    IntelligenceCard,
     MetricDefinition,
     SignalDefinition,
 )
@@ -66,6 +68,22 @@ def run_signals(
     """Evaluate rules for this document's metrics and return the new signals."""
     evaluation = evaluate_signal_rules(db, document=document)
     diagnostics = evaluation["diagnostics"]
+    # Cards FK `signal_id`; clear them before replacing signals (cards stage
+    # also clears by document_id, but signals runs first on re-extract).
+    existing_card_ids = list(
+        db.execute(
+            select(IntelligenceCard.card_id).where(
+                IntelligenceCard.document_id == document.document_id
+            )
+        ).scalars()
+    )
+    if existing_card_ids:
+        db.execute(
+            delete(CardEvidence).where(CardEvidence.card_id.in_(existing_card_ids))
+        )
+        db.execute(
+            delete(IntelligenceCard).where(IntelligenceCard.card_id.in_(existing_card_ids))
+        )
     db.execute(
         delete(GeneratedSignal).where(GeneratedSignal.document_id == document.document_id)
     )

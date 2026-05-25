@@ -19,6 +19,9 @@ Two kinds of services live here:
 - [`credit_risk.py`](credit_risk.py) — credit-only slice of generated signals + dimension bucketing.
 - [`retail_summary.py`](retail_summary.py) — retail-facing summary aggregator.
 - [`result_brief_builder.py`](result_brief_builder.py) — sell-side analyst quarterly brief.
+- [`unified_ask.py`](unified_ask.py) — natural-language ask; routes to SQL or RAG (`POST /search/ask`).
+- [`data_ask.py`](data_ask.py) — read-only SQL over financial facts (used by `unified_ask`).
+- [`document_rag.py`](document_rag.py) — cited Q&A over ingested filing pages (used by `unified_ask`).
 
 ## Pipeline (write-side, ingestion)
 
