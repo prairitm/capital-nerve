@@ -31,6 +31,12 @@ The centerpiece of the v1 namespace — endpoints that return the canonical `Int
 - Home / watchlist feeds order by `CompanyEvent.event_date DESC NULLS LAST`, then `created_at`, then `card_id` (newest events first). Company-scoped lists keep importance ordering.
 - `feed` + `tab` query params mirror the former flat `/cards` filters (`results`, `verdicts`, `red_flags`, etc.).
 - `watch_next` cards are excluded from listings — they are not user-facing intelligence objects.
+- `_io_query()` also adds `NOT EXISTS (suspect signal)` so cards whose signal's
+  primary metric is `is_quarantined=True` or `anomaly_flag=True` are filtered
+  out of every public list. Cards without a `signal_id` (concall / supplemental
+  cards) are unaffected. This mirrors the write-path block in
+  `services/pipeline/runner._summarize_anomalies` so stale cards published
+  before a metric was reclassified do not leak.
 - `period=` accepts either `display_label` (`Q4 FY2025-26`) or `fy_label` (`FY2025-26`) via `ilike` match.
 
 ## Verification checklist

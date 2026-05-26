@@ -14,6 +14,7 @@ from app.schemas.common import (
     FinancialTrend,
     FinancialTrendPoint,
 )
+from app.services.financial_snapshot import MARGIN_LEVEL_CODES, trend_value_for_code
 
 CONCALL_CARD_TYPES = frozenset({"management_tone", "guidance_tracker", "analyst_concern"})
 TREND_LINE_CODES = [
@@ -119,16 +120,19 @@ def load_metric_comparisons(
 
         if md.is_bps and current is not None:
             change_bps = current
-        elif md.metric_code == "ebitda_margin_change_yoy_bps":
-            change_bps = current
+            change_pct = None
+        elif change_bps is not None:
+            change_pct = None
         elif change_pct is None and current is not None and previous is not None:
             if md.is_percentage or md.unit == "%":
                 if md.metric_code.endswith("_growth") or "yoy" in md.metric_code:
                     change_pct = current
+                elif md.metric_code in MARGIN_LEVEL_CODES or (
+                    md.unit == "%" and "growth" not in md.metric_code
+                ):
+                    change_bps = (current - previous) * 100
                 else:
-                    change_bps = (current - previous) * 100 if md.unit == "%" else None
-                    if change_bps is None:
-                        change_pct = current - previous
+                    change_pct = current - previous
 
         out.append(
             CardMetricComparison(
@@ -190,15 +194,31 @@ def load_trend_sparklines(
             )
         ).all()
         fact_by_period = {f.period_id: float(f.value) for f in facts}
-        points = [
-            FinancialTrendPoint(
-                period_label=p.display_label,
-                period_end_date=p.period_end_date,
-                value=fact_by_period.get(p.period_id),
+        points = []
+        for p in periods:
+            raw = fact_by_period.get(p.period_id)
+            if raw is None:
+                continue
+            value = (
+                trend_value_for_code(
+                    db,
+                    company_id=company_id,
+                    period_id=p.period_id,
+                    code=code,
+                    fact_value=raw,
+                )
+                if code in MARGIN_LEVEL_CODES
+                else raw
             )
-            for p in periods
-            if p.period_id in fact_by_period
-        ]
+            if value is None:
+                continue
+            points.append(
+                FinancialTrendPoint(
+                    period_label=p.display_label,
+                    period_end_date=p.period_end_date,
+                    value=value,
+                )
+            )
         if len(points) >= 2:
             trends.append(
                 FinancialTrend(metric_code=code, metric_name=display, unit=unit, points=points)

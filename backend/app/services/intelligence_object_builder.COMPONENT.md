@@ -14,7 +14,7 @@ Single derivation point for the v1 `IntelligenceObject` shape. Every v1 router t
 ## Contract
 
 - `build_intelligence_object(db, card, company, period, event, document) -> IntelligenceObject` — full join including evidence rows, metric comparisons, and the structured `calculation_chain` (Signal → Metric → Inputs with source quotes).
-- `build_intelligence_object_brief(card, company, period, event, document=None) -> IntelligenceObjectBrief` — lighter projection for list endpoints (no evidence / metric comparison / signal join / calculation chain). Optional `document` lets callers pass the canonical `SourceDocument` so the brief carries a useful `source_label`; when omitted the label falls back to event / period.
+- `build_intelligence_object_brief(card, company, period, event, document=None, db=None) -> IntelligenceObjectBrief` — lighter projection for list endpoints (no evidence / metric comparison / signal join / calculation chain). Optional `document` lets callers pass the canonical `SourceDocument` so the brief carries a useful `source_label`; when omitted the label falls back to event / period. Optional `db` enables `_build_trigger_metric_brief`, which attaches the card's primary metric, its formula, its source-page link, and the validation status (validated / anomaly / quarantined) onto `trigger_metric` so the feed row can render the analyst-trust strip without round-tripping to the by-id endpoint.
 
 Module-level mappings (treat as product rules):
 

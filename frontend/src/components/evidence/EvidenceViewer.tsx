@@ -10,6 +10,7 @@ import {
   applyPdfPageHighlights,
   buildEvidenceHighlights,
   formatEvidenceValue,
+  formatExtractionConfidence,
   dedupePageEvidenceRows,
   groupEvidenceBySourceText,
   highlightMatchInText,
@@ -939,8 +940,11 @@ function PageEvidenceGroupCard({ group }: { group: GroupedPageEvidence }) {
               <div className="flex items-center justify-between gap-2 mb-0.5">
                 <div className="text-sm font-medium">{e.evidence_label ?? "Evidence"}</div>
                 {e.confidence_score !== null && (
-                  <span className="text-[11px] text-ink-soft shrink-0">
-                    {e.confidence_score.toFixed(0)}%
+                  <span
+                    className="text-[11px] text-ink-soft shrink-0"
+                    title="Extraction confidence (0–100)"
+                  >
+                    {formatExtractionConfidence(e.confidence_score)}
                   </span>
                 )}
               </div>

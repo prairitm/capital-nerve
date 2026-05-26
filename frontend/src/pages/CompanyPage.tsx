@@ -24,7 +24,8 @@ import {
   formatDate,
   formatNumber,
   formatPct,
-  formatSigned,
+  formatSnapshotYoY,
+  snapshotYoYIsPositive,
   mainIssueLabel,
 } from "@/lib/format";
 
@@ -461,16 +462,14 @@ export function CompanyPage() {
                           <td
                             className={clsx(
                               "px-5 py-2.5 text-right num text-xs font-semibold",
-                              row.yoy_change_pct === null
+                              snapshotYoYIsPositive(row) === null
                                 ? "text-ink-mute"
-                                : row.yoy_change_pct >= 0
+                                : snapshotYoYIsPositive(row)
                                   ? "text-positive"
                                   : "text-negative",
                             )}
                           >
-                            {row.yoy_change_pct === null
-                              ? "—"
-                              : formatSigned(row.yoy_change_pct, 1, "%")}
+                            {formatSnapshotYoY(row)}
                           </td>
                         </tr>
                       );

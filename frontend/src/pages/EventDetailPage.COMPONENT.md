@@ -29,6 +29,7 @@ Drill-down for one event at `/company/:symbol/event/:eventId`. Verdict-first hea
 - Source documents: `EventDocumentIcons` tooltip carries title, type, values, and confidence — not a separate source block.
 - Empty cards copy uses `ingestion_status` (draft cards, extraction without cards, etc.).
 - Fallback event summary from top signal when `summary_text` is null.
+- Back control uses [`BackButton`](../components/common/BackButton.tsx) (history back, fallback `/company/:symbol`).
 
 ## Verification checklist
 
@@ -38,3 +39,4 @@ Drill-down for one event at `/company/:symbol/event/:eventId`. Verdict-first hea
 - [ ] `SaveWatchItemDialog` still works from card bookmark action
 - [ ] Concall transcript and investor presentation events show a dedicated **Management tone intelligence** section
 - [ ] Document icon beside title links to `/documents/:id` when documents exist
+- [ ] Back uses history when available; direct link falls back to company hub

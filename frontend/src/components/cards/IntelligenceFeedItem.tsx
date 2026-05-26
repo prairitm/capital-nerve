@@ -5,6 +5,7 @@ import type { CardBrief } from "@/api/types";
 import { SourceDocumentLink } from "@/components/common/SourceDocumentLink";
 import { SignalBadge } from "@/components/common/SignalBadge";
 import { cardTypeLabel, formatDate, relativeDate } from "@/lib/format";
+import { TriggerMetricStrip } from "@/components/cards/TriggerMetricStrip";
 
 interface Props {
   card: CardBrief;
@@ -66,6 +67,8 @@ export function IntelligenceFeedItem({ card, onSaveWatchItem, showCompany = true
         </div>
 
         <p className="text-sm text-ink-mute leading-relaxed line-clamp-2">{card.one_line_summary}</p>
+
+        <TriggerMetricStrip metric={card.trigger_metric} documentId={card.document_id} />
 
         <div className="flex items-center justify-between gap-2 pt-0.5">
           <div className="text-xs text-ink-soft min-w-0 truncate">

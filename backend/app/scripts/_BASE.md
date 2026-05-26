@@ -21,6 +21,9 @@ backfills.
   stages 2-5 of the pipeline (normalize → metrics → signals → cards)
   over persisted `extracted_values` after the unit-rescale / sanity-bounds
   changes in Phase 1A of the analyst-trust overhaul.
+- [`seed_nifty50_companies.py`](seed_nifty50_companies.COMPONENT.md) —
+  bulk-create `Company` + NSE `Security` rows from
+  `var/nse_nifty50.json`.
 
 ## Cross-cutting rules
 

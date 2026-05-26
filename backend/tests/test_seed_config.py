@@ -164,3 +164,72 @@ def test_every_evaluable_signal_produces_rule_text():
             continue
         text = _format_rule_text(rule)
         assert text, f"signal `{sig['code']}` produced empty rule_text from rule {rule}"
+
+
+# ---------------------------------------------------------------------------
+# Metric ontology (metric_kind) + acceleration metric
+# ---------------------------------------------------------------------------
+
+
+def test_every_metric_declares_a_kind():
+    """Every metric must declare a kind so the feed badge is never blank."""
+    allowed = {"financial", "model_score", "composite"}
+    for spec in METRIC_DEFS:
+        assert spec["kind"] in allowed, (
+            f"metric `{spec['code']}` has unknown kind `{spec['kind']}`"
+        )
+
+
+def test_concall_scores_are_model_kind():
+    """Concall lexicon scores must be labelled model_score so they don't pose as financial metrics."""
+    by_code = {m["code"]: m for m in METRIC_DEFS}
+    for code in (
+        "concall_capex_intent_score",
+        "concall_margin_tone_score",
+        "concall_demand_score",
+        "concall_cost_pressure_score",
+        "concall_pricing_power_score",
+    ):
+        assert by_code[code]["kind"] == "model_score", (
+            f"`{code}` should be kind=model_score"
+        )
+
+
+def test_acceleration_metric_is_composite():
+    """The acceleration metric reads its own metric at PQ — it must be composite."""
+    by_code = {m["code"]: m for m in METRIC_DEFS}
+    accel = by_code["revenue_yoy_growth_acceleration_pp"]
+    assert accel["kind"] == "composite"
+    assert accel["unit"] == "pp"
+    # Must depend on revenue_yoy_growth via kind=metric inputs at CURRENT + PQ.
+    kinds_scopes = {(i["scope"], i.get("kind")) for i in accel["inputs"]}
+    assert ("CURRENT", "metric") in kinds_scopes
+    assert ("PQ", "metric") in kinds_scopes
+
+
+def test_metric_descriptions_cover_analyst_set() -> None:
+    """Phase 2A: top metrics used on feed / trend charts have registry copy."""
+    from app.seed.seed_catalog import METRIC_DESCRIPTIONS
+
+    required = {
+        "revenue_yoy_growth",
+        "revenue_qoq_growth",
+        "revenue_yoy_growth_acceleration_pp",
+        "pat_margin",
+        "ebitda_margin",
+        "primary_segment_margin",
+    }
+    assert required <= set(METRIC_DESCRIPTIONS.keys())
+    for code in required:
+        assert len(METRIC_DESCRIPTIONS[code]) >= 40
+
+
+def test_revenue_acceleration_signal_uses_real_acceleration_metric():
+    """The signal previously fired on a YoY level threshold; now must use pp delta."""
+    by_code = {s["code"]: s for s in SIGNAL_DEFS}
+    rule = by_code["revenue_acceleration"]["rule"]
+    assert rule == {
+        "metric": "revenue_yoy_growth_acceleration_pp",
+        "operator": ">",
+        "threshold": 5,
+    }

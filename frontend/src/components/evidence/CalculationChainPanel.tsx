@@ -152,6 +152,11 @@ function InputRow({ input }: { input: CalculationChainInput }) {
   );
 }
 
+/** DOM id of the "Why this fired" anchor. Metric cells elsewhere on the
+ *  page (IO page, drawer, financial-context table) use this id to scroll
+ *  the user into the calculation chain. */
+export const CALCULATION_CHAIN_ANCHOR = "why-fired";
+
 /**
  * "Why it fired" panel — renders the structured Signal → Metric → Inputs chain.
  *
@@ -168,7 +173,7 @@ export function CalculationChainPanel({ chain, className }: Props) {
   const inputs = metric?.inputs ?? [];
 
   return (
-    <section className={clsx("card p-5 md:p-6 space-y-4", className)}>
+    <section id={CALCULATION_CHAIN_ANCHOR} className={clsx("card p-5 md:p-6 space-y-4 scroll-mt-24", className)}>
       <header>
         <h2 className="text-base font-semibold">Why this fired</h2>
         <p className="text-xs text-ink-soft mt-0.5">

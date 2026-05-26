@@ -31,7 +31,12 @@ Card-density tile for a single `CardBrief`. Used in event detail (signal detail 
 - Inner clickable buttons (company name link, save-watch-item, source link) call `e.stopPropagation()` to prevent the outer card click.
 - Company symbol resolution: `card.company.nse_symbol || card.company.bse_code`. Reuse this when adding new card surfaces — never assume one is non-null.
 - Card-type label rendered with `cardTypeLabel(card.card_type)`.
-- Source label and date row shows: source document link (if `document_id`) · relative date (with full date in `title`) · `Math.round(confidence_score)`% confidence.
+- Headline carries an inline comparator chip (`YoY` / `QoQ` / `YoY · QoQ` /
+  `Δ vs prior YoY`) resolved from `card.trigger_metric.comparison_type`, with
+  a fallback that inspects the `primary_metric` / trigger-metric code suffix.
+  This keeps the comparator visible even when the legacy signal name omits
+  it (the YoY suffix on the catalog name covers the durable path).
+- Source label and date row shows: source document link (if `document_id`) · relative date (with full date in `title`) · extraction confidence formatted via `formatExtractionConfidence` and explicitly labelled "extraction" so it is not confused with metric-input confidence.
 
 ## UI / UX
 

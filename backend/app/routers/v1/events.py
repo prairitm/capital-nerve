@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 
 from app.core.deps import get_current_user, get_db
 from app.db.enums import EventType
-from app.models.events import CompanyEvent, SourceDocument
+from app.models.events import CompanyEvent, ExtractionJob, SourceDocument
 from app.models.facts import (
     AnalystQuestion,
     ConcallFact,
@@ -36,6 +36,8 @@ from app.schemas.v1.events import (
     EventDetailV1,
     EventIngestionStatus,
     EventRawFacts,
+    EventSignalDiagnostics,
+    EventSignalRuleRow,
 )
 from app.schemas.v1.signals import SignalBriefV1
 from app.services.event_financials import build_financial_snapshot_for_period
@@ -343,6 +345,8 @@ def event_detail(
         else None
     )
 
+    signal_diagnostics = _load_signal_diagnostics(db, [d.document_id for d in docs])
+
     return EventDetailV1(
         event_id=event.event_id,
         event_type=event.event_type,
@@ -370,4 +374,81 @@ def event_detail(
         concall_facts=concall_facts,
         ingestion_status=ingestion_status,
         analyst_summary=analyst_summary,
+        signal_diagnostics=signal_diagnostics,
+    )
+
+
+def _load_signal_diagnostics(
+    db: Session, document_ids: list[int]
+) -> EventSignalDiagnostics | None:
+    """Hydrate rule evaluation rows from the latest extraction job on this event."""
+    if not document_ids:
+        return None
+    job = db.scalar(
+        select(ExtractionJob)
+        .where(ExtractionJob.document_id.in_(document_ids))
+        .order_by(
+            ExtractionJob.completed_at.desc().nullslast(),
+            ExtractionJob.created_at.desc(),
+        )
+        .limit(1)
+    )
+    if job is None:
+        return None
+    raw = (job.meta or {}).get("signal_diagnostics")
+    if not isinstance(raw, dict):
+        return None
+
+    fired: list[EventSignalRuleRow] = []
+    for row in raw.get("fired") or []:
+        if not isinstance(row, dict):
+            continue
+        fired.append(
+            EventSignalRuleRow(
+                signal_code=str(row.get("signal_code") or ""),
+                signal_name=str(row.get("signal_name") or ""),
+                status="fired",
+                headline=row.get("headline"),
+            )
+        )
+
+    not_fired: list[EventSignalRuleRow] = []
+    not_evaluable: list[EventSignalRuleRow] = []
+    for row in raw.get("not_fired") or []:
+        if not isinstance(row, dict):
+            continue
+        code = str(row.get("signal_code") or "")
+        name = str(row.get("signal_name") or "")
+        reason = row.get("reason")
+        detail = row.get("detail")
+        if reason == "no_numeric_rule":
+            not_evaluable.append(
+                EventSignalRuleRow(
+                    signal_code=code,
+                    signal_name=name,
+                    status="not_evaluable",
+                    reason=reason,
+                    detail=detail,
+                )
+            )
+        else:
+            not_fired.append(
+                EventSignalRuleRow(
+                    signal_code=code,
+                    signal_name=name,
+                    status="not_fired",
+                    reason=reason,
+                    detail=detail,
+                )
+            )
+
+    return EventSignalDiagnostics(
+        rules_total=int(raw.get("rules_total") or 0),
+        rules_evaluable=int(raw.get("rules_evaluable") or 0),
+        rules_non_evaluable=int(raw.get("rules_non_evaluable") or 0),
+        fired_count=int(raw.get("fired_count") or 0),
+        blockers=list(raw.get("blockers") or []),
+        fired=fired,
+        not_fired=not_fired,
+        not_evaluable=not_evaluable,
     )

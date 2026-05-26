@@ -20,13 +20,13 @@ Optional confidence pill that takes either a `ConfidenceLevel` enum or a numeric
 
 ## Dependencies
 
-- May import: `@/api/types`.
+- May import: `@/api/types`, `@/lib/format` (`formatExtractionConfidence`, `normalizeConfidenceScore`).
 - Must not: render a coloured dot — confidence uses the chip background colour only.
 
 ## Patterns (symmetry)
 
 - Thresholds: `score >= 85` or `level === "HIGH"` → `chip-positive`; `score >= 70` or `level === "MEDIUM"` → `chip-neutral`; otherwise `chip-low`. Keep these in sync with the verdict colours in `CardDetailDrawer.tsx`.
-- Text formatting: when `score` is present, `"${score.toFixed(0)}% confidence"`; otherwise `"${level.toLowerCase()} confidence"` (with `_` replaced by space).
+- Text formatting: card-level chip is always labelled "extraction confidence" — never bare "confidence" — so it can never be confused with per-metric input confidence (`MetricConfidenceBadge`). Score is rendered via `formatExtractionConfidence` so the 0–100 vs 0–1 scaling is handled in one place.
 
 ## Verification checklist
 

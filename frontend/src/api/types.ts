@@ -83,6 +83,12 @@ export interface CardBrief {
   source_label: string | null;
   document_id: number | null;
   created_at: string;
+  /**
+   * Compact metric + provenance carried on feed-row briefs (see
+   * `IntelligenceObjectBrief.trigger_metric`). Detail-page consumers that
+   * convert via `intelligenceObjectToCardBrief` leave it null.
+   */
+  trigger_metric?: IOTriggerMetricBrief | null;
 }
 
 export interface EvidenceItem {
@@ -163,13 +169,21 @@ export interface FinancialSnapshotRow {
   current_value: number | null;
   previous_value: number | null;
   yoy_change_pct: number | null;
+  yoy_change_bps: number | null;
   unit: string;
+}
+
+export interface FinancialTrendBand {
+  min: number | null;
+  max: number | null;
+  median: number | null;
 }
 
 export interface FinancialTrendPoint {
   period_label: string;
   period_end_date: string;
   value: number | null;
+  anomaly_flag?: boolean;
 }
 
 export interface FinancialTrend {
@@ -177,6 +191,7 @@ export interface FinancialTrend {
   metric_name: string;
   unit: string;
   points: FinancialTrendPoint[];
+  band?: FinancialTrendBand | null;
 }
 
 export interface DocumentBrief {
@@ -687,6 +702,28 @@ export interface AnalystSummary {
   themes: AnalystSummaryTheme[];
 }
 
+export type EventSignalRuleStatus = "fired" | "not_fired" | "not_evaluable";
+
+export interface EventSignalRuleRow {
+  signal_code: string;
+  signal_name: string;
+  status: EventSignalRuleStatus;
+  reason: string | null;
+  detail: string | null;
+  headline: string | null;
+}
+
+export interface EventSignalDiagnostics {
+  rules_total: number;
+  rules_evaluable: number;
+  rules_non_evaluable: number;
+  fired_count: number;
+  blockers: string[];
+  fired: EventSignalRuleRow[];
+  not_fired: EventSignalRuleRow[];
+  not_evaluable: EventSignalRuleRow[];
+}
+
 export interface EventDetailV1 extends EventBriefV1 {
   main_issue: string | null;
   watch_next: string | null;
@@ -702,6 +739,7 @@ export interface EventDetailV1 extends EventBriefV1 {
   concall_facts: EventConcallFactV1[];
   ingestion_status: EventIngestionStatusV1;
   analyst_summary: AnalystSummary | null;
+  signal_diagnostics: EventSignalDiagnostics | null;
 }
 
 export interface SignalCalculation {
@@ -812,6 +850,60 @@ export interface IODisplayConfig {
   surfaces: string[];
 }
 
+export type MetricKind = "financial" | "model_score" | "composite";
+
+export type MetricValidationStatus = "validated" | "anomaly" | "quarantined";
+
+export interface MetricRegistryInput {
+  name: string;
+  code: string | null;
+  scope: string;
+  kind: string;
+}
+
+export interface MetricRegistrySignal {
+  signal_code: string;
+  signal_name: string;
+  rule_text: string | null;
+}
+
+export interface MetricRegistryEntry {
+  metric_code: string;
+  metric_name: string;
+  metric_category: string;
+  metric_kind: MetricKind;
+  unit: string | null;
+  formula_text: string | null;
+  is_percentage: boolean;
+  is_bps: boolean;
+  validation_min: number | null;
+  validation_max: number | null;
+  inputs: MetricRegistryInput[];
+  dependencies: string[];
+  related_signals: MetricRegistrySignal[];
+}
+
+export interface MetricRegistryResponse {
+  metrics: MetricRegistryEntry[];
+}
+
+export interface IOTriggerMetricBrief {
+  code: string | null;
+  name: string | null;
+  value_display: string | null;
+  unit: string | null;
+  metric_kind: MetricKind | null;
+  comparison_type: string | null;
+  formula_text: string | null;
+  source_page: number | null;
+  validation_status: MetricValidationStatus;
+  validation_reason: string | null;
+  confidence_band: MetricConfidenceBand | null;
+  confidence_score: number | null;
+}
+
+export type MetricConfidenceBand = "high" | "medium" | "low";
+
 export interface IntelligenceObjectBrief {
   intelligence_object_id: number;
   object_type: string;
@@ -831,6 +923,7 @@ export interface IntelligenceObjectBrief {
   event_date: string | null;
   signal_id: number | null;
   primary_metric: string | null;
+  trigger_metric: IOTriggerMetricBrief | null;
   investor_relevance: string[];
   source_label: string | null;
   document_id: number | null;
@@ -1117,4 +1210,112 @@ export interface ExtractionJobBrief {
   error_message: string | null;
   meta: Record<string, unknown>;
   created_at: string;
+}
+
+export type LineageNodeKind =
+  | "extracted_value"
+  | "financial_fact"
+  | "calculated_metric"
+  | "generated_signal"
+  | "intelligence_card";
+
+export interface LineageNode {
+  id: string;
+  kind: LineageNodeKind;
+  label: string;
+  detail: string | null;
+  page_number: number | null;
+  document_id: number | null;
+  confidence_score: number | null;
+  validation_status: string | null;
+}
+
+export interface LineageEdge {
+  source: string;
+  target: string;
+  relationship: string;
+}
+
+export interface LineageGraph {
+  nodes: LineageNode[];
+  edges: LineageEdge[];
+}
+
+export interface ReproducibilityInput {
+  name: string;
+  code: string | null;
+  scope: string;
+  kind: string;
+  value: number | null;
+  unit: string | null;
+  extracted_value_id: number | null;
+  page_number: number | null;
+  source_text: string | null;
+  confidence_score: number | null;
+}
+
+export interface ReproducibilityMetric {
+  metric_id: number | null;
+  code: string | null;
+  name: string | null;
+  metric_kind: MetricKind | null;
+  formula_text: string | null;
+  unit: string | null;
+  value: number | null;
+  validation_min: number | null;
+  validation_max: number | null;
+  is_quarantined: boolean;
+  quarantine_reason: string | null;
+  anomaly_flag: boolean;
+  anomaly_reason: string | null;
+  confidence_score: number | null;
+  inputs: ReproducibilityInput[];
+}
+
+export interface ReproducibilitySignal {
+  signal_id: number | null;
+  code: string | null;
+  name: string | null;
+  category: string | null;
+  rule_text: string | null;
+  direction: SignalDirection | null;
+  severity: SeverityLevel | null;
+  confidence_score: number | null;
+  fired_value: number | null;
+  threshold: number | null;
+  operator: string | null;
+  explanation: string | null;
+}
+
+export interface ReproducibilityAuditTrail {
+  extraction_job_id: number | null;
+  prompt_version: string | null;
+  parser_version: string | null;
+  model_name: string | null;
+  provider_used: string | null;
+  llm_temperature: number | null;
+  llm_seed: number | null;
+  request_hash: string | null;
+  completed_at: string | null;
+  reprocess_timestamp: string | null;
+}
+
+export interface ReproducibilityCard {
+  card_id: number;
+  card_type: string;
+  headline: string;
+  one_line_summary: string | null;
+  direction: SignalDirection | null;
+  severity: SeverityLevel | null;
+  confidence_score: number | null;
+  is_published: boolean;
+}
+
+export interface ReproducibilityBundle {
+  card: ReproducibilityCard;
+  signal: ReproducibilitySignal | null;
+  metric: ReproducibilityMetric | null;
+  audit_trail: ReproducibilityAuditTrail | null;
+  lineage: LineageGraph;
+  exported_at: string;
 }

@@ -1,7 +1,8 @@
 import { useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, ArrowUpRight, Check, ChevronRight, X } from "lucide-react";
+import { ArrowUpRight, Check, ChevronRight, X } from "lucide-react";
+import { BackButton } from "@/components/common/BackButton";
 import clsx from "clsx";
 import { api } from "@/api/client";
 import type {
@@ -264,13 +265,7 @@ export function SignalDetailPage() {
 
   return (
     <div className="w-full min-w-0 space-y-5">
-      <button
-        type="button"
-        onClick={() => navigate("/signals")}
-        className="btn-ghost -ml-2 text-sm"
-      >
-        <ArrowLeft size={16} /> Back to Signals
-      </button>
+      <BackButton fallback="/signals" />
 
       {/* Verdict strip */}
       <section className="card p-5 md:p-6">

@@ -1,7 +1,7 @@
 """Event-level v1 schemas — raw timeline layer."""
 
 from datetime import date
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import BaseModel
 
@@ -49,6 +49,35 @@ class EventBriefV1(BaseModel):
     overall_confidence: float | None = None
     summary_text: str | None = None
     document_id: int | None = None
+
+
+class EventSignalRuleRow(BaseModel):
+    """One signal rule outcome from the pipeline diagnostics payload."""
+
+    signal_code: str
+    signal_name: str
+    status: Literal["fired", "not_fired", "not_evaluable"]
+    reason: str | None = None
+    detail: str | None = None
+    headline: str | None = None
+
+
+class EventSignalDiagnostics(BaseModel):
+    """Full signal-rule evaluation for an event's latest extraction job.
+
+    Built from ``ExtractionJob.meta['signal_diagnostics']`` so analysts can
+    see which rules fired, which nearly fired, and which need non-metric
+    extractors (concall, governance, etc.).
+    """
+
+    rules_total: int = 0
+    rules_evaluable: int = 0
+    rules_non_evaluable: int = 0
+    fired_count: int = 0
+    blockers: list[str] = []
+    fired: list[EventSignalRuleRow] = []
+    not_fired: list[EventSignalRuleRow] = []
+    not_evaluable: list[EventSignalRuleRow] = []
 
 
 class EventIngestionStatus(BaseModel):
@@ -119,3 +148,4 @@ class EventDetailV1(EventBriefV1):
     concall_facts: list[EventConcallFact] = []
     ingestion_status: EventIngestionStatus
     analyst_summary: AnalystSummary | None = None
+    signal_diagnostics: EventSignalDiagnostics | None = None

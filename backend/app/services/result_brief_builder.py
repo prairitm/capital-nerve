@@ -15,7 +15,7 @@ from app.db.enums import EventType, SignalDirection
 from app.models.events import CompanyEvent
 from app.models.intelligence import CalculatedMetric, IntelligenceCard, MetricDefinition
 from app.models.master import Company, FinancialPeriod
-from app.routers._helpers import company_brief, period_brief
+from app.routers._helpers import company_brief, exclude_suspect_cards, period_brief
 from app.schemas.common import EvidenceItem
 from app.schemas.v1.result_brief import (
     ResultBrief,
@@ -206,10 +206,12 @@ def build_result_brief(
         period = db.get(FinancialPeriod, event.period_id)
 
     cards = db.scalars(
-        select(IntelligenceCard)
-        .where(IntelligenceCard.event_id == event.event_id)
-        .where(IntelligenceCard.is_published.is_(True))
-        .where(IntelligenceCard.card_type != "watch_next")
+        exclude_suspect_cards(
+            select(IntelligenceCard)
+            .where(IntelligenceCard.event_id == event.event_id)
+            .where(IntelligenceCard.is_published.is_(True))
+            .where(IntelligenceCard.card_type != "watch_next")
+        )
         .order_by(IntelligenceCard.card_priority.desc())
     ).all()
 

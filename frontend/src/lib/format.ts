@@ -26,6 +26,55 @@ export function formatPct(value: number | null | undefined, fractionDigits = 1):
 }
 
 /**
+ * Confidence scores are stored as `Numeric(5, 2)` on the backend (0–100 scale)
+ * across `extracted_values`, `financial_statement_facts`, `calculated_metrics`,
+ * `generated_signals`, and `intelligence_cards`. A defensive heuristic accepts
+ * legacy 0–1 fractions so the same helper can be used on every surface.
+ */
+export function normalizeConfidenceScore(score: number | null | undefined): number | null {
+  if (score == null || Number.isNaN(score)) return null;
+  return score <= 1.5 ? score * 100 : score;
+}
+
+export function formatExtractionConfidence(
+  score: number | null | undefined,
+  fractionDigits = 0,
+): string {
+  const v = normalizeConfidenceScore(score);
+  if (v == null) return "—";
+  return `${v.toFixed(fractionDigits)}%`;
+}
+
+export function confidenceTone(score: number | null | undefined): string {
+  const v = normalizeConfidenceScore(score);
+  if (v == null) return "text-ink-soft";
+  if (v >= 85) return "text-positive";
+  if (v >= 60) return "text-ink";
+  return "text-ink-mute";
+}
+
+/** YoY column on financial snapshot tables (relative % or margin bps). */
+export function formatSnapshotYoY(
+  row: {
+    yoy_change_bps?: number | null;
+    yoy_change_pct?: number | null;
+  },
+): string {
+  if (row.yoy_change_bps != null) return formatSigned(row.yoy_change_bps, 0, " bps");
+  if (row.yoy_change_pct != null) return formatSigned(row.yoy_change_pct, 1, "%");
+  return "—";
+}
+
+export function snapshotYoYIsPositive(row: {
+  yoy_change_bps?: number | null;
+  yoy_change_pct?: number | null;
+}): boolean | null {
+  if (row.yoy_change_bps != null) return row.yoy_change_bps > 0;
+  if (row.yoy_change_pct != null) return row.yoy_change_pct > 0;
+  return null;
+}
+
+/**
  * Evidence values are stored as text. Pre-formatted document copy (Rs, %, Cr, commas)
  * is returned unchanged; raw floats like `37146.000000` are shown without noise.
  */

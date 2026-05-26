@@ -27,6 +27,13 @@ class MetricDefinition(Base):
     metric_name: Mapped[str] = mapped_column(String, nullable=False)
     metric_category: Mapped[str] = mapped_column(String, nullable=False)
 
+    # Product-level ontology for the analyst-trust badges. Three kinds:
+    # - ``financial``   — derived from P&L / BS / CF facts (e.g. ``pat_margin``).
+    # - ``model_score`` — concall lexicon scores and other 0–100 model outputs.
+    # - ``composite``   — derived from other CalculatedMetric rows (e.g. the
+    #   pp-acceleration metric reads its own metric at PQ).
+    metric_kind: Mapped[str] = mapped_column(String, nullable=False, default="financial", server_default="financial")
+
     formula_text: Mapped[str | None] = mapped_column(Text)
     formula_sql: Mapped[str | None] = mapped_column(Text)
 
@@ -82,6 +89,14 @@ class CalculatedMetric(Base):
     # admin Review Queue but never feed signals/cards.
     is_quarantined: Mapped[bool] = mapped_column(Boolean, default=False)
     quarantine_reason: Mapped[str | None] = mapped_column(Text)
+
+    # Anomaly flag for metric values that pass static bounds but deviate
+    # sharply from the company's own history (e.g. RELIANCE PAT margin 60.8 %
+    # vs ~7 % historical median). Anomalies are persisted with the value but
+    # the runner forces ``publish=False`` on the document when a key card's
+    # primary metric is flagged. See ``services/pipeline/metric_anomaly.py``.
+    anomaly_flag: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
+    anomaly_reason: Mapped[str | None] = mapped_column(Text)
 
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 

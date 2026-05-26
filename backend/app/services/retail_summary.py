@@ -15,7 +15,7 @@ from app.models.events import CompanyEvent
 from app.models.facts import FinancialLineItemDefinition, FinancialStatementFact
 from app.models.intelligence import CalculatedMetric, IntelligenceCard, MetricDefinition
 from app.models.master import Company, FinancialPeriod
-from app.routers._helpers import company_brief, period_brief
+from app.routers._helpers import company_brief, exclude_suspect_cards, period_brief
 from app.schemas.v1.retail import RetailSummary, RetailSummaryPoint
 
 _TONE_BY_DIRECTION: dict[SignalDirection, str] = {
@@ -41,10 +41,12 @@ def _latest_period(db: Session, company_id: int) -> FinancialPeriod | None:
 
 def _top_cards(db: Session, company_id: int) -> list[IntelligenceCard]:
     return db.scalars(
-        select(IntelligenceCard)
-        .where(IntelligenceCard.company_id == company_id)
-        .where(IntelligenceCard.is_published.is_(True))
-        .where(IntelligenceCard.card_type != "watch_next")
+        exclude_suspect_cards(
+            select(IntelligenceCard)
+            .where(IntelligenceCard.company_id == company_id)
+            .where(IntelligenceCard.is_published.is_(True))
+            .where(IntelligenceCard.card_type != "watch_next")
+        )
         .order_by(IntelligenceCard.card_priority.desc(), IntelligenceCard.created_at.desc())
         .limit(6)
     ).all()

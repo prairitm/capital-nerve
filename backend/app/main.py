@@ -13,6 +13,7 @@ from app.routers.v1 import (
     events as v1_events,
     intelligence_objects as v1_intelligence_objects,
     market_data as v1_market_data,
+    metrics as v1_metrics,
     peers as v1_peers,
     portfolio as v1_portfolio,
     result_brief as v1_result_brief,
@@ -93,6 +94,7 @@ def create_app() -> FastAPI:
     app.include_router(v1_retail.router)
     app.include_router(v1_result_brief.router)
     app.include_router(v1_market_data.router)
+    app.include_router(v1_metrics.router)
 
     return app
 

@@ -103,6 +103,7 @@ export function intelligenceObjectBriefToCardBrief(
     source_label: d.source_label,
     document_id: d.document_id,
     created_at: d.created_at,
+    trigger_metric: d.trigger_metric,
   };
 }
 

@@ -13,7 +13,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from app.services.pipeline.signals import _evaluate_rule
+from app.services.pipeline.signals import _evaluate_rule, _format_value
 
 
 @dataclass
@@ -216,3 +216,20 @@ def test_demand_tone_positive_fires():
 def test_material_order_win_fires():
     rule = {"metric": "new_order_to_ttm_revenue", "operator": ">", "threshold": 0.05}
     assert _evaluate_rule(rule, metrics_from({"new_order_to_ttm_revenue": 0.08}, unit="x")).fired
+
+
+# ---------------------------------------------------------------------------
+# Value formatting — analyst-trust copy
+# ---------------------------------------------------------------------------
+
+
+def test_score_unit_renders_out_of_one_hundred():
+    """Concall lexicon scores must read as `N / 100`, never as bare decimals."""
+    assert _format_value(52.0, "score") == "52 / 100"
+    assert _format_value(7.0, "score") == "7 / 100"
+
+
+def test_pp_unit_renders_signed_percentage_points():
+    """Growth-rate acceleration (pp) must show its sign — accelerating vs decelerating."""
+    assert _format_value(12.3, "pp") == "+12.3 pp"
+    assert _format_value(-4.2, "pp") == "-4.2 pp"

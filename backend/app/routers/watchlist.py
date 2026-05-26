@@ -10,7 +10,7 @@ from app.db.enums import SignalDirection
 from app.models.intelligence import IntelligenceCard
 from app.models.master import Company, Sector
 from app.models.user import AppUser, Watchlist, WatchlistCompany
-from app.routers._helpers import company_brief
+from app.routers._helpers import company_brief, exclude_suspect_cards
 
 router = APIRouter(prefix="/watchlist", tags=["watchlist"])
 
@@ -51,9 +51,11 @@ def my_watchlist(
     red_flags = 0
     for _wc, company, sector in rows:
         latest_card = db.scalars(
-            select(IntelligenceCard)
-            .where(IntelligenceCard.company_id == company.company_id)
-            .where(IntelligenceCard.is_published.is_(True))
+            exclude_suspect_cards(
+                select(IntelligenceCard)
+                .where(IntelligenceCard.company_id == company.company_id)
+                .where(IntelligenceCard.is_published.is_(True))
+            )
             .order_by(IntelligenceCard.card_priority.desc(), IntelligenceCard.created_at.desc())
             .limit(1)
         ).first()

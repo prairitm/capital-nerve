@@ -43,3 +43,4 @@ normalized codes.
 - [ ] No fact row is written without a `period_id`.
 - [ ] Re-running the pipeline does not duplicate facts.
 - [ ] `source_extracted_value_id` always points back at the originating row.
+- [ ] `ebitda_margin` / `pat_margin` facts are not persisted when base P&L lines exist in the same extraction (metrics stage recomputes).

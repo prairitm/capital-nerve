@@ -292,6 +292,13 @@ class InputResolver:
         return float(row) if row is not None else None
 
     def _metric_value(self, code: str, period_id: int) -> float | None:
+        """Read an upstream CalculatedMetric value, ignoring quarantined rows.
+
+        A composite metric (e.g. ``revenue_yoy_growth_acceleration_pp``) that
+        reads another metric must never inherit a value the bounds engine
+        already flagged as implausible — otherwise a 708% Revenue QoQ would
+        propagate one layer up and silently fire a downstream signal.
+        """
         row = self._db.scalar(
             select(CalculatedMetric.metric_value)
             .join(MetricDefinition, MetricDefinition.metric_def_id == CalculatedMetric.metric_def_id)
@@ -299,6 +306,7 @@ class InputResolver:
                 CalculatedMetric.company_id == self._company_id,
                 CalculatedMetric.period_id == period_id,
                 MetricDefinition.metric_code == code,
+                CalculatedMetric.is_quarantined.is_(False),
             )
             .order_by(CalculatedMetric.metric_id.desc())
             .limit(1)

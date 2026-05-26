@@ -38,6 +38,7 @@ Full-screen detail for a single `IntelligenceObject` at `/intelligence/:objectId
 - Inline evidence links (`EvidenceInlineLinks`) beside key metrics and financial context — no standalone evidence card.
 - Suggested action labels match `CardDetailDrawer` map.
 - Subtitle hidden when duplicate of title (normalized compare).
+- Back control uses [`BackButton`](../components/common/BackButton.tsx) (history back, fallback company hub or `/`).
 
 ## Verification checklist
 
@@ -47,3 +48,4 @@ Full-screen detail for a single `IntelligenceObject` at `/intelligence/:objectId
 - [ ] Inline `p.N` links beside metrics; document links via `SourceDocumentLinks` in “Why it matters” when refs exist
 - [ ] Context section links to signal and event routes
 - [ ] Concern heatmap renders when non-empty
+- [ ] Back uses history when available; direct link falls back to company hub or home

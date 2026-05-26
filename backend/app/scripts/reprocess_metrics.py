@@ -37,7 +37,7 @@ from sqlalchemy.orm import Session
 
 from app.db.enums import SignalDirection
 from app.db.session import SessionLocal
-from app.models.events import CompanyEvent, SourceDocument
+from app.models.events import CompanyEvent, ExtractionJob, SourceDocument
 from app.models.facts import ExtractedValue
 from app.models.intelligence import CalculatedMetric, IntelligenceCard
 from app.models.master import Company
@@ -47,9 +47,14 @@ from app.services.event_summary import (
     pick_watch_next,
 )
 from app.services.pipeline import cards as cards_stage
+from app.services.pipeline import metric_validation as metric_validation_stage
 from app.services.pipeline import metrics as metrics_stage
 from app.services.pipeline import normalization as normalization_stage
 from app.services.pipeline import signals as signals_stage
+from app.services.pipeline.runner import (
+    _build_audit_trail,
+    _rescaled_codes_touching_fired_signals,
+)
 from app.services.pipeline.llm import ExtractedLineItem
 from app.services.pipeline.validators import (
     ValidatorReport,
@@ -66,8 +71,10 @@ class _ReprocessStats:
     rescaled_values: int = 0
     metrics_written: int = 0
     quarantined_metrics: int = 0
+    anomalous_metrics: int = 0
     signals_written: int = 0
     cards_written: int = 0
+    anomaly_suppressed_documents: int = 0
 
 
 def main() -> int:
@@ -110,13 +117,16 @@ def main() -> int:
         db.close()
 
     logger.info(
-        "Done: documents=%s rescaled_values=%s metrics=%s quarantined=%s signals=%s cards=%s",
+        "Done: documents=%s rescaled_values=%s metrics=%s quarantined=%s anomaly=%s "
+        "signals=%s cards=%s anomaly_suppressed_docs=%s",
         stats.documents,
         stats.rescaled_values,
         stats.metrics_written,
         stats.quarantined_metrics,
+        stats.anomalous_metrics,
         stats.signals_written,
         stats.cards_written,
+        stats.anomaly_suppressed_documents,
     )
     return 0
 
@@ -134,15 +144,40 @@ def _select_documents(db: Session, args: argparse.Namespace) -> list[int]:
         if not company:
             logger.error("No company with NSE symbol or BSE code %s", symbol)
             return []
+        from app.models.master import FinancialPeriod
+
         ids = db.scalars(
             select(SourceDocument.document_id)
+            .outerjoin(
+                FinancialPeriod,
+                FinancialPeriod.period_id == SourceDocument.period_id,
+            )
             .where(SourceDocument.company_id == company.company_id)
-            .order_by(SourceDocument.document_id)
+            .order_by(
+                FinancialPeriod.fy_year.asc().nulls_last(),
+                FinancialPeriod.quarter.asc().nulls_last(),
+                SourceDocument.document_id.asc(),
+            )
         ).all()
         return list(ids)
+    # Order by reporting period so prior-quarter metric values exist in the
+    # DB before later quarters compute composite metrics (e.g. the new
+    # revenue_yoy_growth_acceleration_pp reads revenue_yoy_growth at PQ).
+    # Documents without a period sort last but keep stable order.
+    from app.models.master import FinancialPeriod
+
     return list(
         db.scalars(
-            select(SourceDocument.document_id).order_by(SourceDocument.document_id)
+            select(SourceDocument.document_id)
+            .outerjoin(
+                FinancialPeriod,
+                FinancialPeriod.period_id == SourceDocument.period_id,
+            )
+            .order_by(
+                FinancialPeriod.fy_year.asc().nulls_last(),
+                FinancialPeriod.quarter.asc().nulls_last(),
+                SourceDocument.document_id.asc(),
+            )
         ).all()
     )
 
@@ -177,30 +212,91 @@ def _reprocess_document(
         db, document=document, event=event
     )
     metrics_written = metrics_stage.run_metrics(db, document=document)
+
+    metric_validation_report = metric_validation_stage.validate_calculated_metrics(
+        db,
+        company_id=document.company_id,
+        period_id=document.period_id,
+    )
+    metric_validation_stage.apply_validation_actions(
+        db,
+        company_id=document.company_id,
+        period_id=document.period_id,
+        report=metric_validation_report,
+    )
+
+    from sqlalchemy import func
+
     quarantined = db.scalar(
-        select(  # type: ignore[arg-type]
-            __import__("sqlalchemy").func.count(CalculatedMetric.metric_id)
-        ).where(
+        select(func.count(CalculatedMetric.metric_id)).where(
             CalculatedMetric.company_id == document.company_id,
             CalculatedMetric.period_id == document.period_id,
             CalculatedMetric.is_quarantined.is_(True),
         )
     ) or 0
+    anomalous = db.scalar(
+        select(func.count(CalculatedMetric.metric_id)).where(
+            CalculatedMetric.company_id == document.company_id,
+            CalculatedMetric.period_id == document.period_id,
+            CalculatedMetric.anomaly_flag.is_(True),
+        )
+    ) or 0
     sigs, _ = signals_stage.run_signals(db, document=document)
 
+    job = db.scalar(
+        select(ExtractionJob)
+        .where(ExtractionJob.document_id == document.document_id)
+        .order_by(ExtractionJob.created_at.desc())
+        .limit(1)
+    )
+    audit_trail = _build_audit_trail(job) if job else None
+
     # Re-publish to whatever state the row was already in; reprocess never
-    # downgrades a previously-published row.
+    # downgrades a previously-published row unless a governance gate fires.
     publish = bool(document.is_published if hasattr(document, "is_published") else True)
     publish = publish and facts_written > 0
 
+    suppressed = False
+    if publish:
+        suppressed = _has_anomalous_signal(db, sigs)
+        if suppressed:
+            publish = False
+        elif (
+            metric_validation_report.cross_statement_breaches
+            or metric_validation_report.growth_review
+            or metric_validation_report.recompute_drift
+        ):
+            publish = False
+            suppressed = True
+        elif job and _rescaled_codes_touching_fired_signals(
+            db, sigs, job.validator_report or {}
+        ):
+            publish = False
+            suppressed = True
+        if suppressed:
+            stats.anomaly_suppressed_documents += 1
+            logger.info(
+                "  publish suppressed: document_id=%s held for analyst review",
+                document.document_id,
+            )
+
     cards_written = cards_stage.run_cards(
-        db, document=document, signals=sigs, publish=publish
+        db,
+        document=document,
+        signals=sigs,
+        publish=publish,
+        audit_trail=audit_trail,
     )
 
     _populate_event_summary(event, sigs, cards_written)
 
     verdict = cards_stage.run_result_verdict(
-        db, document=document, event=event, signals=sigs, publish=publish
+        db,
+        document=document,
+        event=event,
+        signals=sigs,
+        publish=publish,
+        audit_trail=audit_trail,
     )
     if verdict is not None:
         cards_written = [verdict, *cards_written]
@@ -208,16 +304,42 @@ def _reprocess_document(
     stats.documents += 1
     stats.metrics_written += metrics_written
     stats.quarantined_metrics += int(quarantined)
+    stats.anomalous_metrics += int(anomalous)
     stats.signals_written += len(sigs)
     stats.cards_written += len(cards_written)
     logger.info(
-        "  facts=%s metrics=%s quarantined=%s signals=%s cards=%s",
+        "  facts=%s metrics=%s quarantined=%s anomaly=%s signals=%s cards=%s%s",
         facts_written,
         metrics_written,
         int(quarantined),
+        int(anomalous),
         len(sigs),
         len(cards_written),
+        " (publish suppressed)" if suppressed else "",
     )
+
+
+def _has_anomalous_signal(db: Session, sigs: list) -> bool:
+    """Return True when any signal points at a suspect primary metric.
+
+    Mirrors ``runner._summarize_anomalies``: a metric is suspect when either
+    ``anomaly_flag`` (historical-distribution outlier) or ``is_quarantined``
+    (static / cross-statement / drift / extreme-growth breach) is set. Either
+    one is enough to suppress publish.
+    """
+    metric_ids = [s.primary_metric_id for s in sigs if s.primary_metric_id is not None]
+    if not metric_ids:
+        return False
+    from sqlalchemy import func
+
+    flagged = db.scalar(
+        select(func.count(CalculatedMetric.metric_id)).where(
+            CalculatedMetric.metric_id.in_(metric_ids),
+            (CalculatedMetric.anomaly_flag.is_(True))
+            | (CalculatedMetric.is_quarantined.is_(True)),
+        )
+    )
+    return bool(flagged)
 
 
 def _recanonicalise_extracted_values(db: Session, document_id: int) -> int:

@@ -1,11 +1,13 @@
 import { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, ChevronRight, FileText } from "lucide-react";
+import { ChevronRight, FileText } from "lucide-react";
+import { BackButton } from "@/components/common/BackButton";
 import clsx from "clsx";
 import { api } from "@/api/client";
 import type { CardBrief, EventDetailV1, FinancialSnapshotRow, SignalBriefV1 } from "@/api/types";
 import { AnalystSummaryCard } from "@/components/cards/AnalystSummaryCard";
+import { EventSignalDiagnosticsPanel } from "@/components/cards/EventSignalDiagnosticsPanel";
 import { IntelligenceCard } from "@/components/cards/IntelligenceCard";
 import { SaveWatchItemDialog } from "@/components/cards/SaveWatchItemDialog";
 import { PageLoader } from "@/components/common/Spinner";
@@ -23,7 +25,9 @@ import {
   formatDate,
   formatNumber,
   formatPct,
+  formatSnapshotYoY,
   mainIssueLabel,
+  snapshotYoYIsPositive,
 } from "@/lib/format";
 
 const CONCALL_INITIAL_FACTS = 4;
@@ -77,11 +81,11 @@ function EventFinancialSnapshot({
                 <td
                   className={clsx(
                     "px-5 py-2.5 text-right num font-medium",
-                    row.yoy_change_pct != null && row.yoy_change_pct > 0 && "text-positive",
-                    row.yoy_change_pct != null && row.yoy_change_pct < 0 && "text-negative",
+                    snapshotYoYIsPositive(row) === true && "text-positive",
+                    snapshotYoYIsPositive(row) === false && "text-negative",
                   )}
                 >
-                  {formatPct(row.yoy_change_pct)}
+                  {formatSnapshotYoY(row)}
                 </td>
               </tr>
             ))}
@@ -421,13 +425,7 @@ export function EventDetailPage() {
 
   return (
     <div className="w-full min-w-0 space-y-5">
-      <button
-        type="button"
-        onClick={() => navigate(companySymbol ? `/company/${companySymbol}` : "/")}
-        className="btn-ghost -ml-2 text-sm"
-      >
-        <ArrowLeft size={16} /> Back to {data.company?.company_name || "company"}
-      </button>
+      <BackButton fallback={companySymbol ? `/company/${companySymbol}` : "/"} />
 
       <section className="card p-5 md:p-6">
         <div className="min-w-0">
@@ -497,6 +495,10 @@ export function EventDetailPage() {
       </section>
 
       <AnalystSummaryCard summary={data.analyst_summary} />
+
+      {data.signal_diagnostics && (
+        <EventSignalDiagnosticsPanel diagnostics={data.signal_diagnostics} />
+      )}
 
       {showFinancialSnapshot && (
         <EventFinancialSnapshot

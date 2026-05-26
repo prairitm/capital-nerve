@@ -18,7 +18,7 @@ Models defined here include:
 - Identity: `CompanyBrief`, `PeriodBrief`, `CompanyBadge`.
 - Card: `CardBrief`, `CardDetail` (extends `CardBrief`), `CardMetric`, `EvidenceItem`, `CardMetricComparison`.
 - Concall: `ConcernHeatmapRow`.
-- Financials: `FinancialTrendPoint`, `FinancialTrend`, `FinancialSnapshotRow`.
+- Financials: `FinancialTrendPoint`, `FinancialTrend`, `FinancialSnapshotRow` (`yoy_change_pct` for levels in Cr/Rs; `yoy_change_bps` for margin levels).
 - Documents: `DocumentBrief`.
 - Timeline: `TimelineEvent`.
 

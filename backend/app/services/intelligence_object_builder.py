@@ -37,6 +37,7 @@ from app.schemas.v1.intelligence_object import (
     IntelligenceObjectBrief,
     IODisplayConfig,
     IOMetric,
+    IOTriggerMetricBrief,
 )
 from app.schemas.v1.signals import SignalBriefV1
 from app.services.card_context import (
@@ -547,6 +548,7 @@ def build_intelligence_object_brief(
     period: FinancialPeriod | None,
     event: CompanyEvent | None,
     document: SourceDocument | None = None,
+    db: Session | None = None,
 ) -> IntelligenceObjectBrief:
     """Lighter projection used by feeds and portfolio alerts.
 
@@ -558,6 +560,11 @@ def build_intelligence_object_brief(
     `SourceDocument`. When omitted, `source_label` falls back to the period /
     event label resolved by `build_source_label` and `document_id` comes from
     `card.document_id` so the feed-row PDF jump still works.
+
+    ``db`` is optional: when supplied, we attach a compact ``trigger_metric``
+    (formula, unit, source-page link, validation status) so the feed row can
+    render the analyst-trust strip without round-tripping to the by-id
+    endpoint. Callers that already hold a Session should pass it.
     """
 
     primary_metric: str | None = None
@@ -568,6 +575,8 @@ def build_intelligence_object_brief(
             unit = first.get("unit") or ""
             if value is not None:
                 primary_metric = f"{value}{(' ' + unit) if unit else ''}".strip()
+
+    trigger_metric = _build_trigger_metric_brief(db, card) if db is not None else None
 
     return IntelligenceObjectBrief(
         intelligence_object_id=card.card_id,
@@ -590,11 +599,207 @@ def build_intelligence_object_brief(
         event_date=event.event_date.isoformat() if event else None,
         signal_id=card.signal_id,
         primary_metric=primary_metric,
+        trigger_metric=trigger_metric,
         investor_relevance=_derive_investor_relevance(card.card_type, card.signal_direction),
         source_label=build_source_label(period, event, document),
         document_id=card.document_id,
         created_at=card.created_at,
     )
+
+
+def _build_trigger_metric_brief(
+    db: Session | None, card: IntelligenceCard
+) -> IOTriggerMetricBrief | None:
+    """Compact metric provenance for the feed row.
+
+    Reads the card's primary metric, its definition, and the first
+    CURRENT-period extracted value backing one of its formula inputs. One
+    metric-definition lookup + one extracted-value lookup per row keeps the
+    feed endpoint cheap.
+    """
+    if db is None:
+        return None
+    metrics_json = list(card.metrics_json or [])
+    if not metrics_json or not isinstance(metrics_json[0], dict):
+        return None
+    metric_entry = metrics_json[0]
+    name = metric_entry.get("name") or None
+    value_display = (
+        _format_brief_value(metric_entry.get("value"), metric_entry.get("unit"))
+        if metric_entry.get("value") is not None
+        else None
+    )
+    unit = metric_entry.get("unit") or None
+
+    md: MetricDefinition | None = None
+    cm: CalculatedMetric | None = None
+    if card.signal_id is not None:
+        sig = db.get(GeneratedSignal, card.signal_id)
+        if sig is not None and sig.primary_metric_id is not None:
+            cm = db.get(CalculatedMetric, sig.primary_metric_id)
+            if cm is not None and cm.metric_def_id is not None:
+                md = db.get(MetricDefinition, cm.metric_def_id)
+    if md is None and name:
+        md = db.scalar(select(MetricDefinition).where(MetricDefinition.metric_name == name))
+
+    code = md.metric_code if md else None
+    formula_text = md.formula_text if md else None
+    metric_kind = md.metric_kind if md else None
+    comparison_type = cm.comparison_type if cm else None
+    if comparison_type is None and md is not None:
+        # Derive from declared inputs when the metric is a within-period
+        # ratio (e.g. pat_margin) that has no comparison_type row stored.
+        comparison_type = _infer_comparison_type(md)
+
+    validation_status, validation_reason = _derive_validation_status(cm)
+
+    source_page = _primary_input_page(db, card.document_id, md)
+
+    confidence_score, confidence_band = _confidence_summary(cm)
+
+    if all(
+        x is None
+        for x in (
+            code,
+            name,
+            value_display,
+            formula_text,
+            metric_kind,
+            comparison_type,
+            source_page,
+            confidence_band,
+        )
+    ) and validation_status == "validated":
+        return None
+
+    return IOTriggerMetricBrief(
+        code=code,
+        name=name or (md.metric_name if md else None),
+        value_display=value_display,
+        unit=unit,
+        metric_kind=metric_kind,
+        comparison_type=comparison_type,
+        formula_text=formula_text,
+        source_page=source_page,
+        validation_status=validation_status,
+        validation_reason=validation_reason,
+        confidence_band=confidence_band,
+        confidence_score=confidence_score,
+    )
+
+
+def _confidence_summary(
+    cm: CalculatedMetric | None,
+) -> tuple[float | None, str | None]:
+    """Map a ``CalculatedMetric.confidence_score`` onto a coarse band.
+
+    The score on ``calculated_metrics`` is the aggregate of the input
+    extraction confidences (see ``services/pipeline/metrics.py``). Bands
+    follow the same thresholds the UI uses for card-level confidence:
+    high ≥ 80, medium ≥ 60, low otherwise.
+    """
+    if cm is None:
+        return None, None
+    raw = getattr(cm, "confidence_score", None)
+    if raw is None:
+        return None, None
+    try:
+        score = float(raw)
+    except (TypeError, ValueError):
+        return None, None
+    if score >= 80.0:
+        band = "high"
+    elif score >= 60.0:
+        band = "medium"
+    else:
+        band = "low"
+    return score, band
+
+
+def _format_brief_value(value, unit: str | None) -> str | None:
+    try:
+        val = float(value)
+    except (TypeError, ValueError):
+        return None
+    u = (unit or "").strip()
+    if u == "%":
+        return f"{val:.1f}%"
+    if u == "bps":
+        return f"{val:+.0f} bps"
+    if u == "x":
+        return f"{val:.2f}x"
+    if u == "pp":
+        return f"{val:+.1f} pp"
+    if u == "score":
+        return f"{val:.0f} / 100"
+    return f"{val:.2f}{(' ' + u) if u else ''}"
+
+
+def _derive_validation_status(
+    cm: CalculatedMetric | None,
+) -> tuple[str, str | None]:
+    if cm is None:
+        return "validated", None
+    if getattr(cm, "is_quarantined", False):
+        return "quarantined", getattr(cm, "quarantine_reason", None)
+    if getattr(cm, "anomaly_flag", False):
+        return "anomaly", getattr(cm, "anomaly_reason", None)
+    return "validated", None
+
+
+def _infer_comparison_type(md: MetricDefinition) -> str | None:
+    """Pick a short comparator label from the metric's declared inputs.
+
+    Pure metadata read — no DB calls. Codes are intended to be UI-stable so
+    the frontend can branch on them without re-stringifying.
+    """
+    inputs = list(md.inputs_json or [])
+    scopes = {(i.get("scope") or "CURRENT").upper() for i in inputs if isinstance(i, dict)}
+    kinds = {(i.get("kind") or "fact").lower() for i in inputs if isinstance(i, dict)}
+    if "PY" in scopes and "PQ" not in scopes:
+        return "yoy"
+    if "PQ" in scopes and "PY" not in scopes:
+        # PQ over kind=metric describes a true acceleration (pp delta), not
+        # a sequential level — surface it distinctly so the UI can render
+        # "+5 pp vs prior YoY rate" instead of conflating with QoQ.
+        if "metric" in kinds:
+            return "pp_vs_prior_yoy"
+        return "qoq"
+    if "PY" in scopes and "PQ" in scopes:
+        return "yoy_and_qoq"
+    return None
+
+
+def _primary_input_page(
+    db: Session,
+    document_id: int | None,
+    md: MetricDefinition | None,
+) -> int | None:
+    """Return the page of the first CURRENT fact backing the metric formula."""
+    if document_id is None or md is None:
+        return None
+    inputs = list(md.inputs_json or [])
+    code: str | None = None
+    for inp in inputs:
+        if not isinstance(inp, dict):
+            continue
+        scope = (inp.get("scope") or "CURRENT").upper()
+        kind = (inp.get("kind") or "fact").lower()
+        if scope == "CURRENT" and kind == "fact" and inp.get("code"):
+            code = inp["code"]
+            break
+    if code is None:
+        return None
+    row = db.execute(
+        select(ExtractedValue.page_number).where(
+            ExtractedValue.document_id == document_id,
+            ExtractedValue.normalized_label == code,
+            ExtractedValue.page_number.is_not(None),
+        )
+        .order_by(ExtractedValue.page_number.asc())
+        .limit(1)
+    ).scalar()
+    return int(row) if row is not None else None
 
 
 # Re-export to keep the import surface small for callers that just need the

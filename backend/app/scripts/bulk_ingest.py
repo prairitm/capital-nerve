@@ -13,6 +13,7 @@ Usage examples (run from ``backend/``)::
     python -m app.scripts.bulk_ingest --start 2024-04-01 --end 2026-03-31
     python -m app.scripts.bulk_ingest --last-quarters 6
     python -m app.scripts.bulk_ingest --symbols RELIANCE,TCS --from "Q3 FY25-26" --to "Q3 FY25-26" --dry-run
+    python -m app.scripts.bulk_ingest --symbols-file var/nse_nifty50.json --last-quarters 4
 
 The CLI reads `OPENAI_API_KEY`, `IR_AGENT_MODEL`, `IR_AGENT_CONCURRENCY`,
 and `IR_AGENT_RUNS_DIR` from the same `.env` the FastAPI app uses.
@@ -112,6 +113,16 @@ def run(
         None,
         "--symbols",
         help="Comma-separated NSE symbols. Defaults to every Company in the DB.",
+    ),
+    symbols_file: Optional[Path] = typer.Option(
+        None,
+        "--symbols-file",
+        help=(
+            "JSON array with nse_symbol per row (e.g. var/nse_nifty50.json). "
+            "Mutually exclusive with --symbols."
+        ),
+        exists=True,
+        readable=True,
     ),
     doc_types: Optional[str] = typer.Option(
         None,
@@ -228,7 +239,7 @@ def run(
         raise typer.Exit(code=2) from exc
 
     asset_keys = _parse_doc_types(doc_types)
-    target_symbols = _parse_symbols(symbols)
+    target_symbols = _resolve_target_symbols(symbols=symbols, symbols_file=symbols_file)
     concurrency = concurrency or settings.IR_AGENT_CONCURRENCY
 
     run_id = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ") + "-" + uuid.uuid4().hex[:6]
@@ -617,6 +628,25 @@ def _parse_symbols(value: Optional[str]) -> Optional[set[str]]:
     if not value:
         return None
     return {s.strip().upper() for s in value.split(",") if s.strip()}
+
+
+def _resolve_target_symbols(
+    *,
+    symbols: Optional[str],
+    symbols_file: Optional[Path],
+) -> Optional[set[str]]:
+    if symbols and symbols_file is not None:
+        raise typer.BadParameter("Pass only one of --symbols or --symbols-file.")
+    if symbols_file is not None:
+        from app.scripts.company_list_json import load_nse_symbols
+
+        try:
+            file_symbols = load_nse_symbols(symbols_file)
+        except ValueError as exc:
+            raise typer.BadParameter(str(exc)) from exc
+        typer.echo(f"Loaded {len(file_symbols)} symbol(s) from {symbols_file}")
+        return set(file_symbols)
+    return _parse_symbols(symbols)
 
 
 def _load_companies(db: Session, symbols: Optional[set[str]]) -> list[CompanyTarget]:

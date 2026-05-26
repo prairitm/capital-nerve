@@ -17,24 +17,31 @@ from app.models.events import CompanyEvent, SourceDocument
 from app.models.intelligence import IntelligenceCard
 from app.models.master import Company, FinancialPeriod, Sector
 from app.models.user import AppUser, Watchlist, WatchlistCompany
-from app.routers._helpers import find_company
+from app.routers._helpers import exclude_suspect_cards, find_company
 from app.schemas.v1.feed import FeedSummaryV1
 from app.schemas.v1.intelligence_object import (
     IntelligenceObject,
     IntelligenceObjectBrief,
 )
+from app.schemas.v1.reproducibility import ReproducibilityBundle
 from app.services.intelligence_object_builder import (
     build_intelligence_object,
     build_intelligence_object_brief,
 )
+from app.services.reproducibility import build_reproducibility_bundle
 
 router = APIRouter(prefix="/v1", tags=["v1: intelligence-objects"])
 
 
 def _io_query():
-    """Canonical join for published intelligence objects."""
+    """Canonical join for published intelligence objects.
 
-    return (
+    `exclude_suspect_cards` keeps rows whose signal points at a quarantined or
+    anomaly-flagged primary metric out of the feed — mirrors the write-path
+    block in `services/pipeline/runner._summarize_anomalies`.
+    """
+
+    return exclude_suspect_cards(
         select(IntelligenceCard, Company, FinancialPeriod, CompanyEvent, SourceDocument)
         .join(Company, Company.company_id == IntelligenceCard.company_id)
         .outerjoin(FinancialPeriod, FinancialPeriod.period_id == IntelligenceCard.period_id)
@@ -157,7 +164,7 @@ def list_company_intelligence_objects(
 
     rows = db.execute(stmt).all()
     return [
-        build_intelligence_object_brief(card, comp, per, ev, doc)
+        build_intelligence_object_brief(card, comp, per, ev, doc, db=db)
         for (card, comp, per, ev, doc) in rows
     ]
 
@@ -225,7 +232,7 @@ def list_intelligence_objects(
 
     rows = db.execute(stmt).all()
     return [
-        build_intelligence_object_brief(card, comp, per, ev, doc)
+        build_intelligence_object_brief(card, comp, per, ev, doc, db=db)
         for (card, comp, per, ev, doc) in rows
     ]
 
@@ -242,7 +249,9 @@ def intelligence_objects_summary(
     the feed never disagree on what the user can see.
     """
     cards = db.scalars(
-        select(IntelligenceCard).where(IntelligenceCard.is_published.is_(True))
+        exclude_suspect_cards(
+            select(IntelligenceCard).where(IntelligenceCard.is_published.is_(True))
+        )
     ).all()
 
     positive = sum(1 for c in cards if c.signal_direction == SignalDirection.POSITIVE)
@@ -290,3 +299,25 @@ def get_intelligence_object(
         raise HTTPException(status_code=404, detail="Intelligence object not found")
     card, comp, per, ev, doc = row
     return build_intelligence_object(db, card, comp, per, ev, doc)
+
+
+@router.get(
+    "/intelligence-objects/{object_id}/reproducibility",
+    response_model=ReproducibilityBundle,
+)
+def get_intelligence_object_reproducibility(
+    object_id: int,
+    db: Session = Depends(get_db),
+    user: AppUser = Depends(get_current_user),
+) -> ReproducibilityBundle:
+    """Self-contained analyst-reproducibility bundle for a card.
+
+    Returns the signal rule, metric formula, every resolved input with its
+    source page, the pipeline audit trail, and the
+    ``ExtractedValue → Fact → Metric → Signal → Card`` lineage graph as
+    one JSON document. Designed to be downloaded and replayed offline.
+    """
+    card = db.get(IntelligenceCard, object_id)
+    if card is None:
+        raise HTTPException(status_code=404, detail="Intelligence object not found")
+    return build_reproducibility_bundle(db, card)

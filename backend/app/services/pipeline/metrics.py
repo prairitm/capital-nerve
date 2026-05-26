@@ -36,6 +36,7 @@ from app.models.intelligence import (
 from app.models.master import FinancialPeriod
 from app.services.pipeline.formula import FormulaError, evaluate
 from app.services.pipeline.inputs import InputResolver
+from app.services.pipeline.metric_anomaly import check_anomaly
 
 logger = logging.getLogger(__name__)
 
@@ -146,10 +147,25 @@ def run_metrics(db: Session, *, document: SourceDocument) -> int:
             # Inputs incomplete — drop the metric (matches legacy behaviour).
             continue
 
-        comparison = _comparison_metadata(inputs_decl, resolved, current_period, db)
+        comparison = _comparison_metadata(
+            inputs_decl, resolved, current_period, db, metric_def=md
+        )
         steps = _build_steps(md.formula_text, resolved, result.value, md.unit)
 
         quarantine_reason = _bounds_breach_reason(md, result.value)
+        anomaly: object | None = None
+        if quarantine_reason is None:
+            # Static bounds passed — now ask the historical-anomaly check
+            # whether the value is plausible for *this* company. Quarantined
+            # values are already flagged and never reach signals; running the
+            # anomaly check on them adds nothing.
+            anomaly = check_anomaly(
+                db,
+                company_id=document.company_id,
+                metric_def=md,
+                value=result.value,
+                current_period_id=document.period_id,
+            )
         db.add(
             CalculatedMetric(
                 company_id=document.company_id,
@@ -169,11 +185,17 @@ def run_metrics(db: Session, *, document: SourceDocument) -> int:
                 calculation_steps=steps,
                 is_quarantined=quarantine_reason is not None,
                 quarantine_reason=quarantine_reason,
+                anomaly_flag=anomaly is not None,
+                anomaly_reason=anomaly.reason if anomaly is not None else None,
             )
         )
         if quarantine_reason:
             logger.warning(
                 "metric %s quarantined: %s", md.metric_code, quarantine_reason
+            )
+        elif anomaly is not None:
+            logger.warning(
+                "metric %s anomaly: %s", md.metric_code, anomaly.reason
             )
         written += 1
         # Flush so the next metric in topo order can read this metric back via
@@ -252,13 +274,19 @@ def _comparison_metadata(
     resolved: dict,
     current_period: FinancialPeriod,
     db: Session,
+    *,
+    metric_def: MetricDefinition,
 ) -> dict:
     """Pull a YoY/QoQ change-summary from the resolved inputs when present.
 
     Convention: a metric whose first comparator input has scope ``PY`` is YoY;
-    ``PQ`` is QoQ. The drawer reads `change_absolute`, `change_percent`,
-    `change_bps`, and `comparison_period_id` to render the trend chip.
+    ``PQ`` is QoQ. Growth-rate metrics store relative ``change_percent``; level
+    margin metrics store ``change_bps`` (percentage-point × 100). Delta metrics
+    with ``is_bps`` store the change in ``metric_value`` already — no row here.
     """
+    if metric_def.is_bps:
+        return {}
+
     comparator: dict | None = None
     for spec in inputs_decl:
         scope = (spec.get("scope") or "CURRENT").upper()
@@ -280,6 +308,18 @@ def _comparison_metadata(
     period_id = _resolve_comparator_period_id(scope, current_period, db)
 
     change_abs = base_value - prior_value
+    code = metric_def.metric_code
+    is_growth_rate = "growth" in code or code.endswith("_yoy") or code.endswith("_qoq")
+    unit = (metric_def.unit or "").strip()
+    if unit == "%" and not is_growth_rate:
+        return {
+            "period_id": period_id,
+            "type": comparison_type,
+            "change_abs": change_abs,
+            "change_pct": None,
+            "change_bps": change_abs * 100.0,
+        }
+
     change_pct = (base_value - prior_value) / prior_value * 100 if prior_value else None
     return {
         "period_id": period_id,

@@ -28,7 +28,7 @@ const SERIES_COLORS = ["#60A5FA", "#34D399", "#F59E0B", "#F87171", "#A78BFA", "#
 interface ChartDatum {
   period_label: string;
   period_end_date: string;
-  [metricCode: string]: number | string | null;
+  [key: string]: number | string | boolean | null;
 }
 
 function buildChartData(trends: FinancialTrend[]): ChartDatum[] {
@@ -45,6 +45,7 @@ function buildChartData(trends: FinancialTrend[]): ChartDatum[] {
         periodMap.set(key, row);
       }
       row[trend.metric_code] = point.value;
+      row[`${trend.metric_code}__anomaly`] = Boolean(point.anomaly_flag);
     }
   }
   return Array.from(periodMap.values()).sort(
@@ -59,11 +60,48 @@ function formatTooltipValue(value: number | null, unit: string): string {
   return formatNumber(value, 2);
 }
 
+function formatBandValue(value: number | null | undefined, unit: string): string {
+  if (value == null) return "—";
+  if (unit === "%") return formatPct(value, 1);
+  return formatNumber(value, 1);
+}
+
+function AnomalyDot({
+  cx,
+  cy,
+  stroke,
+  payload,
+  dataKey,
+}: {
+  cx?: number;
+  cy?: number;
+  stroke?: string;
+  payload?: ChartDatum;
+  dataKey?: string | number;
+}) {
+  if (cx == null || cy == null || !dataKey) return null;
+  const code = String(dataKey);
+  const flagged = payload?.[`${code}__anomaly`] === true;
+  return (
+    <circle
+      cx={cx}
+      cy={cy}
+      r={flagged ? 4 : 2}
+      fill={flagged ? "#F59E0B" : stroke}
+      stroke={flagged ? "#F59E0B" : stroke}
+      strokeWidth={flagged ? 2 : 0}
+    />
+  );
+}
+
 /**
  * Multi-line "Signal trend" chart on the company hub. Renders the last N
  * quarters of analyst-relevant calculated metrics so an analyst can see
  * direction-of-travel for revenue growth, EBITDA margin, PAT margin, and
  * segment margin without leaving the company page.
+ *
+ * Historical min / max / median bands are listed under the chart; anomalous
+ * quarters render as larger amber dots on the line.
  */
 export function SignalTrendChart({
   symbol,
@@ -86,6 +124,10 @@ export function SignalTrendChart({
   });
 
   const chartData = useMemo(() => (data ? buildChartData(data) : []), [data]);
+  const bands = useMemo(
+    () => (data ?? []).filter((t) => t.band && (t.band.min != null || t.band.max != null)),
+    [data],
+  );
 
   if (isLoading) {
     return (
@@ -107,6 +149,7 @@ export function SignalTrendChart({
             <h2 className="text-base font-semibold">Signal trend</h2>
             <p className="text-xs text-ink-soft mt-0.5">
               Last {quarters} quarters of growth, margin, and segment quality.
+              Amber dots mark quarters flagged as historical anomalies.
             </p>
           </div>
         </header>
@@ -153,14 +196,37 @@ export function SignalTrendChart({
                   name={trend.metric_name}
                   stroke={SERIES_COLORS[idx % SERIES_COLORS.length]}
                   strokeWidth={1.75}
-                  dot={{ r: 2 }}
-                  activeDot={{ r: 4 }}
+                  dot={<AnomalyDot dataKey={trend.metric_code} />}
+                  activeDot={{ r: 5 }}
                   connectNulls
                 />
               ))}
             </LineChart>
           </ResponsiveContainer>
         </div>
+
+        {bands.length > 0 && (
+          <div className="mt-3 pt-3 border-t border-line/60 grid gap-1.5 sm:grid-cols-2">
+            {bands.map((trend) => (
+              <div
+                key={trend.metric_code}
+                className="text-[11px] text-ink-mute"
+                title="Historical envelope from the last 16 non-quarantined quarters"
+              >
+                <span className="font-medium text-ink-soft">{trend.metric_name}</span>
+                {" · "}
+                {formatBandValue(trend.band?.min, trend.unit)} –{" "}
+                {formatBandValue(trend.band?.max, trend.unit)}
+                {trend.band?.median != null && (
+                  <>
+                    {" "}
+                    (median {formatBandValue(trend.band.median, trend.unit)})
+                  </>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </section>
   );

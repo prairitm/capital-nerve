@@ -18,11 +18,10 @@ Build `FinancialSnapshotRow` list for one reporting period (used by `GET /events
 
 ## Dependencies
 
-- May import: `sqlalchemy`, `FinancialStatementFact`, `FinancialLineItemDefinition`, `FinancialPeriod`, `FinancialSnapshotRow`.
+- May import: [`financial_snapshot`](financial_snapshot.py), `FinancialPeriod`, `FinancialSnapshotRow`.
 - Must not: write to the database.
 
 ## Verification checklist
 
 - [ ] Returns empty list when `period` is None
-- [ ] YoY prior period matched by `fy_year - 1`, same `quarter` and `period_type`
-- [ ] Only `period_value_type == "CURRENT"` facts used
+- [ ] Delegates to `financial_snapshot.build_financial_snapshot` (margin bps YoY, calculated margins)

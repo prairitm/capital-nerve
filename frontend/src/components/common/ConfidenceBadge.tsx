@@ -1,5 +1,14 @@
 import type { ConfidenceLevel } from "@/api/types";
+import { formatExtractionConfidence, normalizeConfidenceScore } from "@/lib/format";
 
+/**
+ * Card-level extraction confidence chip.
+ *
+ * Scores are stored on a 0–100 scale (`Numeric(5, 2)` in
+ * `app.models.intelligence`). Label is explicit — analysts have asked us not
+ * to conflate the trust of the extracted card with the trust of an individual
+ * metric input. For per-metric trust use `MetricConfidenceBadge`.
+ */
 export function ConfidenceBadge({
   level,
   score,
@@ -7,18 +16,23 @@ export function ConfidenceBadge({
   level?: ConfidenceLevel | null;
   score?: number | null;
 }) {
-  if (!level && !score) return null;
+  if (!level && score == null) return null;
+  const normalized = normalizeConfidenceScore(score);
   const text =
-    score !== undefined && score !== null
-      ? `${score.toFixed(0)}% confidence`
+    normalized != null
+      ? `${formatExtractionConfidence(score)} extraction confidence`
       : level
-        ? `${level.replace("_", " ").toLowerCase()} confidence`
+        ? `${level.replace("_", " ").toLowerCase()} extraction confidence`
         : "";
   const klass =
-    level === "HIGH" || (score !== undefined && score !== null && score >= 85)
+    level === "HIGH" || (normalized != null && normalized >= 85)
       ? "chip-positive"
-      : level === "MEDIUM" || (score !== undefined && score !== null && score >= 70)
+      : level === "MEDIUM" || (normalized != null && normalized >= 70)
         ? "chip-neutral"
         : "chip-low";
-  return <span className={klass}>{text}</span>;
+  return (
+    <span className={klass} title="Extraction confidence (0–100)">
+      {text}
+    </span>
+  );
 }

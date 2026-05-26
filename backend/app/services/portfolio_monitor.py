@@ -15,6 +15,7 @@ from app.db.enums import SeverityLevel, SignalDirection
 from app.models.events import CompanyEvent
 from app.models.intelligence import IntelligenceCard
 from app.models.master import Company, FinancialPeriod
+from app.routers._helpers import exclude_suspect_cards
 from app.schemas.v1.intelligence_object import IntelligenceObjectBrief
 from app.schemas.v1.portfolio import (
     PortfolioAlert,
@@ -82,7 +83,7 @@ def monitor_portfolio(
 
     company_ids = [c.company_id for c in companies]
 
-    stmt = (
+    stmt = exclude_suspect_cards(
         select(IntelligenceCard, Company, FinancialPeriod, CompanyEvent)
         .join(Company, Company.company_id == IntelligenceCard.company_id)
         .outerjoin(FinancialPeriod, FinancialPeriod.period_id == IntelligenceCard.period_id)
@@ -90,8 +91,7 @@ def monitor_portfolio(
         .where(IntelligenceCard.is_published.is_(True))
         .where(IntelligenceCard.card_type != "watch_next")
         .where(IntelligenceCard.company_id.in_(company_ids))
-        .order_by(IntelligenceCard.card_priority.desc(), IntelligenceCard.created_at.desc())
-    )
+    ).order_by(IntelligenceCard.card_priority.desc(), IntelligenceCard.created_at.desc())
 
     if severity_filter:
         stmt = stmt.where(IntelligenceCard.severity.in_(severity_filter))
@@ -121,7 +121,7 @@ def monitor_portfolio(
             ]
 
         objects = [
-            build_intelligence_object_brief(card, comp, per, ev)
+            build_intelligence_object_brief(card, comp, per, ev, db=db)
             for (card, comp, per, ev) in bucket
         ]
         matched = bool(objects)

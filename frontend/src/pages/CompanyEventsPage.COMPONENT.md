@@ -15,7 +15,7 @@ Full event timeline for one company at `/company/:symbol/events`.
 ## Contract
 
 - Data: `GET /v1/companies/:symbol` (company header) and `GET /v1/companies/:symbol/events?limit=200&dedupe_periods=false` (all filings, grouped by quarter in UI).
-- Back control at top returns to `/company/:symbol`.
+- Back control uses [`BackButton`](../components/common/BackButton.tsx) (history back, fallback `/company/:symbol`).
 
 ## Dependencies
 
@@ -31,3 +31,4 @@ Full event timeline for one company at `/company/:symbol/events`.
 - [ ] Query key `["company", symbol]`
 - [ ] Each row navigates to `/company/:symbol/event/:eventId`
 - [ ] Empty state when `timeline` is empty
+- [ ] Back uses history when available; direct link falls back to company hub

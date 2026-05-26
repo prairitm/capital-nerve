@@ -41,6 +41,32 @@ class IOMetric(BaseModel):
     unit: str | None = None
 
 
+class IOTriggerMetricBrief(BaseModel):
+    """Compact metric + provenance payload carried on every feed-row brief.
+
+    The collapsed feed used to show only ``card.headline`` (e.g.
+    "Healthy PAT Margin: 60.8%"), which hides the metric type, the
+    comparator, and the source page. This brief surfaces all of that so an
+    analyst can sanity-check a card in one glance.
+    """
+
+    code: str | None = None
+    name: str | None = None
+    value_display: str | None = None
+    unit: str | None = None
+    metric_kind: str | None = None      # financial | model_score | composite
+    comparison_type: str | None = None  # qoq | yoy | pq_metric_pp | ...
+    formula_text: str | None = None
+    source_page: int | None = None
+    validation_status: str = "validated"  # validated | anomaly | quarantined
+    validation_reason: str | None = None
+    # Confidence band derived from the underlying extraction confidence
+    # (extracted_values.confidence_score). high / medium / low gives the
+    # feed a single-glance signal even when full chain is collapsed.
+    confidence_band: str | None = None  # high | medium | low
+    confidence_score: float | None = None  # 0..100, raw score behind the band
+
+
 class IODisplayConfig(BaseModel):
     """Display contract that tells a renderer (UI / API client / Excel / Slack)
     how to surface this object.
@@ -136,6 +162,7 @@ class IntelligenceObjectBrief(BaseModel):
     event_date: str | None = None
     signal_id: int | None = None
     primary_metric: str | None = None
+    trigger_metric: IOTriggerMetricBrief | None = None
     investor_relevance: list[str] = []
     source_label: str | None = None
     document_id: int | None = None

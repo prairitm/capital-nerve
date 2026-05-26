@@ -1,9 +1,42 @@
+from sqlalchemy import not_, select
 from sqlalchemy.orm import Session
 
 from app.models.events import CompanyEvent, SourceDocument
-from app.models.intelligence import IntelligenceCard
+from app.models.intelligence import CalculatedMetric, GeneratedSignal, IntelligenceCard
 from app.models.master import Company, FinancialPeriod, Sector
 from app.schemas.common import CardBrief, CompanyBrief, PeriodBrief
+
+
+def suspect_signal_exists():
+    """Correlated EXISTS clause: an `IntelligenceCard`'s signal has a suspect primary metric.
+
+    A card is suspect when the `GeneratedSignal` it was built from points at a
+    `CalculatedMetric` that is `is_quarantined=True` or `anomaly_flag=True`.
+    Cards with `signal_id IS NULL` are unaffected — `EXISTS` returns false when
+    nothing matches.
+
+    Used by every read path that lists "published cards" so the public surface
+    stays consistent with the Review Queue. The corresponding write-path gate
+    lives in `services/pipeline/runner._summarize_anomalies`.
+    """
+    return (
+        select(GeneratedSignal.signal_id)
+        .join(
+            CalculatedMetric,
+            CalculatedMetric.metric_id == GeneratedSignal.primary_metric_id,
+        )
+        .where(GeneratedSignal.signal_id == IntelligenceCard.signal_id)
+        .where(
+            (CalculatedMetric.is_quarantined.is_(True))
+            | (CalculatedMetric.anomaly_flag.is_(True))
+        )
+        .exists()
+    )
+
+
+def exclude_suspect_cards(stmt):
+    """Apply `NOT suspect_signal_exists()` to a select that includes IntelligenceCard."""
+    return stmt.where(not_(suspect_signal_exists()))
 
 
 def company_brief(company: Company, sector: Sector | None = None) -> CompanyBrief:

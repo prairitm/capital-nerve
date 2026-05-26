@@ -39,6 +39,19 @@ def test_v1_health_and_summary_routes_exist(client: TestClient) -> None:
     assert client.get("/v1/intelligence-objects/summary").status_code == 401
 
 
+def test_v1_metric_registry_routes_exist(client: TestClient) -> None:
+    """The new metric-registry endpoints must be wired and auth-guarded."""
+    assert client.get("/v1/metrics/registry").status_code == 401
+    assert client.get("/v1/metrics/registry/pat_margin").status_code == 401
+
+
+def test_v1_reproducibility_route_exists(client: TestClient) -> None:
+    """Analyst-reproducibility export endpoint must be wired and auth-guarded."""
+    assert (
+        client.get("/v1/intelligence-objects/1/reproducibility").status_code == 401
+    )
+
+
 def test_production_rejects_weak_jwt() -> None:
     settings = Settings(
         APP_ENV="production",

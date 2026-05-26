@@ -416,11 +416,13 @@ def _primary_metric_summary(
 def _load_metric_values(
     db: Session, *, company_id: int, period_id: int
 ) -> dict[str, CalculatedMetric]:
-    """Load published metrics for the period, skipping quarantined rows.
+    """Load published metrics for the period, skipping quarantined and anomalous rows.
 
-    Quarantined metrics (`is_quarantined=True`) breached their sanity bounds
-    and would only produce wrong signals. They stay in the DB for the admin
-    Review Queue but never participate in rule evaluation.
+    Quarantined metrics (``is_quarantined=True``) breached their sanity bounds.
+    Anomalous metrics (``anomaly_flag=True``) failed the historical-distribution
+    check (see ``services/pipeline/metric_anomaly.py``). Both stay in the DB for
+    the admin Review Queue but must never participate in rule evaluation —
+    otherwise a single bad input keeps producing misleading public signals.
     """
     stmt = (
         select(CalculatedMetric, MetricDefinition)
@@ -429,6 +431,7 @@ def _load_metric_values(
             CalculatedMetric.company_id == company_id,
             CalculatedMetric.period_id == period_id,
             CalculatedMetric.is_quarantined.is_(False),
+            CalculatedMetric.anomaly_flag.is_(False),
         )
     )
     return {md.metric_code: cm for cm, md in db.execute(stmt).all()}
@@ -501,6 +504,15 @@ def _format_value(value: float, unit: str | None) -> str:
         return f"{value:+.0f} bps"
     if unit == "x":
         return f"{value:.2f}x"
+    if unit == "pp":
+        # Percentage points (e.g. growth-rate acceleration). The sign is
+        # part of the story so always show it.
+        return f"{value:+.1f} pp"
+    if unit == "score":
+        # Concall lexicon scores live on a 0–100 scale; rendering as "12 /
+        # 100" stops analysts treating "0.52" as a probability and makes the
+        # ceiling visible.
+        return f"{value:.0f} / 100"
     return f"{value:.2f}"
 
 

@@ -31,6 +31,7 @@ Detail view for a single generated signal at `/signals/:signalId`. Verdict-first
 - Evidence: inline `p.N` / `source` links via `EvidenceInlineLinks` beside rule leaves and financial context values — no standalone evidence card.
 - Financial context table highlights `rule_metric_codes` and `trigger_metric`.
 - Related cards run through `filterInsightListCards` before rendering.
+- Back control uses [`BackButton`](../components/common/BackButton.tsx) (history back, fallback `/signals`).
 
 ## UI / UX
 
@@ -45,3 +46,4 @@ Detail view for a single generated signal at `/signals/:signalId`. Verdict-first
 - [ ] Related cards filtered by `filterInsightListCards`
 - [ ] Source links use `SourceDocumentLinks` + `uniqueSourceRefs`
 - [ ] Drawer rendered at page level
+- [ ] Back uses history when available; direct link falls back to `/signals`

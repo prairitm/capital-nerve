@@ -1,6 +1,7 @@
-import { useNavigate, useParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, RefreshCw } from "lucide-react";
+import { RefreshCw } from "lucide-react";
+import { BackButton } from "@/components/common/BackButton";
 import { api } from "@/api/client";
 import type { DocumentDetail } from "@/api/types";
 import { PageLoader } from "@/components/common/Spinner";
@@ -10,7 +11,6 @@ const ACTIVE_EXTRACTION = new Set(["PENDING", "PROCESSING"]);
 
 export function DocumentPage() {
   const { documentId } = useParams<{ documentId: string }>();
-  const navigate = useNavigate();
   const queryClient = useQueryClient();
 
   const { data, isLoading } = useQuery({
@@ -39,9 +39,11 @@ export function DocumentPage() {
 
   return (
     <div className="space-y-4">
-      <button onClick={() => navigate(-1)} className="btn-ghost -ml-2 text-sm">
-        <ArrowLeft size={16} /> Back
-      </button>
+      <BackButton
+        fallback={
+          data.company?.symbol ? `/company/${data.company.symbol}` : "/"
+        }
+      />
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <div className="text-[11px] uppercase tracking-wider text-ink-soft">

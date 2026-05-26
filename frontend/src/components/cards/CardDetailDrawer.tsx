@@ -9,7 +9,10 @@ import { SeverityBadge } from "@/components/common/SeverityBadge";
 import { SignalBadge } from "@/components/common/SignalBadge";
 import { Spinner } from "@/components/common/Spinner";
 import { SourceDocumentLinks, uniqueSourceRefs } from "@/components/common/SourceDocumentLink";
-import { CalculationChainPanel } from "@/components/evidence/CalculationChainPanel";
+import {
+  CalculationChainPanel,
+  CALCULATION_CHAIN_ANCHOR,
+} from "@/components/evidence/CalculationChainPanel";
 import { EvidencePanel } from "@/components/evidence/EvidencePanel";
 import { MetricSparkline } from "@/components/cards/MetricSparkline";
 import { cardTypeLabel, formatDate, formatNumber, formatPct, formatSigned, mainIssueLabel } from "@/lib/format";
@@ -387,19 +390,46 @@ export function CardDetailDrawer({ cardId, onClose, onSaveWatchItem }: Props) {
 
             {data.metrics.length > 0 && (
               <section>
-                <h3 className="text-xs uppercase tracking-wider text-ink-soft mb-2">Key metrics</h3>
+                <div className="flex items-baseline justify-between gap-3 mb-2">
+                  <h3 className="text-xs uppercase tracking-wider text-ink-soft">Key metrics</h3>
+                  {data.calculation_chain && (
+                    <a
+                      href={`#${CALCULATION_CHAIN_ANCHOR}`}
+                      className="text-[11px] text-ink-soft hover:text-ink"
+                      title="See formula + sources"
+                    >
+                      Show derivation
+                    </a>
+                  )}
+                </div>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                  {data.metrics.map((m, i) => (
-                    <div key={i} className="card-2 p-3">
-                      <div className="text-[11px] text-ink-soft mb-0.5">{m.name}</div>
-                      <div className="text-base font-semibold num">
-                        {typeof m.value === "number"
-                          ? m.value.toLocaleString("en-IN", { maximumFractionDigits: 2 })
-                          : (m.value ?? "—")}
-                        {m.unit && <span className="text-ink-mute ml-1 text-xs">{m.unit}</span>}
-                      </div>
-                    </div>
-                  ))}
+                  {data.metrics.map((m, i) => {
+                    const Tag = data.calculation_chain ? "a" : "div";
+                    const tagProps = data.calculation_chain
+                      ? {
+                          href: `#${CALCULATION_CHAIN_ANCHOR}`,
+                          title: "Open derivation",
+                        }
+                      : {};
+                    return (
+                      <Tag
+                        key={i}
+                        {...tagProps}
+                        className={clsx(
+                          "card-2 p-3 block",
+                          data.calculation_chain && "hover:border-line-strong cursor-pointer",
+                        )}
+                      >
+                        <div className="text-[11px] text-ink-soft mb-0.5">{m.name}</div>
+                        <div className="text-base font-semibold num">
+                          {typeof m.value === "number"
+                            ? m.value.toLocaleString("en-IN", { maximumFractionDigits: 2 })
+                            : (m.value ?? "—")}
+                          {m.unit && <span className="text-ink-mute ml-1 text-xs">{m.unit}</span>}
+                        </div>
+                      </Tag>
+                    );
+                  })}
                 </div>
               </section>
             )}

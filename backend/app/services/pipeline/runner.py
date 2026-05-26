@@ -20,6 +20,7 @@ from sqlalchemy.orm import Session
 from app.core.config import settings
 from app.db.enums import ExtractionStatus, SignalDirection
 from app.models.events import CompanyEvent, ExtractionJob, SourceDocument
+from app.models.intelligence import CalculatedMetric, MetricDefinition
 from app.models.review import ReviewQueue
 from app.services.pipeline import cards as cards_stage
 from app.services.pipeline import concall as concall_stage
@@ -27,6 +28,7 @@ from app.services.pipeline import extraction as extraction_stage
 from app.services.pipeline import guidance as guidance_stage
 from app.services.pipeline import indexing as indexing_stage
 from app.services.pipeline import metrics as metrics_stage
+from app.services.pipeline import metric_validation as metric_validation_stage
 from app.services.pipeline import normalization as normalization_stage
 from app.services.pipeline import announcement as announcement_stage
 from app.services.pipeline import orderbook as orderbook_stage
@@ -152,6 +154,24 @@ def run_pipeline_for_document(db: Session, *, job_id: int) -> PipelineSummary:
         # ---- Metrics ----
         metrics_written = metrics_stage.run_metrics(db, document=document)
 
+        # ---- Cross-statement + drift validation ----
+        # Runs after metrics so it can read back stored ``CalculatedMetric``
+        # rows and re-derive them from facts. Findings feed the review queue
+        # and the auto-publish gate alongside the static bounds + anomaly checks.
+        metric_validation_report = None
+        if document.period_id is not None:
+            metric_validation_report = metric_validation_stage.validate_calculated_metrics(
+                db,
+                company_id=document.company_id,
+                period_id=document.period_id,
+            )
+            metric_validation_stage.apply_validation_actions(
+                db,
+                company_id=document.company_id,
+                period_id=document.period_id,
+                report=metric_validation_report,
+            )
+
         # ---- Signals ----
         sigs, signal_diag_raw = signals_stage.run_signals(db, document=document)
         signal_diag = signals_stage.diagnostics_to_dict(signal_diag_raw)
@@ -165,13 +185,83 @@ def run_pipeline_for_document(db: Session, *, job_id: int) -> PipelineSummary:
             and facts_written > 0
             and overall_conf >= float(settings.AUTO_PUBLISH_CONFIDENCE)
         )
+        # The metric_anomaly check flagged values that look impossible against
+        # the company's own history (the RELIANCE Q2 60.8 % PAT margin case).
+        # Hold the document for analyst review rather than publishing a
+        # signal-set built on an obviously suspect metric.
+        anomaly_summary: str | None = None
+        if publish:
+            anomaly_summary = _summarize_anomalies(sigs)
+            if anomaly_summary is not None:
+                publish = False
+                logger.warning(
+                    "Suppressing auto-publish on document %s: %s",
+                    document.document_id,
+                    anomaly_summary,
+                )
+        # Cross-statement breaches (PAT > Revenue, EBITDA > Revenue) and
+        # extreme growth rates are also publish-blockers — the underlying
+        # extraction is internally inconsistent.
+        cross_statement_summary: str | None = None
+        if publish and metric_validation_report is not None and (
+            metric_validation_report.cross_statement_breaches
+            or metric_validation_report.growth_review
+        ):
+            parts: list[str] = []
+            if metric_validation_report.cross_statement_breaches:
+                parts.append(
+                    f"{len(metric_validation_report.cross_statement_breaches)} cross-statement breach(es)"
+                )
+            if metric_validation_report.growth_review:
+                parts.append(
+                    f"{len(metric_validation_report.growth_review)} extreme growth value(s)"
+                )
+            cross_statement_summary = ", ".join(parts)
+            publish = False
+            logger.warning(
+                "Suppressing auto-publish on document %s: %s",
+                document.document_id,
+                cross_statement_summary,
+            )
+        recompute_drift_summary: str | None = None
+        if publish and metric_validation_report is not None and metric_validation_report.recompute_drift:
+            recompute_drift_summary = (
+                f"{len(metric_validation_report.recompute_drift)} metric recompute drift(s)"
+            )
+            publish = False
+            logger.warning(
+                "Suppressing auto-publish on document %s: %s",
+                document.document_id,
+                recompute_drift_summary,
+            )
+        unit_rescale_summary: str | None = None
+        if publish:
+            rescaled_touching = _rescaled_codes_touching_fired_signals(
+                db,
+                sigs,
+                job.validator_report or {},
+            )
+            if rescaled_touching:
+                unit_rescale_summary = (
+                    f"unit rescaling on primary inputs ({', '.join(rescaled_touching)})"
+                )
+                publish = False
+                logger.warning(
+                    "Suppressing auto-publish on document %s: %s",
+                    document.document_id,
+                    unit_rescale_summary,
+                )
         # Mirror publish state onto the parent objects so the read-side filters
         # (which all gate on `is_published`) stay coherent.
         event.is_published = publish
         for s in sigs:
             s.is_published = publish
         cards_written = cards_stage.run_cards(
-            db, document=document, signals=sigs, publish=publish
+            db,
+            document=document,
+            signals=sigs,
+            publish=publish,
+            audit_trail=_build_audit_trail(job),
         )
 
         # Roll up onto the event summary so home / company pages show a real
@@ -182,7 +272,12 @@ def run_pipeline_for_document(db: Session, *, job_id: int) -> PipelineSummary:
         # This is the single hero card that ranks above the individual signal
         # cards on the event page and feed.
         verdict = cards_stage.run_result_verdict(
-            db, document=document, event=event, signals=sigs, publish=publish
+            db,
+            document=document,
+            event=event,
+            signals=sigs,
+            publish=publish,
+            audit_trail=_build_audit_trail(job),
         )
         if verdict is not None:
             cards_written = [verdict, *cards_written]
@@ -208,6 +303,11 @@ def run_pipeline_for_document(db: Session, *, job_id: int) -> PipelineSummary:
             "signal_diagnostics": signal_diag,
             "published": publish,
             "auto_publish_threshold": float(settings.AUTO_PUBLISH_CONFIDENCE),
+            "metric_validation": (
+                metric_validation_report.to_dict()
+                if metric_validation_report is not None
+                else None
+            ),
         }
         document.extraction_status = job.status
         document.cards_generated = len(cards_written)
@@ -228,6 +328,10 @@ def run_pipeline_for_document(db: Session, *, job_id: int) -> PipelineSummary:
                 signal_diag=signal_diag,
                 cache_hit=bool((job.meta or {}).get("cache_hit")),
                 validator_report=job.validator_report or {},
+                anomaly_summary=anomaly_summary,
+                cross_statement_summary=cross_statement_summary,
+                recompute_drift_summary=recompute_drift_summary,
+                unit_rescale_summary=unit_rescale_summary,
             ),
         )
 
@@ -328,6 +432,10 @@ def _review_description(
     signal_diag: dict,
     cache_hit: bool = False,
     validator_report: dict | None = None,
+    anomaly_summary: str | None = None,
+    cross_statement_summary: str | None = None,
+    recompute_drift_summary: str | None = None,
+    unit_rescale_summary: str | None = None,
 ) -> str:
     threshold = float(settings.AUTO_PUBLISH_CONFIDENCE)
     signal_line = (
@@ -367,6 +475,14 @@ def _review_description(
             f"extraction confidence {overall_conf:.0f}% is below auto-publish "
             f"threshold ({threshold:.0f}%)"
         )
+    if anomaly_summary:
+        reasons.append(anomaly_summary)
+    if cross_statement_summary:
+        reasons.append(cross_statement_summary)
+    if recompute_drift_summary:
+        reasons.append(recompute_drift_summary)
+    if unit_rescale_summary:
+        reasons.append(unit_rescale_summary)
     if signals_fired == 0 and not signal_diag.get("blockers"):
         reasons.append("no metric rules breached — cards may be minimal")
     if validator_report and validator_report.get("totals_breaches"):
@@ -374,6 +490,125 @@ def _review_description(
     if not reasons:
         reasons.append("awaiting admin approval")
     return f"Needs review: {signal_line}; {cards} cards; " + "; ".join(reasons) + "." + suffix
+
+
+def _rescaled_codes_touching_fired_signals(
+    db: Session,
+    sigs: list,
+    validator_report: dict,
+) -> list[str]:
+    """Return fact codes that were unit-rescaled and feed a fired signal's primary metric."""
+    rescaled = validator_report.get("unit_rescaled") or []
+    if not rescaled or not sigs:
+        return []
+    rescaled_codes = {
+        str(entry["normalized_code"])
+        for entry in rescaled
+        if isinstance(entry, dict) and entry.get("normalized_code")
+    }
+    if not rescaled_codes:
+        return []
+    touched: list[str] = []
+    for sig in sigs:
+        if sig.primary_metric_id is None:
+            continue
+        cm = db.get(CalculatedMetric, sig.primary_metric_id)
+        if cm is None or cm.metric_def_id is None:
+            continue
+        md = db.get(MetricDefinition, cm.metric_def_id)
+        if md is None:
+            continue
+        for inp in md.inputs_json or []:
+            if not isinstance(inp, dict):
+                continue
+            if (inp.get("kind") or "fact").lower() != "fact":
+                continue
+            if (inp.get("scope") or "CURRENT").upper() != "CURRENT":
+                continue
+            code = inp.get("code")
+            if code and code in rescaled_codes and code not in touched:
+                touched.append(code)
+    return touched
+
+
+def _build_audit_trail(job: ExtractionJob) -> dict:
+    """Snapshot pipeline versions for the cards we are about to write.
+
+    Persisted on ``IntelligenceCard.display_context['audit_trail']`` so the
+    analyst-reproducibility export can answer the question "which pipeline
+    produced this card?" without re-joining ``extraction_jobs``.
+    """
+    return {
+        "extraction_job_id": job.extraction_job_id,
+        "prompt_version": job.prompt_version,
+        "parser_version": job.parser_version,
+        "model_name": job.model_name,
+        "provider_used": job.provider_used,
+        "llm_temperature": (
+            float(job.llm_temperature) if job.llm_temperature is not None else None
+        ),
+        "llm_seed": job.llm_seed,
+        "request_hash": job.request_hash,
+        "completed_at": (
+            job.completed_at.isoformat() if job.completed_at else None
+        ),
+    }
+
+
+def _summarize_anomalies(sigs: list) -> str | None:
+    """Return a short summary string when any fired signal's primary metric
+    is suspect — historical anomaly or sanity-bound quarantine.
+
+    The runner uses it to suppress auto-publish; the review queue surfaces
+    the same string for the admin. Quarantine + anomaly are both blocking
+    because either one means the rule fired on a number we do not trust.
+    """
+    from app.models.intelligence import CalculatedMetric, MetricDefinition
+
+    anomalies: list[str] = []
+    quarantined: list[str] = []
+    for s in sigs:
+        cm = getattr(s, "primary_metric", None)
+        if cm is None:
+            # Lazy SQLAlchemy attribute: the signal carries primary_metric_id;
+            # the actual row is fetched if we use the ORM session via the
+            # session attached to the signal.
+            from sqlalchemy.orm import object_session
+
+            session = object_session(s)
+            if session is None or s.primary_metric_id is None:
+                continue
+            cm = session.get(CalculatedMetric, s.primary_metric_id)
+        if cm is None:
+            continue
+        is_anomaly = bool(getattr(cm, "anomaly_flag", False))
+        is_quarantined = bool(getattr(cm, "is_quarantined", False))
+        if not (is_anomaly or is_quarantined):
+            continue
+        md_session = None
+        try:
+            from sqlalchemy.orm import object_session
+
+            md_session = object_session(cm)
+        except Exception:  # pragma: no cover - defensive
+            md_session = None
+        code = None
+        if md_session is not None:
+            md = md_session.get(MetricDefinition, cm.metric_def_id)
+            code = md.metric_code if md else None
+        label = code or f"metric#{cm.metric_def_id}"
+        if is_anomaly:
+            anomalies.append(label)
+        if is_quarantined:
+            quarantined.append(label)
+    if not anomalies and not quarantined:
+        return None
+    parts: list[str] = []
+    if anomalies:
+        parts.append(f"historical-anomaly on {', '.join(sorted(set(anomalies)))}")
+    if quarantined:
+        parts.append(f"quarantined primary metric on {', '.join(sorted(set(quarantined)))}")
+    return "; ".join(parts)
 
 
 def _populate_event_summary(

@@ -1,7 +1,7 @@
 import { useMemo } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft } from "lucide-react";
+import { BackButton } from "@/components/common/BackButton";
 import { api } from "@/api/client";
 import type { CompanyDetail, EventBriefV1 } from "@/api/types";
 import { CompanyQuarterTimeline } from "@/components/common/CompanyQuarterTimeline";
@@ -10,7 +10,6 @@ import { groupEventsByQuarter } from "@/lib/cards";
 
 export function CompanyEventsPage() {
   const { symbol } = useParams<{ symbol: string }>();
-  const navigate = useNavigate();
 
   const { data, isLoading: hubLoading } = useQuery({
     queryKey: ["company", symbol],
@@ -35,17 +34,9 @@ export function CompanyEventsPage() {
 
   const timelineLatestEventId = data.latest_event_id ?? events[0]?.event_id ?? null;
 
-  const companyPath = `/company/${symbol}`;
-
   return (
     <div className="w-full min-w-0 space-y-5">
-      <button
-        type="button"
-        onClick={() => navigate(companyPath)}
-        className="btn-ghost -ml-2 text-sm"
-      >
-        <ArrowLeft size={16} /> Back to {data.company.short_name || data.company.company_name}
-      </button>
+      <BackButton fallback={`/company/${symbol}`} />
 
       <div>
         <h1 className="text-xl md:text-2xl font-semibold tracking-tight">Event timeline</h1>

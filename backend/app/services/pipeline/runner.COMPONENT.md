@@ -56,6 +56,13 @@ whether to auto-publish the resulting cards.
   card `is_published` is flipped automatically. The same flip is mirrored in
   [`routers/review.py`](../../routers/review.py) for the manual-approval
   path; if you change one, change the other.
+- `_summarize_anomalies` is now a combined check: it blocks publish when any
+  fired signal's primary metric is `anomaly_flag=True` **or**
+  `is_quarantined=True`. The first catches historical-distribution outliers;
+  the second catches static bounds, drift, and extreme-growth quarantines
+  from `metric_validation.apply_validation_actions`. The matching read-path
+  filter is `NOT EXISTS (suspect signal)` in
+  [`routers/v1/intelligence_objects._io_query`](../../routers/v1/intelligence_objects.py).
 - Review queue updates use the most recent open review for the document so
   re-runs do not pile up multiple review rows.
 

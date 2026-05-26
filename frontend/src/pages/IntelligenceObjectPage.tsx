@@ -1,7 +1,8 @@
 import { useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, ArrowUpRight, ChevronDown, ChevronRight } from "lucide-react";
+import { ArrowUpRight, ChevronDown, ChevronRight } from "lucide-react";
+import { BackButton } from "@/components/common/BackButton";
 import clsx from "clsx";
 import { api } from "@/api/client";
 import type {
@@ -11,14 +12,20 @@ import type {
   EvidenceItem,
   IntelligenceObject,
   PeriodBrief,
+  ReproducibilityBundle,
 } from "@/api/types";
 import { MetricSparkline } from "@/components/cards/MetricSparkline";
 import { SeverityBadge } from "@/components/common/SeverityBadge";
 import { SignalBadge } from "@/components/common/SignalBadge";
 import { PageLoader } from "@/components/common/Spinner";
 import { SourceDocumentLinks, uniqueSourceRefs } from "@/components/common/SourceDocumentLink";
-import { CalculationChainPanel } from "@/components/evidence/CalculationChainPanel";
+import {
+  CalculationChainPanel,
+  CALCULATION_CHAIN_ANCHOR,
+} from "@/components/evidence/CalculationChainPanel";
 import { EvidencePanel } from "@/components/evidence/EvidencePanel";
+import { ExtractionLineageGraph } from "@/components/evidence/ExtractionLineageGraph";
+import { ReproducibilityExportButton } from "@/components/evidence/ReproducibilityExportButton";
 import {
   EvidenceInlineLinks,
   evidenceMatchingLabel,
@@ -242,6 +249,15 @@ export function IntelligenceObjectPage() {
     enabled: !!objectId,
   });
 
+  const { data: bundle } = useQuery({
+    queryKey: ["intelligenceObjectReproducibility", objectId],
+    queryFn: () =>
+      api<ReproducibilityBundle>(
+        `/v1/intelligence-objects/${objectId}/reproducibility`,
+      ),
+    enabled: !!objectId,
+  });
+
   const sourceRefs = useMemo(
     () =>
       data
@@ -278,9 +294,14 @@ export function IntelligenceObjectPage() {
 
   return (
     <div className="w-full min-w-0 space-y-5">
-      <button type="button" onClick={() => navigate(-1)} className="btn-ghost -ml-2 text-sm">
-        <ArrowLeft size={16} /> Back
-      </button>
+      <div className="flex items-center justify-between gap-3">
+        <BackButton
+          fallback={
+            symbol ? `/company/${symbol}` : "/"
+          }
+        />
+        <ReproducibilityExportButton objectId={data.intelligence_object_id} />
+      </div>
 
       {/* Verdict strip — same structure as SignalDetailPage */}
       <section className="card p-5 md:p-6">
@@ -357,24 +378,51 @@ export function IntelligenceObjectPage() {
         <div className="xl:col-span-2 space-y-5 min-w-0">
           {data.metrics.length > 0 && (
             <section className="card p-5 md:p-6">
-              <h2 className="text-base font-semibold mb-3">Key metrics</h2>
+              <div className="flex items-baseline justify-between gap-3 mb-3">
+                <h2 className="text-base font-semibold">Key metrics</h2>
+                {data.calculation_chain && (
+                  <a
+                    href={`#${CALCULATION_CHAIN_ANCHOR}`}
+                    className="text-xs text-ink-soft hover:text-ink"
+                    title="See formula + sources"
+                  >
+                    Show derivation
+                  </a>
+                )}
+              </div>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                {data.metrics.map((m, i) => (
-                  <div key={i} className="card-2 p-3">
-                    <div className="text-[11px] text-ink-soft mb-0.5 truncate">{m.name}</div>
-                    <div className="text-lg font-semibold num text-ink">
-                      {typeof m.value === "number"
-                        ? m.unit === "%"
-                          ? formatPct(m.value, 1)
-                          : formatNumber(m.value, 1)
-                        : (m.value ?? "—")}
-                      {m.unit && m.unit !== "%" && (
-                        <span className="text-ink-soft text-xs font-normal ml-0.5">{m.unit}</span>
+                {data.metrics.map((m, i) => {
+                  const Tag = data.calculation_chain ? "a" : "div";
+                  const tagProps = data.calculation_chain
+                    ? {
+                        href: `#${CALCULATION_CHAIN_ANCHOR}`,
+                        title: "Open derivation",
+                      }
+                    : {};
+                  return (
+                    <Tag
+                      key={i}
+                      {...tagProps}
+                      className={clsx(
+                        "card-2 p-3 block",
+                        data.calculation_chain && "hover:border-line-strong cursor-pointer",
                       )}
-                      <EvidenceInlineLinks items={evidenceMatchingLabel(data.evidence, m.name)} />
-                    </div>
-                  </div>
-                ))}
+                    >
+                      <div className="text-[11px] text-ink-soft mb-0.5 truncate">{m.name}</div>
+                      <div className="text-lg font-semibold num text-ink">
+                        {typeof m.value === "number"
+                          ? m.unit === "%"
+                            ? formatPct(m.value, 1)
+                            : formatNumber(m.value, 1)
+                          : (m.value ?? "—")}
+                        {m.unit && m.unit !== "%" && (
+                          <span className="text-ink-soft text-xs font-normal ml-0.5">{m.unit}</span>
+                        )}
+                        <EvidenceInlineLinks items={evidenceMatchingLabel(data.evidence, m.name)} />
+                      </div>
+                    </Tag>
+                  );
+                })}
               </div>
             </section>
           )}
@@ -449,6 +497,10 @@ export function IntelligenceObjectPage() {
           )}
 
           <CalculationChainPanel chain={data.calculation_chain} />
+
+          {bundle?.lineage && (
+            <ExtractionLineageGraph graph={bundle.lineage} />
+          )}
 
           <EvidencePanel
             evidence={data.evidence}

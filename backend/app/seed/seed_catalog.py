@@ -176,6 +176,7 @@ def _m(
     inputs: list[dict] | None = None,
     deps: list[str] | None = None,
     bounds: tuple[float | None, float | None] | None = None,
+    kind: str = "financial",
 ) -> dict:
     """Build a metric-definition row for the seed.
 
@@ -184,6 +185,10 @@ def _m(
     100 % or growth above 500 % never reach the signals/cards layer. Either
     endpoint can be ``None`` for one-sided bounds. ``None`` overall means no
     bound is enforced (e.g. raw absolute values like ``fcf`` in crore).
+
+    ``kind`` is the product-level ontology badge used by the feed:
+    ``"financial"`` (derived from facts), ``"model_score"`` (concall lexicon
+    scores), or ``"composite"`` (reads from other CalculatedMetric rows).
     """
     return {
         "code": code,
@@ -196,6 +201,7 @@ def _m(
         "inputs": inputs or [],
         "deps": deps or [],
         "bounds": bounds,
+        "kind": kind,
     }
 
 
@@ -221,7 +227,26 @@ METRIC_DEFS: list[dict] = [
             _i("revenue", "revenue_from_operations", "CURRENT"),
             _i("revenue_pq", "revenue_from_operations", "PQ"),
         ],
-        bounds=(-100.0, 300.0),
+        # Tightened so seasonal swings stay flagged for review instead of
+        # publishing. Anything outside ±80% is treated as a comparator /
+        # column-tag mismatch (e.g. YTD column mis-aligned with PQ).
+        bounds=(-80.0, 80.0),
+    ),
+    _m(
+        # True acceleration: how much the YoY growth rate itself changed
+        # versus the prior quarter's YoY rate. Expressed in percentage
+        # points so it stays distinct from the underlying YoY % and the QoQ %.
+        "revenue_yoy_growth_acceleration_pp",
+        "Revenue YoY Growth Acceleration",
+        "growth",
+        "now - prior", "pp",
+        inputs=[
+            _i("now", "revenue_yoy_growth", "CURRENT", kind="metric"),
+            _i("prior", "revenue_yoy_growth", "PQ", kind="metric"),
+        ],
+        deps=["revenue_yoy_growth"],
+        bounds=(-100.0, 100.0),
+        kind="composite",
     ),
     _m(
         "ebitda_growth_yoy", "EBITDA Growth YoY", "growth",
@@ -248,7 +273,9 @@ METRIC_DEFS: list[dict] = [
             _i("pat", "pat", "CURRENT"),
             _i("pat_pq", "pat", "PQ"),
         ],
-        bounds=(-500.0, 1000.0),
+        # PAT QoQ can swing on small bases (tax, exceptionals), but >300%
+        # in either direction is almost always a column-tag mismatch.
+        bounds=(-300.0, 300.0),
     ),
     _m(
         "eps_growth_yoy", "EPS Growth YoY", "growth",
@@ -595,31 +622,37 @@ METRIC_DEFS: list[dict] = [
         "management_confidence_score", "Management Confidence", "management_tone",
         "s", "score",
         inputs=[_i("s", "concall_confidence_score", "CURRENT")],
+        kind="model_score",
     ),
     _m(
         "management_uncertainty_score", "Management Uncertainty", "management_tone",
         "s", "score",
         inputs=[_i("s", "concall_uncertainty_score", "CURRENT")],
+        kind="model_score",
     ),
     _m(
         "management_evasive_score", "Management Evasive", "management_tone",
         "s", "score",
         inputs=[_i("s", "concall_evasive_score", "CURRENT")],
+        kind="model_score",
     ),
     _m(
         "concall_demand_score", "Concall Demand Score", "management_tone",
         "s", "score",
         inputs=[_i("s", "concall_demand_score", "CURRENT")],
+        kind="model_score",
     ),
     _m(
         "concall_cost_pressure_score", "Concall Cost Pressure Score", "management_tone",
         "s", "score",
         inputs=[_i("s", "concall_cost_pressure_score", "CURRENT")],
+        kind="model_score",
     ),
     _m(
         "concall_pricing_power_score", "Concall Pricing Power Score", "management_tone",
         "s", "score",
         inputs=[_i("s", "concall_pricing_power_score", "CURRENT")],
+        kind="model_score",
     ),
     _m(
         "management_confidence_change_qoq", "Management Confidence Δ QoQ", "management_tone",
@@ -628,6 +661,7 @@ METRIC_DEFS: list[dict] = [
             _i("now", "concall_confidence_score", "CURRENT"),
             _i("pq", "concall_confidence_score", "PQ"),
         ],
+        kind="model_score",
     ),
     _m(
         "concall_demand_change_qoq", "Concall Demand Tone Δ QoQ", "management_tone",
@@ -636,6 +670,7 @@ METRIC_DEFS: list[dict] = [
             _i("now", "concall_demand_score", "CURRENT"),
             _i("pq", "concall_demand_score", "PQ"),
         ],
+        kind="model_score",
     ),
     _m(
         "concall_pricing_power_change_qoq", "Pricing Power Tone Δ QoQ", "management_tone",
@@ -644,6 +679,7 @@ METRIC_DEFS: list[dict] = [
             _i("now", "concall_pricing_power_score", "CURRENT"),
             _i("pq", "concall_pricing_power_score", "PQ"),
         ],
+        kind="model_score",
     ),
     _m(
         "concall_cost_pressure_change_qoq", "Cost Pressure Δ QoQ", "management_tone",
@@ -652,16 +688,19 @@ METRIC_DEFS: list[dict] = [
             _i("now", "concall_cost_pressure_score", "CURRENT"),
             _i("pq", "concall_cost_pressure_score", "PQ"),
         ],
+        kind="model_score",
     ),
     _m(
-        "concall_capex_intent_score", "Capex Intent (Concall)", "management_tone",
+        "concall_capex_intent_score", "Capex Intent Score (Concall)", "management_tone",
         "s", "score",
         inputs=[_i("s", "concall_capex_intent_score", "CURRENT")],
+        kind="model_score",
     ),
     _m(
-        "concall_margin_tone_score", "Margin Tone (Concall)", "management_tone",
+        "concall_margin_tone_score", "Margin Tone Score (Concall)", "management_tone",
         "s", "score",
         inputs=[_i("s", "concall_margin_tone_score", "CURRENT")],
+        kind="model_score",
     ),
     _m(
         "capacity_utilization_change", "Capacity Utilization Change", "operations",
@@ -894,13 +933,26 @@ SIGNAL_DEFS: list[dict] = [
         SignalDirection.POSITIVE, SeverityLevel.MEDIUM,
     ),
     _s(
+        # Fires when the YoY growth rate itself accelerated by >5 pp vs the
+        # prior quarter's YoY rate. Distinct from "revenue_growth_qoq"
+        # (sequential %) and "strong_revenue_growth_yoy" (YoY level).
         "revenue_acceleration", "Revenue Growth Acceleration",
+        "growth", "YoY revenue growth accelerated by more than 5 pp vs the prior quarter's YoY rate.",
+        _leaf("revenue_yoy_growth_acceleration_pp", ">", 5),
+        SignalDirection.POSITIVE, SeverityLevel.MEDIUM,
+    ),
+    _s(
+        # The old "Revenue Growth Acceleration" rule (YoY > 12) is what
+        # analysts actually want labelled "Strong YoY Revenue Growth"; keep
+        # it under a separate honest signal so the feed doesn't conflate
+        # acceleration with the level.
+        "strong_revenue_growth_yoy", "Strong YoY Revenue Growth",
         "growth", "Revenue YoY growth above 12%.",
         _leaf("revenue_yoy_growth", ">", 12),
         SignalDirection.POSITIVE, SeverityLevel.MEDIUM,
     ),
     _s(
-        "modest_revenue_growth", "Modest Revenue Growth",
+        "modest_revenue_growth", "Modest Revenue Growth (YoY)",
         "growth", "Revenue growing YoY but below acceleration tier.",
         {"all": [
             _leaf("revenue_yoy_growth", ">", 0),
@@ -909,7 +961,7 @@ SIGNAL_DEFS: list[dict] = [
         SignalDirection.POSITIVE, SeverityLevel.LOW,
     ),
     _s(
-        "revenue_deceleration", "Revenue Growth Deceleration",
+        "revenue_deceleration", "Revenue Growth Deceleration (YoY)",
         "growth", "Revenue YoY growth positive but slowing materially.",
         {"all": [
             _leaf("revenue_yoy_growth", ">", 0),
@@ -918,7 +970,7 @@ SIGNAL_DEFS: list[dict] = [
         SignalDirection.NEGATIVE, SeverityLevel.MEDIUM,
     ),
     _s(
-        "revenue_contraction", "Revenue Contraction",
+        "revenue_contraction", "Revenue Contraction (YoY)",
         "growth", "Revenue YoY growth turned negative.",
         _leaf("revenue_yoy_growth", "<", 0),
         SignalDirection.NEGATIVE, SeverityLevel.HIGH,
@@ -931,7 +983,7 @@ SIGNAL_DEFS: list[dict] = [
     ),
     _s(
         "pat_decline_despite_revenue_growth",
-        "PAT Down Despite Revenue Growth", "earnings_quality",
+        "PAT Down Despite Revenue Growth (YoY)", "earnings_quality",
         "PAT contracted YoY while revenue grew.",
         {"all": [
             _leaf("pat_growth_yoy", "<", 0),
@@ -1242,7 +1294,7 @@ SIGNAL_DEFS: list[dict] = [
     ),
     # ---------------- Phase 4e — Order book ----------------
     _s(
-        "order_book_growth", "Order Book Growth",
+        "order_book_growth", "Order Book Growth (YoY)",
         "order_book", "Order book grew materially YoY.",
         _leaf("order_book_growth_yoy", ">", 20),
         SignalDirection.POSITIVE, SeverityLevel.MEDIUM,
@@ -1272,32 +1324,35 @@ SIGNAL_DEFS: list[dict] = [
         SignalDirection.NEGATIVE, SeverityLevel.HIGH,
     ),
     _s(
-        "booking_momentum", "Booking Momentum",
+        "booking_momentum", "Booking Momentum (YoY)",
         "order_book", "Order inflow grew materially YoY.",
         _leaf("order_inflow_growth_yoy", ">", 15),
         SignalDirection.POSITIVE, SeverityLevel.MEDIUM,
     ),
     _s(
-        "order_inflow_slowdown", "Order Inflow Slowdown",
+        "order_inflow_slowdown", "Order Inflow Slowdown (YoY)",
         "order_book", "Order inflow contracted YoY.",
         _leaf("order_inflow_growth_yoy", "<", 0),
         SignalDirection.NEGATIVE, SeverityLevel.MEDIUM,
     ),
     # ---------------- Phase 1 extensions — growth / WC / earnings ----------------
     _s(
-        "operating_profit_momentum", "Operating Profit Momentum",
-        "growth", "EBITDA grew materially YoY.",
+        # The signal previously surfaced as "Operating Profit Momentum"
+        # which hides that the rule actually fires on EBITDA YoY growth.
+        # Honest label encodes the comparator (YoY).
+        "operating_profit_momentum", "EBITDA Growth (YoY)",
+        "growth", "EBITDA grew more than 8% versus the same quarter last year.",
         _leaf("ebitda_growth_yoy", ">", 8),
         SignalDirection.POSITIVE, SeverityLevel.MEDIUM,
     ),
     _s(
-        "shareholder_earnings_growth", "Shareholder Earnings Growth",
+        "shareholder_earnings_growth", "Shareholder Earnings Growth (YoY)",
         "growth", "EPS grew materially YoY.",
         _leaf("eps_growth_yoy", ">", 10),
         SignalDirection.POSITIVE, SeverityLevel.MEDIUM,
     ),
     _s(
-        "eps_contraction", "EPS Contraction",
+        "eps_contraction", "EPS Contraction (YoY)",
         "growth", "EPS declined YoY.",
         _leaf("eps_growth_yoy", "<", 0),
         SignalDirection.NEGATIVE, SeverityLevel.HIGH,
@@ -1315,8 +1370,10 @@ SIGNAL_DEFS: list[dict] = [
         SignalDirection.NEGATIVE, SeverityLevel.MEDIUM,
     ),
     _s(
-        "margin_strength", "Margin Strength",
-        "margin", "EBITDA margin above 20%.",
+        # Honest label — this is consolidated EBITDA margin, not a composite
+        # "strength" score.
+        "margin_strength", "EBITDA Margin",
+        "margin", "EBITDA margin above 20% for the quarter.",
         _leaf("ebitda_margin", ">", 20),
         SignalDirection.POSITIVE, SeverityLevel.MEDIUM,
     ),
@@ -1355,14 +1412,17 @@ SIGNAL_DEFS: list[dict] = [
         SignalDirection.POSITIVE, SeverityLevel.MEDIUM,
     ),
     _s(
-        "capex_expansion_intent", "Capex Expansion Intent",
-        "management_tone", "Management signals expansionary capex.",
+        # These signals fire on a concall lexicon score (0–100), not on
+        # capex spend itself. The honest name keeps the model nature visible
+        # in the feed; the score is rendered as "N / 100" via _format_value.
+        "capex_expansion_intent", "Capex Tone — Expansion",
+        "management_tone", "Concall capex-intent score above 40 / 100 (lexicon-based).",
         _leaf("concall_capex_intent_score", ">", 40),
         SignalDirection.POSITIVE, SeverityLevel.MEDIUM,
     ),
     _s(
-        "capex_caution", "Capex Caution",
-        "management_tone", "Limited capex / expansion language on concall.",
+        "capex_caution", "Capex Tone — Cautious",
+        "management_tone", "Concall capex-intent score below 15 / 100 (lexicon-based).",
         _leaf("concall_capex_intent_score", "<", 15),
         SignalDirection.MIXED, SeverityLevel.LOW,
     ),
@@ -1380,8 +1440,11 @@ SIGNAL_DEFS: list[dict] = [
         SignalDirection.POSITIVE, SeverityLevel.MEDIUM,
     ),
     _s(
-        "segment_margin_strength", "Segment Margin Strength",
-        "segment", "Primary segment EBIT margin above 20%.",
+        # Honest label: this rule looks at the EBIT margin of the company's
+        # largest segment by revenue, not a weighted score or an
+        # "overall margin strength" composite.
+        "segment_margin_strength", "Primary Segment EBIT Margin",
+        "segment", "EBIT margin of the largest segment by revenue is above 20%.",
         _leaf("primary_segment_margin", ">", 20),
         SignalDirection.POSITIVE, SeverityLevel.MEDIUM,
     ),
@@ -1580,6 +1643,109 @@ def upsert_periods(db: Session) -> dict[tuple[int, int], FinancialPeriod]:
     return out
 
 
+# Analyst-facing definitions for the metric registry drawer (Phase 2A).
+# Refreshed on every ``seed_catalog`` run so older DBs pick up copy changes.
+METRIC_DESCRIPTIONS: dict[str, str] = {
+    "revenue_yoy_growth": (
+        "Year-on-year change in revenue from operations for the current quarter "
+        "column versus the same quarter last year. Uses consolidated P&L lines only."
+    ),
+    "revenue_qoq_growth": (
+        "Quarter-on-quarter change in revenue from operations versus the immediately "
+        "prior reported quarter (not YTD or 9M columns)."
+    ),
+    "revenue_yoy_growth_acceleration_pp": (
+        "Change in YoY revenue growth rate versus the prior quarter's YoY rate, "
+        "in percentage points. Positive means growth is speeding up sequentially."
+    ),
+    "ebitda_growth_yoy": (
+        "YoY change in reported EBITDA for the current quarter versus the prior-year "
+        "quarter column."
+    ),
+    "pat_growth_yoy": (
+        "YoY change in profit after tax for the current quarter versus the prior-year "
+        "quarter column."
+    ),
+    "pat_growth_qoq": (
+        "QoQ change in PAT versus the immediately prior quarter."
+    ),
+    "ebitda_margin": (
+        "EBITDA divided by revenue from operations, expressed as a percentage. "
+        "Both inputs must be from the same consolidation and period column."
+    ),
+    "pat_margin": (
+        "PAT divided by revenue from operations, expressed as a percentage. "
+        "Flags when PAT and revenue are drawn from mismatched segment vs consolidated rows."
+    ),
+    "ebitda_margin_change_yoy_bps": (
+        "YoY change in EBITDA margin in basis points (current margin minus prior-year margin)."
+    ),
+    "primary_segment_margin": (
+        "EBIT of the largest segment by revenue divided by that segment's revenue. "
+        "Not a consolidated company margin."
+    ),
+    "primary_segment_revenue_growth_yoy": (
+        "YoY growth of the primary (largest) segment's revenue."
+    ),
+    "other_income_to_pbt": (
+        "Share of profit before tax coming from other income — high values can "
+        "inflate headline profitability."
+    ),
+    "exceptional_to_pat": (
+        "Exceptional items as a percentage of PAT — surfaces one-off earnings quality."
+    ),
+    "effective_tax_rate": (
+        "Tax expense divided by PBT. Useful for spotting abnormally low or high tax rates."
+    ),
+    "finance_cost_burden": (
+        "Finance costs as a percentage of EBITDA — leverage pressure indicator."
+    ),
+    "interest_coverage": (
+        "EBITDA divided by finance costs. Higher is better; below 1x is stressed."
+    ),
+    "cfo_to_pat": (
+        "Cash from operations divided by PAT — cash conversion proxy for the quarter."
+    ),
+    "cash_conversion_ratio": (
+        "Same as CFO/PAT — operating cash generation relative to reported earnings."
+    ),
+    "fcf": (
+        "Free cash flow: CFO minus capex (PPE and intangibles) in crore."
+    ),
+    "concall_confidence_score": (
+        "Lexicon-based management confidence score from the earnings call transcript "
+        "(0–100, higher = more confident language)."
+    ),
+    "concall_uncertainty_score": (
+        "Lexicon score for hedging / uncertainty language on the concall (0–100)."
+    ),
+    "concall_capex_intent_score": (
+        "Lexicon score for capex expansion vs caution language on the concall (0–100)."
+    ),
+    "concall_demand_score": (
+        "Lexicon score for demand / volume commentary on the concall (0–100)."
+    ),
+    "concall_cost_pressure_score": (
+        "Lexicon score for cost / margin pressure language on the concall (0–100)."
+    ),
+    "concall_pricing_power_score": (
+        "Lexicon score for pricing / realisation commentary on the concall (0–100)."
+    ),
+    "concall_margin_tone_score": (
+        "Lexicon score for margin outlook language on the concall (0–100)."
+    ),
+    "net_debt_to_ebitda": (
+        "Net debt divided by EBITDA — leverage multiple (lower is generally healthier)."
+    ),
+    "debt_to_equity": (
+        "Total debt divided by shareholders' equity."
+    ),
+    "promoter_holding_change_qoq_bps": (
+        "Change in promoter holding versus the prior quarter, in basis points."
+    ),
+}
+
+
 def upsert_line_items(db: Session) -> dict[str, FinancialLineItemDefinition]:
     out: dict[str, FinancialLineItemDefinition] = {}
     for code, name, stype in LINE_ITEMS:
@@ -1604,6 +1770,7 @@ def upsert_metric_defs(db: Session) -> dict[str, MetricDefinition]:
         bounds = spec.get("bounds")
         v_min = bounds[0] if bounds and bounds[0] is not None else None
         v_max = bounds[1] if bounds and bounds[1] is not None else None
+        desc = METRIC_DESCRIPTIONS.get(code)
         existing = db.scalar(select(MetricDefinition).where(MetricDefinition.metric_code == code))
         if existing:
             # Idempotent re-seed: refresh the engine fields so older DBs pick
@@ -1615,12 +1782,16 @@ def upsert_metric_defs(db: Session) -> dict[str, MetricDefinition]:
             existing.metric_category = spec["category"]
             existing.validation_min = v_min
             existing.validation_max = v_max
+            existing.metric_kind = spec["kind"]
+            if desc:
+                existing.description = desc
             out[code] = existing
             continue
         md = MetricDefinition(
             metric_code=code,
             metric_name=spec["name"],
             metric_category=spec["category"],
+            metric_kind=spec["kind"],
             formula_text=spec["formula"],
             unit=spec["unit"],
             is_percentage=spec["is_pct"],
@@ -1629,6 +1800,7 @@ def upsert_metric_defs(db: Session) -> dict[str, MetricDefinition]:
             dependencies_json=spec["deps"],
             validation_min=v_min,
             validation_max=v_max,
+            description=desc,
         )
         db.add(md)
         db.flush()
@@ -1681,6 +1853,9 @@ def upsert_signal_defs(db: Session) -> dict[str, SignalDefinition]:
         rule_text = _format_rule_text(spec["rule"])
         existing = db.scalar(select(SignalDefinition).where(SignalDefinition.signal_code == code))
         if existing:
+            existing.signal_name = spec["name"]
+            existing.signal_category = spec["category"]
+            existing.description = spec["desc"]
             existing.rule_json = spec["rule"]
             existing.rule_text = rule_text
             out[code] = existing

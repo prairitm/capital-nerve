@@ -19,13 +19,19 @@ from app.models.facts import FinancialLineItemDefinition, FinancialStatementFact
 from app.models.intelligence import CalculatedMetric, IntelligenceCard, MetricDefinition
 from app.models.master import Company, FinancialPeriod, Sector
 from app.models.user import AppUser, Watchlist, WatchlistCompany
-from app.routers._helpers import company_brief, find_company, period_brief
+from app.routers._helpers import (
+    company_brief,
+    exclude_suspect_cards,
+    find_company,
+    period_brief,
+)
 from app.schemas.common import (
     CompanyBadge,
     CompanyBrief,
     DocumentBrief,
     FinancialSnapshotRow,
     FinancialTrend,
+    FinancialTrendBand,
     FinancialTrendPoint,
     TimelineEvent,
 )
@@ -38,6 +44,11 @@ from app.services.event_summary import (
     resolve_event_summary_text,
 )
 from app.services.event_timeline import pick_canonical_per_period
+from app.services.financial_snapshot import (
+    SNAPSHOT_METRICS,
+    build_snapshot_row,
+    trend_value_for_code,
+)
 from app.services.intelligence_object_builder import build_intelligence_object_brief
 
 router = APIRouter(prefix="/v1", tags=["v1: companies"])
@@ -46,13 +57,7 @@ router = APIRouter(prefix="/v1", tags=["v1: companies"])
 _HUB_TIMELINE_LIMIT = 60
 
 
-_SNAPSHOT_ROWS: tuple[tuple[str, str, str], ...] = (
-    ("revenue_from_operations", "Revenue", "Cr"),
-    ("ebitda", "EBITDA", "Cr"),
-    ("ebitda_margin", "EBITDA Margin", "%"),
-    ("pat", "PAT", "Cr"),
-    ("eps_basic", "EPS", "Rs"),
-)
+_SNAPSHOT_ROWS = SNAPSHOT_METRICS
 
 _BADGE_CARD_TYPES: dict[str, str] = {
     "revenue_growth": "Growth",
@@ -131,19 +136,21 @@ def company_hub(
         latest_period = db.get(FinancialPeriod, latest_event.period_id)
 
     top_object_rows = db.execute(
-        select(IntelligenceCard, Company, FinancialPeriod, CompanyEvent, SourceDocument)
-        .join(Company, Company.company_id == IntelligenceCard.company_id)
-        .outerjoin(FinancialPeriod, FinancialPeriod.period_id == IntelligenceCard.period_id)
-        .outerjoin(CompanyEvent, CompanyEvent.event_id == IntelligenceCard.event_id)
-        .outerjoin(SourceDocument, SourceDocument.document_id == IntelligenceCard.document_id)
-        .where(IntelligenceCard.company_id == company.company_id)
-        .where(IntelligenceCard.is_published.is_(True))
-        .where(IntelligenceCard.card_type != "watch_next")
+        exclude_suspect_cards(
+            select(IntelligenceCard, Company, FinancialPeriod, CompanyEvent, SourceDocument)
+            .join(Company, Company.company_id == IntelligenceCard.company_id)
+            .outerjoin(FinancialPeriod, FinancialPeriod.period_id == IntelligenceCard.period_id)
+            .outerjoin(CompanyEvent, CompanyEvent.event_id == IntelligenceCard.event_id)
+            .outerjoin(SourceDocument, SourceDocument.document_id == IntelligenceCard.document_id)
+            .where(IntelligenceCard.company_id == company.company_id)
+            .where(IntelligenceCard.is_published.is_(True))
+            .where(IntelligenceCard.card_type != "watch_next")
+        )
         .order_by(IntelligenceCard.card_priority.desc(), IntelligenceCard.created_at.desc())
         .limit(8)
     ).all()
     top_objects: list[IntelligenceObjectBrief] = [
-        build_intelligence_object_brief(card, comp, per, ev, doc)
+        build_intelligence_object_brief(card, comp, per, ev, doc, db=db)
         for (card, comp, per, ev, doc) in top_object_rows
     ]
 
@@ -221,23 +228,35 @@ def company_hub(
             )
         ).all()
         fact_by_period = {f.period_id: float(f.value) for f in facts}
-        points = [
-            FinancialTrendPoint(
-                period_label=p.display_label,
-                period_end_date=p.period_end_date,
-                value=fact_by_period[p.period_id],
+        points = []
+        for p in periods:
+            raw = fact_by_period.get(p.period_id)
+            if raw is None:
+                continue
+            value = trend_value_for_code(
+                db,
+                company_id=company.company_id,
+                period_id=p.period_id,
+                code=code,
+                fact_value=raw,
             )
-            for p in periods
-            if p.period_id in fact_by_period
-        ]
-        trends.append(
-            FinancialTrend(
-                metric_code=code, metric_name=display, unit=unit, points=points
+            if value is None:
+                continue
+            points.append(
+                FinancialTrendPoint(
+                    period_label=p.display_label,
+                    period_end_date=p.period_end_date,
+                    value=value,
+                )
             )
-        )
+        if len(points) >= 2:
+            trends.append(
+                FinancialTrend(
+                    metric_code=code, metric_name=display, unit=unit, points=points
+                )
+            )
 
-        if latest_period and latest_period.period_id in fact_by_period:
-            cur_val = fact_by_period[latest_period.period_id]
+        if latest_period:
             prev_period_id = next(
                 (
                     p.period_id
@@ -250,18 +269,17 @@ def company_hub(
                 ),
                 None,
             )
-            prev_val = fact_by_period.get(prev_period_id) if prev_period_id else None
-            yoy = ((cur_val - prev_val) / prev_val * 100) if prev_val else None
-            snapshot.append(
-                FinancialSnapshotRow(
-                    metric=display,
-                    code=code,
-                    current_value=cur_val,
-                    previous_value=prev_val,
-                    yoy_change_pct=yoy,
-                    unit=unit,
-                )
+            row = build_snapshot_row(
+                db,
+                company_id=company.company_id,
+                period=latest_period,
+                prev_period_id=prev_period_id,
+                code=code,
+                display=display,
+                unit=unit,
             )
+            if row is not None:
+                snapshot.append(row)
 
     watchlist_status = False
     wl = db.scalar(select(Watchlist).where(Watchlist.user_id == user.user_id).limit(1))
@@ -344,6 +362,46 @@ _DEFAULT_METRIC_TREND_CODES: tuple[str, ...] = (
     "primary_segment_margin",
 )
 
+# Band overlay uses a longer lookback than the plotted series so min/max/median
+# reflect company history, not just the visible window.
+_BAND_HISTORY_QUARTERS = 16
+
+
+def _historical_band(
+    db: Session,
+    *,
+    company_id: int,
+    metric_def_id: int,
+) -> FinancialTrendBand | None:
+    import statistics
+
+    values = [
+        float(v)
+        for v in db.execute(
+            select(CalculatedMetric.metric_value)
+            .join(
+                FinancialPeriod,
+                FinancialPeriod.period_id == CalculatedMetric.period_id,
+            )
+            .where(
+                CalculatedMetric.company_id == company_id,
+                CalculatedMetric.metric_def_id == metric_def_id,
+                CalculatedMetric.is_quarantined.is_(False),
+                CalculatedMetric.metric_value.is_not(None),
+            )
+            .order_by(FinancialPeriod.period_end_date.desc())
+            .limit(_BAND_HISTORY_QUARTERS)
+        ).scalars()
+        if v is not None
+    ]
+    if len(values) < 2:
+        return None
+    return FinancialTrendBand(
+        min=min(values),
+        max=max(values),
+        median=float(statistics.median(values)),
+    )
+
 
 @router.get(
     "/companies/{symbol}/metric-trend",
@@ -406,15 +464,20 @@ def company_metric_trend(
                 period_label=period.display_label,
                 period_end_date=period.period_end_date,
                 value=float(cm.metric_value) if cm.metric_value is not None else None,
+                anomaly_flag=bool(getattr(cm, "anomaly_flag", False)),
             )
             for (cm, period) in rows
         ]
+        band = _historical_band(
+            db, company_id=company.company_id, metric_def_id=md.metric_def_id
+        )
         trends.append(
             FinancialTrend(
                 metric_code=md.metric_code,
                 metric_name=md.metric_name,
                 unit=md.unit or "",
                 points=points,
+                band=band,
             )
         )
     return trends

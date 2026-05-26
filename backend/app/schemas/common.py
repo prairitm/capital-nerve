@@ -91,10 +91,19 @@ class ConcernHeatmapRow(BaseModel):
     percent: float
 
 
+class FinancialTrendBand(BaseModel):
+    """Historical envelope for one metric across recent quarters."""
+
+    min: float | None = None
+    max: float | None = None
+    median: float | None = None
+
+
 class FinancialTrendPoint(BaseModel):
     period_label: str
     period_end_date: date
     value: float | None
+    anomaly_flag: bool = False
 
 
 class FinancialTrend(BaseModel):
@@ -102,6 +111,7 @@ class FinancialTrend(BaseModel):
     metric_name: str
     unit: str
     points: list[FinancialTrendPoint]
+    band: FinancialTrendBand | None = None
 
 
 class CardDetail(CardBrief):
@@ -133,7 +143,8 @@ class FinancialSnapshotRow(BaseModel):
     code: str
     current_value: float | None
     previous_value: float | None
-    yoy_change_pct: float | None
+    yoy_change_pct: float | None = None
+    yoy_change_bps: float | None = None
     unit: str
 
 

@@ -25,3 +25,8 @@ Reusable, presentational building blocks: badges, spinners, source links, and em
 
 - Use `Spinner` for inline loading inside buttons; use `PageLoader` for full-page loading inside pages and the drawer.
 - `Empty` is the canonical zero-state card — pages and panels should reuse it rather than rolling their own.
+
+## Back navigation (`BackButton`)
+
+- Drill-down pages use [`BackButton.tsx`](BackButton.tsx) / `useNavigateBack(fallback)` — never hard-code a parent route as the only back target.
+- `navigate(-1)` when the user arrived via in-app navigation; `fallback` when the route was opened directly (bookmark / refresh).

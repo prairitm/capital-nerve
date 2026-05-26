@@ -72,11 +72,15 @@ def run_cards(
     document: SourceDocument,
     signals: Iterable[GeneratedSignal],
     publish: bool,
+    audit_trail: dict | None = None,
 ) -> list[IntelligenceCard]:
     """Materialize one card per published signal.
 
     `publish` controls `is_published`; the runner flips this based on the
     document's overall extraction confidence vs `AUTO_PUBLISH_CONFIDENCE`.
+    ``audit_trail`` is an optional snapshot of pipeline versions (prompt /
+    parser / model) that is stored on ``display_context['audit_trail']``
+    for the analyst-reproducibility export.
     """
     # Re-runs replace previous cards for this document.
     existing_card_ids = list(
@@ -130,6 +134,7 @@ def run_cards(
             display_context={
                 "primary_metric": metrics_json[0]["display"] if metrics_json else None,
                 "surfaces": ["home", "company_page", "event_page"],
+                **({"audit_trail": audit_trail} if audit_trail else {}),
             },
             is_published=publish,
         )
@@ -196,6 +201,7 @@ def run_result_verdict(
     event: CompanyEvent,
     signals: list[GeneratedSignal],
     publish: bool,
+    audit_trail: dict | None = None,
 ) -> IntelligenceCard | None:
     """Emit one ``result_verdict`` card per quarterly result event.
 
@@ -271,6 +277,7 @@ def run_result_verdict(
             "primary_metric": metrics_json[0]["display"] if metrics_json else None,
             "surfaces": ["home", "company_page", "event_page"],
             "is_summary": True,
+            **({"audit_trail": audit_trail} if audit_trail else {}),
         },
         is_published=publish,
     )
@@ -597,6 +604,10 @@ def _metric_display(cm: CalculatedMetric, md: MetricDefinition) -> str:
         return f"{val:+.0f} bps"
     if unit == "x":
         return f"{val:.2f}x"
+    if unit == "pp":
+        return f"{val:+.1f} pp"
+    if unit == "score":
+        return f"{val:.0f} / 100"
     return f"{val:.2f}"
 
 

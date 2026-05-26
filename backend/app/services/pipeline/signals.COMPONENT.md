@@ -49,6 +49,11 @@ metric-vs-threshold and metric-vs-metric leaves — so cross-card signals
   add a new severity escalation.
 - `primary_metric_id` is populated whenever the rule has a metric reference
   so the drawer's "primary metric" badge reads it back directly.
+- `_load_metric_values` excludes both `is_quarantined=True` **and**
+  `anomaly_flag=True` rows. The two flags are independent: quarantine catches
+  static / cross-statement / drift / extreme-growth breaches, while
+  `anomaly_flag` catches historical-distribution outliers. Either one means
+  the metric is suspect, so neither should drive a public signal.
 
 ## Verification checklist
 

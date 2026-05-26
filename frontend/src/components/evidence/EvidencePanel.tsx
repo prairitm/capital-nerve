@@ -1,7 +1,11 @@
 import clsx from "clsx";
 import type { EvidenceItem } from "@/api/types";
 import { SourceDocumentLink } from "@/components/common/SourceDocumentLink";
-import { formatEvidenceValue } from "@/lib/format";
+import {
+  confidenceTone,
+  formatEvidenceValue,
+  formatExtractionConfidence,
+} from "@/lib/format";
 
 interface Props {
   evidence: EvidenceItem[];
@@ -10,13 +14,6 @@ interface Props {
   className?: string;
   /** Limit rows; pass `null` for "show all". Default 8. */
   limit?: number | null;
-}
-
-function confidenceTone(score: number | null): string {
-  if (score == null) return "text-ink-soft";
-  if (score >= 0.85) return "text-positive";
-  if (score >= 0.6) return "text-ink";
-  return "text-ink-mute";
 }
 
 function evidenceTypeLabel(type: string | null | undefined): string | null {
@@ -89,9 +86,9 @@ function EvidenceRow({ item }: { item: EvidenceItem }) {
         {item.confidence_score != null && (
           <span
             className={clsx("num", confidenceTone(item.confidence_score))}
-            title="Extraction confidence (0–1)"
+            title="Extraction confidence (0–100)"
           >
-            {Math.round(item.confidence_score * 100)}% conf
+            {formatExtractionConfidence(item.confidence_score)} conf
           </span>
         )}
       </div>

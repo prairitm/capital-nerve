@@ -1,5 +1,5 @@
 import clsx from "clsx";
-import { TrendingDown, TrendingUp, Minus, AlertTriangle } from "lucide-react";
+import { ShieldAlert, TrendingDown, TrendingUp, Minus, AlertTriangle } from "lucide-react";
 import type { CardBrief, SignalDirection } from "@/api/types";
 
 interface Props {
@@ -35,7 +35,9 @@ function DirectionIcon({ direction }: { direction: SignalDirection | null }) {
  * Compact strip of "what fired" chips for an event group, intended for the
  * collapsed accordion state on `IntelligenceTimeline`. Each chip pulls the
  * card headline (already a one-line signal label) and tones the colour by
- * the card's signal direction.
+ * the card's signal direction. When the underlying primary metric was
+ * anomaly-flagged or quarantined we layer an inline icon onto the chip so
+ * a reviewer can see the trust issue without expanding the event.
  */
 export function EventSignalSummary({ cards, limit = 5, className }: Props) {
   const summaryCards = cards
@@ -46,19 +48,29 @@ export function EventSignalSummary({ cards, limit = 5, className }: Props) {
 
   return (
     <div className={clsx("flex flex-wrap items-center gap-1.5", className)}>
-      {summaryCards.map((c) => (
-        <span
-          key={c.card_id}
-          className={clsx(
-            "chip max-w-[18rem] truncate",
-            DIRECTION_TONE[c.signal_direction ?? "NEUTRAL"] ?? FALLBACK_TONE,
-          )}
-          title={c.headline}
-        >
-          <DirectionIcon direction={c.signal_direction ?? null} />
-          <span className="truncate">{c.headline}</span>
-        </span>
-      ))}
+      {summaryCards.map((c) => {
+        const status = c.trigger_metric?.validation_status;
+        const flagged = status === "anomaly" || status === "quarantined";
+        return (
+          <span
+            key={c.card_id}
+            className={clsx(
+              "chip max-w-[18rem] truncate",
+              DIRECTION_TONE[c.signal_direction ?? "NEUTRAL"] ?? FALLBACK_TONE,
+              flagged && "ring-1 ring-mixed/40",
+            )}
+            title={
+              flagged && c.trigger_metric?.validation_reason
+                ? `${c.headline} — ${c.trigger_metric.validation_reason}`
+                : c.headline
+            }
+          >
+            <DirectionIcon direction={c.signal_direction ?? null} />
+            <span className="truncate">{c.headline}</span>
+            {flagged && <ShieldAlert size={11} className="text-mixed" aria-hidden />}
+          </span>
+        );
+      })}
       {cards.length - summaryCards.length > 0 && (
         <span className="chip-low text-[11px]">
           +{cards.length - summaryCards.length} more

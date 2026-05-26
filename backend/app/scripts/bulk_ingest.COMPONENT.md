@@ -58,6 +58,8 @@ Period range (provide exactly one):
 Optional:
 
 - `--symbols RELIANCE,TCS` — filter Company sweep.
+- `--symbols-file var/nse_nifty50.json` — load NSE symbols from a JSON
+  array (`nse_symbol` per row). Mutually exclusive with `--symbols`.
 - `--doc-types financial_report_pdf,transcript,presentation,annual_report`.
 - `--include-annual` — adds an ANNUAL `PeriodSpec` for every FY whose
   Q4 is in range.

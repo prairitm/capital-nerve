@@ -44,12 +44,26 @@ def run_normalization(
     consolidation = event.consolidation or ConsolidationType.CONSOLIDATED
     audit_status = event.audit_status or AuditStatus.UNKNOWN
 
+    extracted_codes = {
+        (ev.normalized_label or ev.raw_label or "").strip()
+        for ev in values
+    }
+
     written = 0
     seen_keys: set[tuple[int, int, ConsolidationType, str]] = set()
     for ev in values:
         code = ev.normalized_label or ev.raw_label
         li = line_items.get(code)
         if not li:
+            continue
+        if _skip_derived_margin_fact(code, extracted_codes):
+            _delete_margin_fact(
+                db,
+                company_id=document.company_id,
+                period_id=document.period_id,
+                line_item_def_id=li.line_item_def_id,
+                consolidation=consolidation,
+            )
             continue
         key = (li.line_item_def_id, document.period_id, consolidation, "CURRENT")
         if key in seen_keys:
@@ -103,3 +117,33 @@ def run_normalization(
 def _load_line_items(db: Session) -> dict[str, FinancialLineItemDefinition]:
     rows = db.execute(select(FinancialLineItemDefinition)).scalars().all()
     return {r.normalized_code: r for r in rows}
+
+
+def _skip_derived_margin_fact(code: str, extracted_codes: set[str]) -> bool:
+    """Do not persist LLM margin % when base P&L lines are present — metrics stage recomputes."""
+    if code == "ebitda_margin":
+        return "ebitda" in extracted_codes and "revenue_from_operations" in extracted_codes
+    if code == "pat_margin":
+        return "pat" in extracted_codes and "revenue_from_operations" in extracted_codes
+    return False
+
+
+def _delete_margin_fact(
+    db: Session,
+    *,
+    company_id: int,
+    period_id: int,
+    line_item_def_id: int,
+    consolidation: ConsolidationType,
+) -> None:
+    existing = db.scalar(
+        select(FinancialStatementFact).where(
+            FinancialStatementFact.company_id == company_id,
+            FinancialStatementFact.period_id == period_id,
+            FinancialStatementFact.line_item_def_id == line_item_def_id,
+            FinancialStatementFact.consolidation == consolidation,
+            FinancialStatementFact.period_value_type == "CURRENT",
+        )
+    )
+    if existing is not None:
+        db.delete(existing)
