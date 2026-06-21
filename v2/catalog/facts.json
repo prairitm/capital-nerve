@@ -1,0 +1,77 @@
+{
+  "revenue_from_operations": {
+    "name": "Revenue from Operations",
+    "statement": "PROFIT_AND_LOSS",
+    "unit": "crore",
+    "documents": ["FINANCIAL_RESULT"],
+    "aliases": ["revenue"]
+  },
+  "ebitda": {
+    "name": "EBITDA",
+    "statement": "PROFIT_AND_LOSS",
+    "unit": "crore",
+    "documents": ["FINANCIAL_RESULT"]
+  },
+  "pat": {
+    "name": "Profit After Tax",
+    "statement": "PROFIT_AND_LOSS",
+    "unit": "crore",
+    "documents": ["FINANCIAL_RESULT"],
+    "aliases": ["net_profit"]
+  },
+  "eps_basic": {
+    "name": "EPS (Basic)",
+    "statement": "PROFIT_AND_LOSS",
+    "unit": "Rs",
+    "documents": ["FINANCIAL_RESULT"],
+    "aliases": ["eps"]
+  },
+  "other_income": {
+    "name": "Other Income",
+    "statement": "PROFIT_AND_LOSS",
+    "unit": "crore",
+    "documents": ["FINANCIAL_RESULT"]
+  },
+  "pbt": {
+    "name": "Profit Before Tax",
+    "statement": "PROFIT_AND_LOSS",
+    "unit": "crore",
+    "documents": ["FINANCIAL_RESULT"]
+  },
+  "exceptional_items": {
+    "name": "Exceptional Items",
+    "statement": "PROFIT_AND_LOSS",
+    "unit": "crore",
+    "documents": ["FINANCIAL_RESULT"]
+  },
+  "finance_cost": {
+    "name": "Finance Costs",
+    "statement": "PROFIT_AND_LOSS",
+    "unit": "crore",
+    "documents": ["FINANCIAL_RESULT"]
+  },
+  "tax_expense": {
+    "name": "Tax Expense",
+    "statement": "PROFIT_AND_LOSS",
+    "unit": "crore",
+    "documents": ["FINANCIAL_RESULT"]
+  },
+  "cfo": {
+    "name": "Cash Flow from Operations",
+    "statement": "CASH_FLOW",
+    "unit": "crore",
+    "documents": ["FINANCIAL_RESULT"]
+  },
+  "operating_profit": {
+    "name": "Operating Profit",
+    "statement": "PROFIT_AND_LOSS",
+    "unit": "crore",
+    "documents": ["FINANCIAL_RESULT"]
+  },
+  "interest_earned": {
+    "name": "Interest Earned",
+    "statement": "PROFIT_AND_LOSS",
+    "unit": "crore",
+    "documents": ["FINANCIAL_RESULT"]
+  }
+}

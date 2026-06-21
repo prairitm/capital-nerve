@@ -1,0 +1,174 @@
+{
+  "revenue_yoy_growth": {
+    "name": "Revenue YoY Growth",
+    "unit": "%",
+    "category": "growth",
+    "formula": "(revenue - revenue_py) / revenue_py * 100",
+    "inputs": [
+      {"var": "revenue", "fact_key": "revenue_from_operations", "scope": "CURRENT"},
+      {"var": "revenue_py", "fact_key": "revenue_from_operations", "scope": "PY"}
+    ]
+  },
+  "revenue_qoq_growth": {
+    "name": "Revenue QoQ Growth",
+    "unit": "%",
+    "category": "growth",
+    "formula": "(revenue - revenue_pq) / revenue_pq * 100",
+    "inputs": [
+      {"var": "revenue", "fact_key": "revenue_from_operations", "scope": "CURRENT"},
+      {"var": "revenue_pq", "fact_key": "revenue_from_operations", "scope": "PQ"}
+    ]
+  },
+  "ebitda_growth_yoy": {
+    "name": "EBITDA Growth YoY",
+    "unit": "%",
+    "category": "growth",
+    "formula": "(ebitda - ebitda_py) / ebitda_py * 100",
+    "inputs": [
+      {"var": "ebitda", "fact_key": "ebitda", "scope": "CURRENT"},
+      {"var": "ebitda_py", "fact_key": "ebitda", "scope": "PY"}
+    ]
+  },
+  "ebitda_qoq_growth": {
+    "name": "EBITDA Growth QoQ",
+    "unit": "%",
+    "category": "growth",
+    "formula": "(ebitda - ebitda_pq) / ebitda_pq * 100",
+    "inputs": [
+      {"var": "ebitda", "fact_key": "ebitda", "scope": "CURRENT"},
+      {"var": "ebitda_pq", "fact_key": "ebitda", "scope": "PQ"}
+    ]
+  },
+  "pat_growth_yoy": {
+    "name": "PAT Growth YoY",
+    "unit": "%",
+    "category": "growth",
+    "formula": "(pat - pat_py) / pat_py * 100",
+    "inputs": [
+      {"var": "pat", "fact_key": "pat", "scope": "CURRENT"},
+      {"var": "pat_py", "fact_key": "pat", "scope": "PY"}
+    ]
+  },
+  "pat_growth_qoq": {
+    "name": "PAT Growth QoQ",
+    "unit": "%",
+    "category": "growth",
+    "formula": "(pat - pat_pq) / pat_pq * 100",
+    "inputs": [
+      {"var": "pat", "fact_key": "pat", "scope": "CURRENT"},
+      {"var": "pat_pq", "fact_key": "pat", "scope": "PQ"}
+    ]
+  },
+  "eps_growth_yoy": {
+    "name": "EPS Growth YoY",
+    "unit": "%",
+    "category": "growth",
+    "formula": "(eps - eps_py) / eps_py * 100",
+    "inputs": [
+      {"var": "eps", "fact_key": "eps_basic", "scope": "CURRENT"},
+      {"var": "eps_py", "fact_key": "eps_basic", "scope": "PY"}
+    ]
+  },
+  "ebitda_margin": {
+    "name": "EBITDA Margin",
+    "unit": "%",
+    "category": "margin",
+    "formula": "ebitda / revenue * 100",
+    "inputs": [
+      {"var": "ebitda", "fact_key": "ebitda", "scope": "CURRENT"},
+      {"var": "revenue", "fact_key": "revenue_from_operations", "scope": "CURRENT"}
+    ]
+  },
+  "ebitda_margin_change_yoy_bps": {
+    "name": "EBITDA Margin Change YoY",
+    "unit": "bps",
+    "category": "margin",
+    "formula": "(ebitda / revenue - ebitda_py / revenue_py) * 10000",
+    "inputs": [
+      {"var": "ebitda", "fact_key": "ebitda", "scope": "CURRENT"},
+      {"var": "revenue", "fact_key": "revenue_from_operations", "scope": "CURRENT"},
+      {"var": "ebitda_py", "fact_key": "ebitda", "scope": "PY"},
+      {"var": "revenue_py", "fact_key": "revenue_from_operations", "scope": "PY"}
+    ]
+  },
+  "pat_margin": {
+    "name": "PAT Margin",
+    "unit": "%",
+    "category": "margin",
+    "formula": "pat / revenue * 100",
+    "inputs": [
+      {"var": "pat", "fact_key": "pat", "scope": "CURRENT"},
+      {"var": "revenue", "fact_key": "revenue_from_operations", "scope": "CURRENT"}
+    ]
+  },
+  "other_income_to_pbt": {
+    "name": "Other Income to PBT",
+    "unit": "%",
+    "category": "profit_quality",
+    "formula": "other_income / pbt * 100",
+    "inputs": [
+      {"var": "other_income", "fact_key": "other_income", "scope": "CURRENT"},
+      {"var": "pbt", "fact_key": "pbt", "scope": "CURRENT"}
+    ]
+  },
+  "exceptional_to_pat": {
+    "name": "Exceptional Items / PAT",
+    "unit": "%",
+    "category": "earnings_quality",
+    "formula": "exceptional_items / pat * 100",
+    "inputs": [
+      {"var": "exceptional_items", "fact_key": "exceptional_items", "scope": "CURRENT"},
+      {"var": "pat", "fact_key": "pat", "scope": "CURRENT"}
+    ]
+  },
+  "finance_cost_burden": {
+    "name": "Finance Cost Burden",
+    "unit": "%",
+    "category": "expense",
+    "formula": "finance_cost / ebitda * 100",
+    "inputs": [
+      {"var": "finance_cost", "fact_key": "finance_cost", "scope": "CURRENT"},
+      {"var": "ebitda", "fact_key": "ebitda", "scope": "CURRENT"}
+    ]
+  },
+  "interest_coverage": {
+    "name": "Interest Coverage",
+    "unit": "x",
+    "category": "debt",
+    "formula": "ebitda / finance_cost",
+    "inputs": [
+      {"var": "ebitda", "fact_key": "ebitda", "scope": "CURRENT"},
+      {"var": "finance_cost", "fact_key": "finance_cost", "scope": "CURRENT"}
+    ]
+  },
+  "cfo_to_pat": {
+    "name": "CFO to PAT",
+    "unit": "x",
+    "category": "cash_quality",
+    "formula": "cfo / pat",
+    "inputs": [
+      {"var": "cfo", "fact_key": "cfo", "scope": "CURRENT"},
+      {"var": "pat", "fact_key": "pat", "scope": "CURRENT"}
+    ]
+  },
+  "operating_profit_yoy_growth": {
+    "name": "Operating Profit Growth YoY",
+    "unit": "%",
+    "category": "growth",
+    "formula": "(op - op_py) / op_py * 100",
+    "inputs": [
+      {"var": "op", "fact_key": "operating_profit", "scope": "CURRENT"},
+      {"var": "op_py", "fact_key": "operating_profit", "scope": "PY"}
+    ]
+  },
+  "operating_profit_qoq_growth": {
+    "name": "Operating Profit Growth QoQ",
+    "unit": "%",
+    "category": "growth",
+    "formula": "(op - op_pq) / op_pq * 100",
+    "inputs": [
+      {"var": "op", "fact_key": "operating_profit", "scope": "CURRENT"},
+      {"var": "op_pq", "fact_key": "operating_profit", "scope": "PQ"}
+    ]
+  }
+}

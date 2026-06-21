@@ -1,0 +1,7 @@
+fastapi
+uvicorn
+PyPDF2
+openai>=1.0
+python-dotenv
+pymupdf
+python-multipart

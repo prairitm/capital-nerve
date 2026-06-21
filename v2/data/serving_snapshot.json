@@ -1,0 +1,610 @@
+{
+  "served_at": "2026-06-14T14:23:35.354364+00:00",
+  "reporting_period": {
+    "quarter": 4,
+    "fiscal_year": 26,
+    "quarter_end": "2026-03-31",
+    "label": "Q4 FY26",
+    "period_type": "quarter",
+    "source": "heading"
+  },
+  "preferred_metric_basis": "consolidated",
+  "metrics_basis_used": "consolidated",
+  "company_ticker": "Reliance Industries Ltd.",
+  "cards": [
+    {
+      "card_id": "card_5d4bc5f166ad",
+      "card_type": "earnings_snapshot",
+      "title": "Earnings snapshot \u2014 Q4 FY26 (consolidated)",
+      "summary": "Weak Profit Quality: Other Income Dependency",
+      "metrics": [
+        {
+          "fact_key": "revenue_from_operations",
+          "value": 267186.0,
+          "unit": "crore",
+          "derivation": "raw",
+          "inputs": [
+            "revenue_from_operations"
+          ],
+          "evidence": "Gross Revenue | 267,186",
+          "source_document_id": null,
+          "period": "Q4 FY26",
+          "source": "filing",
+          "metric_id": "met_2f0b98f752c0"
+        },
+        {
+          "fact_key": "ebitda",
+          "value": 48003.0,
+          "unit": "crore",
+          "derivation": "raw",
+          "inputs": [
+            "ebitda"
+          ],
+          "evidence": "EBITDA | 48,003",
+          "source_document_id": null,
+          "period": "Q4 FY26",
+          "source": "filing",
+          "metric_id": "met_8628237639b2"
+        },
+        {
+          "fact_key": "operating_profit",
+          "value": 46789.0,
+          "unit": "crore",
+          "derivation": "raw",
+          "inputs": [
+            "operating_profit"
+          ],
+          "evidence": "Total Segment Profit before Interest, Tax and Depreciation, Amortisation and Depletion | 46,789",
+          "source_document_id": null,
+          "period": "Q4 FY26",
+          "source": "filing",
+          "metric_id": "met_1cb510559ad8"
+        },
+        {
+          "fact_key": "pbt",
+          "value": 28643.0,
+          "unit": "crore",
+          "derivation": "raw",
+          "inputs": [
+            "pbt"
+          ],
+          "evidence": "Profit Before Tax | 28,643",
+          "source_document_id": null,
+          "period": "Q4 FY26",
+          "source": "filing",
+          "metric_id": "met_b6c5113522b5"
+        },
+        {
+          "fact_key": "pat",
+          "value": 21804.0,
+          "unit": "crore",
+          "derivation": "raw",
+          "inputs": [
+            "pat"
+          ],
+          "evidence": "Profit After Tax | 21,804",
+          "source_document_id": null,
+          "period": "Q4 FY26",
+          "source": "filing",
+          "metric_id": "met_51b7727bf5cf"
+        },
+        {
+          "metric_key": "other_income_to_pbt",
+          "value": 52.78,
+          "unit": "%",
+          "derivation": "formula",
+          "inputs": [
+            "other_income",
+            "pbt"
+          ],
+          "period": "Q4 FY26",
+          "source": "catalog",
+          "formula_evaluated": "other_income / pbt * 100",
+          "input_details": [
+            {
+              "fact_key": "other_income",
+              "role": "current",
+              "value": 52.78
+            },
+            {
+              "fact_key": "pbt",
+              "role": "current",
+              "value": 27195.0,
+              "period": "Q4 FY26",
+              "evidence": "Profit Before Tax | 27,195",
+              "source": "filing",
+              "value_id": "val_456b73a00dd7",
+              "unit": "crore"
+            }
+          ],
+          "metric_id": "met_58490db95583"
+        },
+        {
+          "metric_key": "finance_cost_burden",
+          "value": 12.87,
+          "unit": "%",
+          "derivation": "formula",
+          "inputs": [
+            "ebitda",
+            "finance_cost"
+          ],
+          "period": "Q4 FY26",
+          "source": "catalog",
+          "formula_evaluated": "finance_cost / ebitda * 100",
+          "input_details": [
+            {
+              "fact_key": "finance_cost",
+              "role": "current",
+              "value": 6585.0,
+              "period": "Q4 FY26",
+              "evidence": "Finance Costs | 6,585",
+              "source": "filing",
+              "value_id": "val_f5c68e1bfb93",
+              "unit": "crore"
+            },
+            {
+              "fact_key": "ebitda",
+              "role": "current",
+              "value": 48588.0,
+              "period": "Q4 FY26",
+              "evidence": "EBITDA | 48,588",
+              "source": "filing",
+              "value_id": "val_2a40f4ec751e",
+              "unit": "crore"
+            }
+          ],
+          "metric_id": "met_70679ee19001"
+        },
+        {
+          "metric_key": "interest_coverage",
+          "value": 7.77,
+          "unit": "x",
+          "derivation": "formula",
+          "inputs": [
+            "ebitda",
+            "finance_cost"
+          ],
+          "period": "Q4 FY26",
+          "source": "catalog",
+          "formula_evaluated": "ebitda / finance_cost",
+          "input_details": [
+            {
+              "fact_key": "ebitda",
+              "role": "current",
+              "value": 48588.0,
+              "period": "Q4 FY26",
+              "evidence": "EBITDA | 48,588",
+              "source": "filing",
+              "value_id": "val_2a40f4ec751e",
+              "unit": "crore"
+            },
+            {
+              "fact_key": "finance_cost",
+              "role": "current",
+              "value": 6585.0,
+              "period": "Q4 FY26",
+              "evidence": "Finance Costs | 6,585",
+              "source": "filing",
+              "value_id": "val_f5c68e1bfb93",
+              "unit": "crore"
+            }
+          ],
+          "metric_id": "met_ba96f26f72b9"
+        },
+        {
+          "metric_key": "ebitda_margin",
+          "value": 17.97,
+          "unit": "%",
+          "derivation": "margin",
+          "inputs": [
+            "ebitda",
+            "revenue_from_operations"
+          ],
+          "period": "Q4 FY26",
+          "source": "catalog",
+          "formula_evaluated": "ebitda / revenue * 100",
+          "input_details": [
+            {
+              "fact_key": "ebitda",
+              "role": "numerator",
+              "value": 48588.0,
+              "period": "Q4 FY26",
+              "evidence": "EBITDA | 48,588",
+              "source": "filing",
+              "value_id": "val_2a40f4ec751e",
+              "unit": "crore"
+            },
+            {
+              "fact_key": "revenue_from_operations",
+              "role": "denominator",
+              "value": 325290.0,
+              "period": "Q4 FY26",
+              "evidence": "Gross Revenue | 325,290",
+              "source": "filing",
+              "value_id": "val_fda48e8a5f65",
+              "unit": "crore"
+            }
+          ],
+          "metric_id": "met_47a35fd5bfa0"
+        },
+        {
+          "metric_key": "pat_margin",
+          "value": 8.16,
+          "unit": "%",
+          "derivation": "margin",
+          "inputs": [
+            "pat",
+            "revenue_from_operations"
+          ],
+          "period": "Q4 FY26",
+          "source": "catalog",
+          "formula_evaluated": "pat / revenue * 100",
+          "input_details": [
+            {
+              "fact_key": "pat",
+              "role": "numerator",
+              "value": 20616.0,
+              "period": "Q4 FY26",
+              "evidence": "Profit After Tax | 20,616",
+              "source": "filing",
+              "value_id": "val_240c61f70c8d",
+              "unit": "crore"
+            },
+            {
+              "fact_key": "revenue_from_operations",
+              "role": "denominator",
+              "value": 325290.0,
+              "period": "Q4 FY26",
+              "evidence": "Gross Revenue | 325,290",
+              "source": "filing",
+              "value_id": "val_fda48e8a5f65",
+              "unit": "crore"
+            }
+          ],
+          "metric_id": "met_e24af7a9896c"
+        }
+      ],
+      "signals": [
+        {
+          "signal_id": "sig_3cbcf0064b9e",
+          "signal_key": "weak_profit_quality_other_income",
+          "severity": "watch",
+          "headline": "Weak Profit Quality: Other Income Dependency",
+          "rationale": "Other income forms a large percentage of PBT. (other_income_to_pbt=52.78)",
+          "metric_keys": [
+            "other_income_to_pbt"
+          ],
+          "category": "profit_quality",
+          "direction": "NEGATIVE"
+        }
+      ],
+      "reporting_period": {
+        "quarter": 4,
+        "fiscal_year": 26,
+        "quarter_end": "2026-03-31",
+        "label": "Q4 FY26",
+        "period_type": "quarter",
+        "source": "heading"
+      },
+      "preferred_metric_basis": "consolidated",
+      "generated_at": "2026-06-14T14:23:35.341828+00:00"
+    },
+    {
+      "card_id": "card_43eb44f0fe79",
+      "card_type": "metric_trend",
+      "title": "Revenue trend \u2014 last 4 quarters",
+      "summary": "Revenue (consolidated) across stored quarters",
+      "metrics": [
+        {
+          "metric_key": "revenue_from_operations",
+          "value": 288138.0,
+          "unit": "INR_cr",
+          "derivation": "raw",
+          "period": "Q4 FY25",
+          "evidence": "Gross Revenue | 288,138",
+          "source": "database"
+        },
+        {
+          "metric_key": "revenue_from_operations",
+          "value": 273252.0,
+          "unit": "INR_cr",
+          "derivation": "raw",
+          "period": "Q1 FY26",
+          "evidence": "Gross Revenue | 273,252",
+          "source": "database"
+        },
+        {
+          "metric_key": "revenue_from_operations",
+          "value": 293829.0,
+          "unit": "INR_cr",
+          "derivation": "raw",
+          "period": "Q3 FY26",
+          "evidence": "Gross Revenue | 293,829",
+          "source": "database"
+        },
+        {
+          "metric_key": "revenue_from_operations",
+          "value": 325290.0,
+          "unit": "INR_cr",
+          "derivation": "raw",
+          "period": "Q4 FY26",
+          "evidence": "Gross Revenue | 325,290",
+          "source": "database"
+        }
+      ],
+      "signals": [],
+      "reporting_period": {
+        "quarter": 4,
+        "fiscal_year": 26,
+        "quarter_end": "2026-03-31",
+        "label": "Q4 FY26",
+        "period_type": "quarter",
+        "source": "heading"
+      },
+      "preferred_metric_basis": "consolidated",
+      "generated_at": "2026-06-14T14:23:35.342299+00:00"
+    }
+  ],
+  "history": [
+    {
+      "quarter": 1,
+      "fiscal_year": 24,
+      "quarter_end": "2023-06-30",
+      "label": "Q1 FY24"
+    },
+    {
+      "quarter": 2,
+      "fiscal_year": 24,
+      "quarter_end": "2023-09-30",
+      "label": "Q2 FY24"
+    },
+    {
+      "quarter": 3,
+      "fiscal_year": 24,
+      "quarter_end": "2023-12-31",
+      "label": "Q3 FY24"
+    },
+    {
+      "quarter": 2,
+      "fiscal_year": 25,
+      "quarter_end": "2024-09-30",
+      "label": "Q2 FY25"
+    },
+    {
+      "quarter": 4,
+      "fiscal_year": 25,
+      "quarter_end": "2025-03-31",
+      "label": "Q4 FY25"
+    },
+    {
+      "quarter": 1,
+      "fiscal_year": 26,
+      "quarter_end": "2025-06-30",
+      "label": "Q1 FY26"
+    },
+    {
+      "quarter": 3,
+      "fiscal_year": 26,
+      "quarter_end": "2025-12-31",
+      "label": "Q3 FY26"
+    },
+    {
+      "quarter": 4,
+      "fiscal_year": 26,
+      "quarter_end": "2026-03-31",
+      "label": "Q4 FY26"
+    }
+  ],
+  "trends": {
+    "revenue_from_operations": [
+      {
+        "label": "Q1 FY24",
+        "quarter": 1,
+        "fiscal_year": 24,
+        "quarter_end": "2023-06-30",
+        "value": 257823.0,
+        "unit": "crore",
+        "evidence": "QUARTERLY CONSOLIDATED REVENUE AT \u20b9 257,823 CRORE",
+        "source": "database",
+        "source_document_id": "doc_cf7b731d4b7c"
+      },
+      {
+        "label": "Q2 FY24",
+        "quarter": 2,
+        "fiscal_year": 24,
+        "quarter_end": "2023-09-30",
+        "value": 258027.0,
+        "unit": "crore",
+        "evidence": "Quarterly Consolidated Revenue at \u20b9 258,027 crore",
+        "source": "database",
+        "source_document_id": "doc_95c451f0bf93"
+      },
+      {
+        "label": "Q3 FY24",
+        "quarter": 3,
+        "fiscal_year": 24,
+        "quarter_end": "2023-12-31",
+        "value": 267186.0,
+        "unit": "crore",
+        "evidence": "Quarterly Consolidated Revenue at \u20b9 267,186 crore",
+        "source": "database",
+        "source_document_id": "doc_7963cc19bb5d"
+      },
+      {
+        "label": "Q2 FY25",
+        "quarter": 2,
+        "fiscal_year": 25,
+        "quarter_end": "2024-09-30",
+        "value": 283548.0,
+        "unit": "crore",
+        "evidence": "Gross Revenue | 283,548",
+        "source": "database",
+        "source_document_id": "doc_ff6e557ffb38"
+      },
+      {
+        "label": "Q4 FY25",
+        "quarter": 4,
+        "fiscal_year": 25,
+        "quarter_end": "2025-03-31",
+        "value": 288138.0,
+        "unit": "crore",
+        "evidence": "Gross Revenue | 288,138",
+        "source": "database",
+        "source_document_id": "doc_5ae351e0f37b"
+      },
+      {
+        "label": "Q1 FY26",
+        "quarter": 1,
+        "fiscal_year": 26,
+        "quarter_end": "2025-06-30",
+        "value": 273252.0,
+        "unit": "crore",
+        "evidence": "Gross Revenue | 273,252",
+        "source": "database",
+        "source_document_id": "doc_bb3779ac5474"
+      },
+      {
+        "label": "Q3 FY26",
+        "quarter": 3,
+        "fiscal_year": 26,
+        "quarter_end": "2025-12-31",
+        "value": 293829.0,
+        "unit": "crore",
+        "evidence": "Gross Revenue | 293,829",
+        "source": "database",
+        "source_document_id": "doc_a76d8754d46c"
+      },
+      {
+        "label": "Q4 FY26",
+        "quarter": 4,
+        "fiscal_year": 26,
+        "quarter_end": "2026-03-31",
+        "value": 325290.0,
+        "unit": "crore",
+        "evidence": "Gross Revenue | 325,290",
+        "source": "database",
+        "source_document_id": "doc_4a58da21113f"
+      }
+    ],
+    "pat": [
+      {
+        "label": "Q1 FY24",
+        "quarter": 1,
+        "fiscal_year": 24,
+        "quarter_end": "2023-06-30",
+        "value": 17448.0,
+        "unit": "crore",
+        "evidence": "Profit After Tax | 17,448",
+        "source": "database",
+        "source_document_id": "doc_cf7b731d4b7c"
+      },
+      {
+        "label": "Q2 FY24",
+        "quarter": 2,
+        "fiscal_year": 24,
+        "quarter_end": "2023-09-30",
+        "value": 19101.0,
+        "unit": "crore",
+        "evidence": "Profit After Tax | 19,101",
+        "source": "database",
+        "source_document_id": "doc_95c451f0bf93"
+      },
+      {
+        "label": "Q3 FY24",
+        "quarter": 3,
+        "fiscal_year": 24,
+        "quarter_end": "2023-12-31",
+        "value": 21930.0,
+        "unit": "crore",
+        "evidence": "Record Quarterly Consolidated Profit After Tax^ at \u20b9 21,930 crore",
+        "source": "database",
+        "source_document_id": "doc_7963cc19bb5d"
+      },
+      {
+        "label": "Q2 FY25",
+        "quarter": 2,
+        "fiscal_year": 25,
+        "quarter_end": "2024-09-30",
+        "value": 22146.0,
+        "unit": "crore",
+        "evidence": "Profit After Tax | 22,146",
+        "source": "database",
+        "source_document_id": "doc_ff6e557ffb38"
+      },
+      {
+        "label": "Q4 FY25",
+        "quarter": 4,
+        "fiscal_year": 25,
+        "quarter_end": "2025-03-31",
+        "value": 22434.0,
+        "unit": "crore",
+        "evidence": "Profit After Tax | 22,434",
+        "source": "database",
+        "source_document_id": "doc_5ae351e0f37b"
+      },
+      {
+        "label": "Q1 FY26",
+        "quarter": 1,
+        "fiscal_year": 26,
+        "quarter_end": "2025-06-30",
+        "value": 30681.0,
+        "unit": "crore",
+        "evidence": "Profit After Tax | 30,681",
+        "source": "database",
+        "source_document_id": "doc_bb3779ac5474"
+      },
+      {
+        "label": "Q3 FY26",
+        "quarter": 3,
+        "fiscal_year": 26,
+        "quarter_end": "2025-12-31",
+        "value": 22167.0,
+        "unit": "crore",
+        "evidence": "Profit After Tax | 22,167",
+        "source": "database",
+        "source_document_id": "doc_a76d8754d46c"
+      },
+      {
+        "label": "Q4 FY26",
+        "quarter": 4,
+        "fiscal_year": 26,
+        "quarter_end": "2026-03-31",
+        "value": 20616.0,
+        "unit": "crore",
+        "evidence": "Profit After Tax | 20,616",
+        "source": "database",
+        "source_document_id": "doc_4a58da21113f"
+      }
+    ],
+    "operating_profit": [
+      {
+        "label": "Q1 FY24",
+        "quarter": 1,
+        "fiscal_year": 24,
+        "quarter_end": "2023-06-30",
+        "value": 27399.0,
+        "unit": "crore",
+        "evidence": "Total Segment Profit before Interest and Tax | 27,399",
+        "source": "database",
+        "source_document_id": "doc_cf7b731d4b7c"
+      },
+      {
+        "label": "Q1 FY26",
+        "quarter": 1,
+        "fiscal_year": 26,
+        "quarter_end": "2025-06-30",
+        "value": 46789.0,
+        "unit": "crore",
+        "evidence": "Total Segment Profit before Interest, Tax and Depreciation, Amortisation and Depletion | 46,789",
+        "source": "database",
+        "source_document_id": "doc_bb3779ac5474"
+      }
+    ]
+  },
+  "endpoints": {
+    "rest": "/api/v1/cards",
+    "search": "/api/v1/search",
+    "alerts": "/api/v1/alerts",
+    "trends": "/api/v1/metrics/trend"
+  }
+}

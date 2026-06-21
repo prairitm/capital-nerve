@@ -1,0 +1,173 @@
+{
+  "revenue_contraction": {
+    "name": "Revenue Contraction",
+    "category": "growth",
+    "direction": "NEGATIVE",
+    "severity": "HIGH",
+    "description": "Revenue YoY growth turned negative.",
+    "rule": {"metric_key": "revenue_yoy_growth", "op": "<", "value": 0}
+  },
+  "strong_revenue_growth_yoy": {
+    "name": "Strong YoY Revenue Growth",
+    "category": "growth",
+    "direction": "POSITIVE",
+    "severity": "MEDIUM",
+    "description": "Revenue YoY growth above 12%.",
+    "rule": {"metric_key": "revenue_yoy_growth", "op": ">", "value": 12}
+  },
+  "modest_revenue_growth": {
+    "name": "Modest Revenue Growth",
+    "category": "growth",
+    "direction": "POSITIVE",
+    "severity": "LOW",
+    "description": "Revenue growing YoY but below acceleration tier.",
+    "rule": {
+      "all": [
+        {"metric_key": "revenue_yoy_growth", "op": ">", "value": 0},
+        {"metric_key": "revenue_yoy_growth", "op": "<", "value": 12}
+      ]
+    }
+  },
+  "revenue_decline_qoq": {
+    "name": "Revenue Decline (QoQ)",
+    "category": "growth",
+    "direction": "NEGATIVE",
+    "severity": "MEDIUM",
+    "description": "Revenue contracted versus the prior quarter.",
+    "rule": {"metric_key": "revenue_qoq_growth", "op": "<", "value": 0}
+  },
+  "revenue_growth_qoq": {
+    "name": "Revenue Growth (QoQ)",
+    "category": "growth",
+    "direction": "POSITIVE",
+    "severity": "MEDIUM",
+    "description": "Revenue grew more than 5% versus the prior quarter.",
+    "rule": {"metric_key": "revenue_qoq_growth", "op": ">", "value": 5}
+  },
+  "margin_compression": {
+    "name": "Margin Compression",
+    "category": "margin",
+    "direction": "NEGATIVE",
+    "severity": "MEDIUM",
+    "description": "EBITDA margin declined materially YoY.",
+    "rule": {"metric_key": "ebitda_margin_change_yoy_bps", "op": "<", "value": -75}
+  },
+  "margin_expansion": {
+    "name": "Margin Expansion",
+    "category": "margin",
+    "direction": "POSITIVE",
+    "severity": "MEDIUM",
+    "description": "EBITDA margin expanded YoY.",
+    "rule": {"metric_key": "ebitda_margin_change_yoy_bps", "op": ">", "value": 75}
+  },
+  "margin_pressure": {
+    "name": "EBITDA Margin Pressure",
+    "category": "margin",
+    "direction": "NEGATIVE",
+    "severity": "MEDIUM",
+    "description": "EBITDA margin below 15% for the quarter.",
+    "rule": {"metric_key": "ebitda_margin", "op": "<", "value": 15}
+  },
+  "clean_beat": {
+    "name": "Clean Beat",
+    "category": "earnings_quality",
+    "direction": "POSITIVE",
+    "severity": "HIGH",
+    "description": "Revenue, EBITDA, and PAT all up YoY with healthy other-income share.",
+    "rule": {
+      "all": [
+        {"metric_key": "revenue_yoy_growth", "op": ">", "value": 8},
+        {"metric_key": "ebitda_growth_yoy", "op": ">", "value": 8},
+        {"metric_key": "pat_growth_yoy", "op": ">", "value": 8},
+        {"metric_key": "other_income_to_pbt", "op": "<", "value": 15}
+      ]
+    }
+  },
+  "dirty_beat": {
+    "name": "Dirty Beat",
+    "category": "earnings_quality",
+    "direction": "MIXED",
+    "severity": "HIGH",
+    "description": "PAT growth flattered by other income or exceptional items.",
+    "rule": {
+      "all": [
+        {"metric_key": "pat_growth_yoy", "op": ">", "value": 10},
+        {
+          "any": [
+            {"metric_key": "other_income_to_pbt", "op": ">", "value": 18},
+            {"metric_key": "exceptional_to_pat", "op": ">", "value": 15}
+          ]
+        }
+      ]
+    }
+  },
+  "pat_decline_despite_revenue_growth": {
+    "name": "PAT Down Despite Revenue Growth",
+    "category": "earnings_quality",
+    "direction": "NEGATIVE",
+    "severity": "HIGH",
+    "description": "PAT contracted YoY while revenue grew.",
+    "rule": {
+      "all": [
+        {"metric_key": "pat_growth_yoy", "op": "<", "value": 0},
+        {"metric_key": "revenue_yoy_growth", "op": ">", "value": 0}
+      ]
+    }
+  },
+  "strong_cash_conversion": {
+    "name": "Strong Cash Conversion",
+    "category": "cash_quality",
+    "direction": "POSITIVE",
+    "severity": "MEDIUM",
+    "description": "CFO materially exceeds PAT — earnings backed by cash.",
+    "rule": {"metric_key": "cfo_to_pat", "op": ">", "value": 1.0}
+  },
+  "weak_cash_conversion": {
+    "name": "Weak Cash Conversion",
+    "category": "cash_quality",
+    "direction": "NEGATIVE",
+    "severity": "HIGH",
+    "description": "CFO fails to cover PAT — earnings quality concern.",
+    "rule": {"metric_key": "cfo_to_pat", "op": "<", "value": 0.5}
+  },
+  "finance_cost_pressure": {
+    "name": "Finance Cost Pressure",
+    "category": "expense",
+    "direction": "NEGATIVE",
+    "severity": "HIGH",
+    "description": "Finance costs absorb a heavy share of EBITDA.",
+    "rule": {"metric_key": "finance_cost_burden", "op": ">", "value": 22}
+  },
+  "interest_coverage_weakness": {
+    "name": "Interest Coverage Weakness",
+    "category": "debt",
+    "direction": "NEGATIVE",
+    "severity": "HIGH",
+    "description": "Interest coverage below 2.5x.",
+    "rule": {"metric_key": "interest_coverage", "op": "<", "value": 2.5}
+  },
+  "eps_contraction": {
+    "name": "EPS Contraction",
+    "category": "growth",
+    "direction": "NEGATIVE",
+    "severity": "HIGH",
+    "description": "EPS declined YoY.",
+    "rule": {"metric_key": "eps_growth_yoy", "op": "<", "value": 0}
+  },
+  "shareholder_earnings_growth": {
+    "name": "Shareholder Earnings Growth",
+    "category": "growth",
+    "direction": "POSITIVE",
+    "severity": "MEDIUM",
+    "description": "EPS grew materially YoY.",
+    "rule": {"metric_key": "eps_growth_yoy", "op": ">", "value": 10}
+  },
+  "weak_profit_quality_other_income": {
+    "name": "Weak Profit Quality: Other Income Dependency",
+    "category": "profit_quality",
+    "direction": "NEGATIVE",
+    "severity": "HIGH",
+    "description": "Other income forms a large percentage of PBT.",
+    "rule": {"metric_key": "other_income_to_pbt", "op": ">", "value": 18}
+  }
+}
