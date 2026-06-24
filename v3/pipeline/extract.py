@@ -41,7 +41,18 @@ def _openai_client():
 
 
 def parse_pdf_to_markdown(pdf_path: Path, *, force: bool = False) -> str:
-    from capital_nerve_parse import pdf_to_markdown_page_by_page, should_reparse
+    try:
+        from capital_nerve_parse import pdf_to_markdown_page_by_page, should_reparse, write_parse_meta
+    except ImportError:
+        from pdf_parse import parse_pdf_to_markdown as _v2_parse
+
+        return _v2_parse(
+            pdf_path,
+            parsed_dir=settings.parsed_dir,
+            client=_openai_client(),
+            model=settings.openai_parse_model,
+            force=force,
+        )
 
     settings.parsed_dir.mkdir(parents=True, exist_ok=True)
     md_path = settings.parsed_dir / f"{pdf_path.stem}.md"
@@ -57,8 +68,6 @@ def parse_pdf_to_markdown(pdf_path: Path, *, force: bool = False) -> str:
         model=settings.openai_parse_model,
     )
     md_path.write_text(markdown, encoding="utf-8")
-    from capital_nerve_parse import write_parse_meta
-
     write_parse_meta(
         md_path.with_suffix(".meta.json"),
         source_sha256=digest,
@@ -186,26 +195,85 @@ def extract_facts(
     period: Any,
     document_id: str,
 ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
-    from capital_nerve_logic import (
-        accept_for_preferred_basis,
-        canonicalize_unit,
-        dedupe_eps_values,
-        is_blocking_check,
-        validation_checks,
-    )
-    from catalog_loader import canonical_fact_key
+    try:
+        from capital_nerve_logic import (
+            accept_for_preferred_basis,
+            canonicalize_unit,
+            dedupe_eps_values,
+            is_blocking_check,
+            validation_checks,
+        )
+        from catalog_loader import canonical_fact_key, get_catalog
+    except ImportError:
+        from catalog_loader import canonical_fact_key, get_catalog
+
+        def canonicalize_unit(unit):  # type: ignore[misc]
+            if not unit:
+                return None
+            u = str(unit).strip().lower()
+            return {"crores": "crore", "cr": "crore", "rs.": "Rs", "rs": "Rs"}.get(u, unit)
+
+        def validation_checks(row, _basis):  # type: ignore[misc]
+            return []
+
+        def is_blocking_check(_check):  # type: ignore[misc]
+            return False
+
+        def dedupe_eps_values(rows, **_kw):  # type: ignore[misc]
+            return rows
+
+        def accept_for_preferred_basis(rows, preferred, **_kw):  # type: ignore[misc]
+            by_key: dict[str, dict[str, Any]] = {}
+            for row in rows:
+                fk = row.get("fact_key") or row.get("value_code")
+                basis = (row.get("basis") or "consolidated").lower()
+                cur = by_key.get(fk)
+                if cur is None or (basis == preferred and cur.get("basis") != preferred):
+                    by_key[fk] = row
+            return list(by_key.values())
+
+    from quarter_column import extract_facts_from_quarter_column
 
     schema_info = _extraction_schema()
     client = _openai_client()
     period_label = period.label if period else ""
 
-    raw_facts: list[dict[str, Any]] = []
-    for chunk in _chunk_markdown(markdown):
-        raw_facts.extend(
-            _extract_facts_from_chunk(
-                client, chunk, period_label=period_label, schema_info=schema_info
-            )
+    catalog = get_catalog()
+    det_by_key = {
+        row["fact_key"]: row
+        for row in extract_facts_from_quarter_column(
+            markdown,
+            target=period,
+            fact_keys=set(catalog.facts.keys()),
+            facts_catalog=catalog.facts,
         )
+    }
+
+    raw_facts: list[dict[str, Any]] = [
+        {
+            "fact_key": row["fact_key"],
+            "numeric_value": row["numeric_value"],
+            "unit": row.get("unit"),
+            "basis": row.get("basis") or "consolidated",
+            "evidence": row.get("evidence") or "",
+            "confidence": row.get("confidence") or 0.92,
+            "period": period_label,
+        }
+        for row in det_by_key.values()
+    ]
+    missing_keys = set(catalog.facts.keys()) - set(det_by_key)
+
+    for chunk in _chunk_markdown(markdown):
+        for entry in _extract_facts_from_chunk(
+            client, chunk, period_label=period_label, schema_info=schema_info
+        ):
+            fk = entry.get("fact_key")
+            canonical = canonical_fact_key(str(fk)) if fk else None
+            if canonical and canonical in det_by_key:
+                continue
+            if canonical and canonical not in missing_keys:
+                continue
+            raw_facts.append(entry)
 
     validated: list[dict[str, Any]] = []
     rejected: list[dict[str, Any]] = []

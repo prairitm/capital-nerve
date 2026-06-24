@@ -1,0 +1,140 @@
+"""PDF → markdown via OpenAI vision (page-by-page).
+
+Mirrors the ``capital_nerve_parse`` API used by v3 so the notebook and pipeline
+can share one parse path without an external package.
+"""
+
+from __future__ import annotations
+
+import base64
+import json
+from pathlib import Path
+from typing import Any
+
+import fitz
+
+_PAGE_DPI = 200
+_PARSE_PROMPT = """Convert this Indian corporate filing page to clean markdown.
+
+Rules:
+- Preserve tables as markdown pipe tables with correct row/column alignment
+- Keep every number exactly as printed (commas, parentheses for negatives, decimals)
+- Include column headers and period dates (e.g. Quarter Ended 31.03.2025)
+- Use # headings for page titles; do not wrap the whole page in a code block
+- Omit decorative letterhead art; keep all financial statement content
+- If the page has no meaningful content, return a single line: *(empty page)*
+"""
+
+
+def should_reparse(
+    md_path: Path,
+    pdf_path: Path,
+    *,
+    source_sha256: str,
+    force: bool = False,
+) -> bool:
+    if force or not md_path.exists():
+        return True
+    meta_path = md_path.with_suffix(".meta.json")
+    if not meta_path.exists():
+        return True
+    try:
+        meta = json.loads(meta_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return True
+    return meta.get("source_sha256") != source_sha256
+
+
+def write_parse_meta(
+    meta_path: Path,
+    *,
+    source_sha256: str,
+    page_count: int,
+) -> None:
+    meta_path.write_text(
+        json.dumps(
+            {
+                "source_sha256": source_sha256,
+                "page_count": page_count,
+                "mode": "page_by_page",
+            },
+            indent=2,
+        ),
+        encoding="utf-8",
+    )
+
+
+def _page_png_b64(pdf_path: Path, page_index: int) -> str:
+    with fitz.open(pdf_path) as doc:
+        page = doc[page_index]
+        pix = page.get_pixmap(dpi=_PAGE_DPI)
+        return base64.standard_b64encode(pix.tobytes("png")).decode("ascii")
+
+
+def _parse_page_image(client: Any, *, model: str, png_b64: str, page_no: int) -> str:
+    response = client.responses.create(
+        model=model,
+        input=[
+            {
+                "role": "user",
+                "content": [
+                    {"type": "input_text", "text": _PARSE_PROMPT},
+                    {
+                        "type": "input_image",
+                        "image_url": f"data:image/png;base64,{png_b64}",
+                    },
+                ],
+            }
+        ],
+        temperature=0,
+    )
+    text = (response.output_text or "").strip()
+    if not text:
+        return f"*(empty page {page_no})*"
+    return text
+
+
+def pdf_to_markdown_page_by_page(
+    pdf_path: Path,
+    *,
+    client: Any,
+    model: str,
+) -> str:
+    with fitz.open(pdf_path) as doc:
+        page_count = doc.page_count
+
+    parts: list[str] = []
+    for i in range(page_count):
+        png_b64 = _page_png_b64(pdf_path, i)
+        page_md = _parse_page_image(client, model=model, png_b64=png_b64, page_no=i + 1)
+        parts.append(f"# Page {i + 1}\n\n{page_md}")
+
+    return "\n\n---\n\n".join(parts)
+
+
+def parse_pdf_to_markdown(
+    pdf_path: Path,
+    *,
+    parsed_dir: Path,
+    client: Any,
+    model: str,
+    force: bool = False,
+) -> str:
+    """Parse PDF to markdown with disk cache under ``parsed_dir``."""
+    import hashlib
+
+    parsed_dir.mkdir(parents=True, exist_ok=True)
+    md_path = parsed_dir / f"{pdf_path.stem}.md"
+    digest = hashlib.sha256(pdf_path.read_bytes()).hexdigest()
+
+    if not should_reparse(md_path, pdf_path, source_sha256=digest, force=force):
+        return md_path.read_text(encoding="utf-8")
+
+    markdown = pdf_to_markdown_page_by_page(pdf_path, client=client, model=model)
+    md_path.write_text(markdown, encoding="utf-8")
+    write_parse_meta(
+        md_path.with_suffix(".meta.json"),
+        source_sha256=digest,
+        page_count=markdown.count("\n# Page"),
+    )
+    return markdown

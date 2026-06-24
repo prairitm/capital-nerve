@@ -1,0 +1,124 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  @apply bg-bg text-ink font-sans antialiased;
+  font-feature-settings: "cv11", "ss01";
+  background-image:
+    radial-gradient(circle at 18% -10%, rgba(59, 130, 246, 0.12), transparent 50%),
+    radial-gradient(circle at 100% 100%, rgba(96, 165, 250, 0.06), transparent 50%);
+  background-attachment: fixed;
+}
+
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+::selection {
+  background: rgba(59, 130, 246, 0.35);
+  color: #fff;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-thumb {
+  background: #222b3d;
+  border-radius: 8px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #2e3a52;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.num {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+}
+
+.scrollbar-none {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+
+@layer components {
+  .card {
+    @apply rounded-2xl bg-surface border border-line shadow-card;
+  }
+  .card-2 {
+    @apply rounded-2xl bg-surface-2 border border-line shadow-card;
+  }
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl px-3 py-2 text-sm font-medium transition-colors;
+  }
+  .btn-primary {
+    @apply btn bg-ink text-bg font-medium border border-ink/20;
+    @apply shadow-[0_1px_2px_rgba(0,0,0,0.35),inset_0_1px_0_rgba(255,255,255,0.18)];
+    @apply disabled:opacity-50 disabled:pointer-events-none;
+  }
+  .btn-primary:hover:not(:disabled) {
+    @apply bg-ink-mute border-ink-mute/30;
+  }
+  .btn-secondary {
+    @apply btn bg-surface-2 text-ink hover:bg-surface-3 border border-line;
+  }
+  .btn-ghost {
+    @apply btn text-ink-mute hover:text-ink hover:bg-surface;
+  }
+  .ui-link {
+    @apply text-ink-mute hover:text-ink transition-colors;
+  }
+  .ui-dot {
+    @apply absolute -left-[6px] mt-1.5 size-3 rounded-full bg-ink-mute border-2 border-bg;
+  }
+  .input {
+    @apply w-full rounded-xl bg-surface-2 border border-line px-3 py-2 text-sm text-ink placeholder:text-ink-soft outline-none focus:border-line-strong;
+  }
+  .chip {
+    @apply inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium border whitespace-nowrap;
+  }
+  .chip-positive {
+    @apply chip bg-positive-bg text-positive border-positive/30;
+  }
+  .chip-negative {
+    @apply chip bg-negative-bg text-negative border-negative/30;
+  }
+  .chip-mixed {
+    @apply chip bg-mixed-bg text-mixed border-mixed/30;
+  }
+  .chip-neutral {
+    @apply chip bg-neutral-bg text-neutral border-neutral/30;
+  }
+  .chip-low {
+    @apply chip bg-low-bg text-low border-low/30;
+  }
+  .divider {
+    @apply h-px w-full bg-line/70;
+  }
+  .evidence-highlight {
+    background: rgba(34, 197, 94, 0.38);
+    border-radius: 2px;
+    box-shadow: 0 0 0 1px rgba(34, 197, 94, 0.25);
+  }
+  .react-pdf__Page__textContent .evidence-highlight,
+  .react-pdf__Page__textContent [role="presentation"].evidence-highlight {
+    color: transparent;
+  }
+}
