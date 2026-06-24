@@ -14,18 +14,35 @@ from typing import Any
 
 _MONTH_MAP = {
     "january": 1,
+    "jan": 1,
     "february": 2,
+    "feb": 2,
     "march": 3,
+    "mar": 3,
     "april": 4,
+    "apr": 4,
     "may": 5,
     "june": 6,
+    "jun": 6,
     "july": 7,
+    "jul": 7,
     "august": 8,
+    "aug": 8,
     "september": 9,
+    "sep": 9,
+    "sept": 9,
     "october": 10,
+    "oct": 10,
     "november": 11,
+    "nov": 11,
     "december": 12,
+    "dec": 12,
 }
+
+
+def _month_from_name(name: str) -> int | None:
+    key = name.lower().strip(".")
+    return _MONTH_MAP.get(key) or _MONTH_MAP.get(key[:3])
 
 _PERIOD_LABEL_RE = re.compile(
     r"^\s*Q([1-4])\s+FY\s*(\d{2,4})\s*[-/]\s*(\d{2,4})\s*$",
@@ -184,21 +201,53 @@ def detect_period_from_filename(title: str) -> ReportingPeriod | None:
 
 
 def detect_period_from_markdown(markdown: str) -> ReportingPeriod | None:
+    head = markdown[:12000]
+
     m = re.search(
-        r"(?:QUARTER|quarter).{0,60}?ENDED\s+(\d{1,2})\s*(?:ST|ND|RD|TH)?\s+([A-Za-z]+)\s*,?\s*(\d{4})",
-        markdown[:12000],
+        r"(?:QUARTER|quarter).{0,60}?ENDED(?:\s+on)?\s+(\d{1,2})\s*(?:ST|ND|RD|TH)?\s+([A-Za-z]+)\s*,?\s*(\d{4})",
+        head,
         re.I | re.S,
     )
     if m:
-        month = _MONTH_MAP.get(m.group(2).lower())
+        month = _month_from_name(m.group(2))
         if month:
             d = date(int(m.group(3)), month, int(m.group(1)))
             return reporting_period_from_date(d, "heading")
 
-    m = re.search(r"FOR THE QUARTER ENDED\s+(\d{2})\.(\d{2})\.(\d{4})", markdown, re.I)
+    m = re.search(
+        r"(?:QUARTER|quarter).{0,60}?ENDED\s+([A-Za-z]+)\s+(\d{1,2})\s*,?\s*(\d{4})",
+        head,
+        re.I | re.S,
+    )
     if m:
-        d = date(int(m.group(3)), int(m.group(2)), int(m.group(1)))
-        return reporting_period_from_date(d, "table_header")
+        month = _month_from_name(m.group(1))
+        if month:
+            d = date(int(m.group(3)), month, int(m.group(2)))
+            return reporting_period_from_date(d, "heading")
+
+    for pattern, source in (
+        (
+            r"FOR\s+THE\s+QUARTER(?:\s*&\s*YEAR)?\s+ENDED\s+([A-Za-z]+)\s+(\d{1,2})\s*,?\s*(\d{4})",
+            "heading",
+        ),
+        (
+            r"FOR\s+THE\s+QUARTER(?:\s*&\s*YEAR)?\s+ENDED\s+(\d{2})\.(\d{2})\.(\d{4})",
+            "table_header",
+        ),
+        (r"FOR\s+THE\s+QUARTER\s+ENDED\s+(\d{2})\.(\d{2})\.(\d{4})", "table_header"),
+        (r"(?<![A-Za-z])Quarter\s+Ended\s+(\d{2})\.(\d{2})\.(\d{4})", "table_header"),
+    ):
+        m = re.search(pattern, head, re.I)
+        if not m:
+            continue
+        if m.lastindex == 3 and m.group(1).isalpha():
+            month = _month_from_name(m.group(1))
+            if month:
+                d = date(int(m.group(3)), month, int(m.group(2)))
+                return reporting_period_from_date(d, source)
+        elif m.lastindex == 3:
+            d = date(int(m.group(3)), int(m.group(2)), int(m.group(1)))
+            return reporting_period_from_date(d, source)
     return None
 
 

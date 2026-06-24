@@ -18,6 +18,10 @@ _PERIOD_ENDED_MONTH_FIRST_RE = re.compile(
     r"period ended\s+([A-Za-z]+)\s+(\d{1,2})\s*,?\s*(\d{4})",
     re.IGNORECASE,
 )
+_PERIOD_ENDED_HYPHEN_RE = re.compile(
+    r"period ended\s+(\d{1,2})-([A-Za-z]{3,})-(\d{4})",
+    re.IGNORECASE,
+)
 
 
 @dataclass
@@ -66,9 +70,10 @@ def parse_pdf_to_markdown(pdf_path: Path, *, force: bool = False) -> str:
 def _period_from_announcement_text(text: str) -> Any:
     from datetime import date
 
-    from periods import _MONTH_MAP, reporting_period_from_date
+    from periods import _month_from_name, reporting_period_from_date
 
     for pattern, day_first in (
+        (_PERIOD_ENDED_HYPHEN_RE, True),
         (_PERIOD_ENDED_DAY_FIRST_RE, True),
         (_PERIOD_ENDED_MONTH_FIRST_RE, False),
     ):
@@ -76,10 +81,10 @@ def _period_from_announcement_text(text: str) -> Any:
         if not m:
             continue
         if day_first:
-            day, month_name, year = int(m.group(1)), m.group(2).lower(), int(m.group(3))
+            day, month_name, year = int(m.group(1)), m.group(2), int(m.group(3))
         else:
-            month_name, day, year = m.group(1).lower(), int(m.group(2)), int(m.group(3))
-        month = _MONTH_MAP.get(month_name)
+            month_name, day, year = m.group(1), int(m.group(2)), int(m.group(3))
+        month = _month_from_name(month_name)
         if month:
             return reporting_period_from_date(date(year, month, day), "announcement_text")
     return None
