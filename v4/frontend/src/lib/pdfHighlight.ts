@@ -3,6 +3,13 @@ export type EvidenceHighlights = {
   quoteTexts: string[];
 };
 
+export type SourceBbox = {
+  x0: number;
+  y0: number;
+  x1: number;
+  y1: number;
+};
+
 const MAX_QUOTE_LEN = 600;
 
 export function normalizeQuoteText(raw: string): string {
@@ -33,7 +40,7 @@ export function buildEvidenceHighlights(sourceTexts: string[]): EvidenceHighligh
   const addQuote = (raw: string | null | undefined) => {
     if (!raw) return;
     const quote = normalizeQuoteText(raw);
-    if (quote.length < 2) return;
+    if (quote.length < 4) return;
     const clipped = quote.length > MAX_QUOTE_LEN ? quote.slice(0, MAX_QUOTE_LEN) : quote;
     if (!quoteTexts.includes(clipped)) quoteTexts.push(clipped);
     patterns.add(clipped);
@@ -48,9 +55,10 @@ export function buildEvidenceHighlights(sourceTexts: string[]): EvidenceHighligh
     const valueMatch = raw.match(/-?[\d,]+\.?\d*/g);
     if (lineMatch && valueMatch) {
       const value = valueMatch[valueMatch.length - 1]?.replace(/,/g, "");
-      if (value && value.length >= 2) {
+      const label = sourceLabel(raw);
+      if (value && value.length >= 2 && label.length >= 4) {
+        addQuote(`${label} ${value}`);
         addQuote(`${lineMatch[1]}. ${value}`);
-        addQuote(value);
       }
     }
   }
@@ -63,6 +71,14 @@ export function buildEvidenceHighlights(sourceTexts: string[]): EvidenceHighligh
 
 function escapeRegex(text: string): string {
   return text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function escapeHtml(text: string): string {
+  return text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
 }
 
 function flexibleTextRegex(text: string): string | null {
@@ -157,17 +173,34 @@ function joinPdfTextSpans(spans: HTMLElement[]): { text: string; ranges: SpanRan
 }
 
 function quoteRegex(quote: string): RegExp | null {
-  const noComma = quote.replace(/,/g, "");
-  const numeric = numericFlexibleRegex(noComma);
-  if (numeric) return new RegExp(numeric, "gi");
-
   const flex = flexibleTextRegex(quote);
   if (flex) return new RegExp(flex, "gi");
   const single = quote.trim();
-  if (single.length >= 2) {
+  if (single.length >= 6 && /[a-zA-Z]/.test(single)) {
     return new RegExp(escapeRegex(single), "gi");
   }
+  const noComma = quote.replace(/,/g, "");
+  const numeric = numericFlexibleRegex(noComma);
+  if (numeric && !/[a-zA-Z]/.test(quote)) return new RegExp(numeric, "gi");
   return null;
+}
+
+function buildHighlightRegex(patterns: string[]): RegExp | null {
+  const parts: string[] = [];
+  for (const pattern of patterns) {
+    if (pattern.length < 4) continue;
+    const noComma = pattern.replace(/,/g, "");
+    const numeric = numericFlexibleRegex(noComma);
+    if (numeric && !/[a-zA-Z]/.test(pattern)) {
+      parts.push(numeric);
+      continue;
+    }
+    const textual =
+      pattern.length >= 8 && /[a-zA-Z]/.test(pattern) ? flexibleTextRegex(pattern) : null;
+    parts.push(textual ?? escapeRegex(pattern));
+  }
+  if (parts.length === 0) return null;
+  return new RegExp(`(${parts.join("|")})`, "gi");
 }
 
 function markSpanRange(ranges: SpanRange[], start: number, end: number, hit: Set<HTMLElement>) {
@@ -180,11 +213,11 @@ export function applyPdfPageHighlights(
   textLayer: HTMLElement,
   highlights: EvidenceHighlights,
   referenceText?: string | null,
-): void {
+): boolean {
   const spans = [...textLayer.querySelectorAll('[role="presentation"]')] as HTMLElement[];
   spans.forEach((el) => el.classList.remove("evidence-highlight"));
 
-  if (spans.length === 0 || highlights.quoteTexts.length === 0) return;
+  if (spans.length === 0 || highlights.quoteTexts.length === 0) return false;
 
   const { text: pdfText, ranges } = joinPdfTextSpans(spans);
   const hit = new Set<HTMLElement>();
@@ -205,7 +238,7 @@ export function applyPdfPageHighlights(
     }
     if (!matched && refNorm) {
       const qNorm = normalizeQuoteText(quote);
-      if (qNorm.length >= 4 && refNorm.includes(qNorm)) {
+      if (qNorm.length >= 8 && refNorm.includes(qNorm)) {
         matchQuoteToPdfSpans(spans, quote, hit);
       }
     }
@@ -217,4 +250,31 @@ export function applyPdfPageHighlights(
   if (first) {
     first.scrollIntoView({ block: "center", behavior: "smooth" });
   }
+
+  return hit.size > 0;
+}
+
+/** Wrap full source-quote matches in `<mark class="evidence-highlight">`. */
+export function highlightMatchInText(text: string, patterns: string[]): string {
+  const re = buildHighlightRegex(patterns);
+  if (!re || !text) return escapeHtml(text);
+
+  let result = "";
+  let lastIndex = 0;
+  for (const match of text.matchAll(re)) {
+    const index = match.index ?? 0;
+    result += escapeHtml(text.slice(lastIndex, index));
+    result += `<mark class="evidence-highlight">${escapeHtml(match[0])}</mark>`;
+    lastIndex = index + match[0].length;
+  }
+  result += escapeHtml(text.slice(lastIndex));
+  return result;
+}
+
+export function parseSourceBbox(raw: number[] | null | undefined): SourceBbox | null {
+  if (!raw || raw.length < 4) return null;
+  const [x0, y0, x1, y1] = raw;
+  if (![x0, y0, x1, y1].every((n) => Number.isFinite(n))) return null;
+  if (x1 <= x0 || y1 <= y0) return null;
+  return { x0, y0, x1, y1 };
 }

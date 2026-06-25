@@ -57,9 +57,10 @@ def document_detail(document_id: str):
 
 
 @router.get("/documents/{document_id}/locate")
-def document_locate(document_id: str, text: str):
+def document_locate(document_id: str, text: str, page: int | None = None):
     if not text.strip():
         raise HTTPException(status_code=400, detail="text query parameter is required")
+    preferred_page = page if page is not None and page > 0 else None
     with get_conn() as conn:
         doc = conn.execute(
             "SELECT storage_path FROM documents WHERE id = ?", (document_id,)
@@ -72,6 +73,7 @@ def document_locate(document_id: str, text: str):
             parsed_md_path=parsed_md_path,
             pdf_path=pdf_path,
             source_text=text,
+            preferred_page=preferred_page,
         )
 
 

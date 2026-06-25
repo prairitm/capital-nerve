@@ -11,7 +11,13 @@ import type { DocumentDetail, SourceLocateResult } from "@/api/types";
 import { PageLoader, Spinner } from "@/components/common/Spinner";
 import { BackButton } from "@/components/common/BackButton";
 import { documentDisplayTitle } from "@/lib/format";
-import { buildEvidenceHighlights, applyPdfPageHighlights } from "@/lib/pdfHighlight";
+import {
+  buildEvidenceHighlights,
+  applyPdfPageHighlights,
+  highlightMatchInText,
+  parseSourceBbox,
+  type SourceBbox,
+} from "@/lib/pdfHighlight";
 
 pdfjs.GlobalWorkerOptions.workerSrc = pdfjsWorker;
 
@@ -22,47 +28,82 @@ function parsePageParam(raw: string | null): number | null {
 
 function PdfPageWithHighlights({
   pageNumber,
+  pageWidth,
   highlightText,
   referenceText,
+  bbox,
+  onHighlightStatus,
 }: {
   pageNumber: number;
+  pageWidth: number;
   highlightText: string | null;
   referenceText: string | null;
+  bbox: SourceBbox | null;
+  onHighlightStatus?: (matched: boolean) => void;
 }) {
   const pageWrapRef = useRef<HTMLDivElement>(null);
+  const [pdfPageWidth, setPdfPageWidth] = useState(0);
   const highlights = useMemo(
     () => (highlightText ? buildEvidenceHighlights([highlightText]) : { patterns: [], quoteTexts: [] }),
     [highlightText],
   );
+  const scale = pdfPageWidth > 0 ? pageWidth / pdfPageWidth : 0;
 
   const paintHighlights = useCallback(() => {
     const layer = pageWrapRef.current?.querySelector(".react-pdf__Page__textContent");
     if (layer instanceof HTMLElement) {
-      applyPdfPageHighlights(layer, highlights, referenceText);
+      const matched = applyPdfPageHighlights(layer, highlights, referenceText);
+      onHighlightStatus?.(matched || bbox != null);
+      return;
     }
-  }, [highlights, referenceText]);
+    onHighlightStatus?.(bbox != null);
+  }, [highlights, referenceText, bbox, onHighlightStatus]);
 
   useEffect(() => {
     paintHighlights();
     const raf = requestAnimationFrame(() => paintHighlights());
     const retry = window.setTimeout(() => paintHighlights(), 200);
     const retryLate = window.setTimeout(() => paintHighlights(), 600);
+    const retryLate2 = window.setTimeout(() => paintHighlights(), 1200);
+
+    const layer = pageWrapRef.current?.querySelector(".react-pdf__Page__textContent");
+    let observer: MutationObserver | null = null;
+    if (layer instanceof HTMLElement) {
+      observer = new MutationObserver(() => paintHighlights());
+      observer.observe(layer, { childList: true, subtree: true });
+    }
+
     return () => {
       cancelAnimationFrame(raf);
       clearTimeout(retry);
       clearTimeout(retryLate);
+      clearTimeout(retryLate2);
+      observer?.disconnect();
     };
-  }, [paintHighlights, pageNumber]);
+  }, [paintHighlights, pageNumber, pageWidth]);
 
   return (
-    <div ref={pageWrapRef}>
+    <div ref={pageWrapRef} className="relative inline-block max-w-full">
       <Page
         pageNumber={pageNumber}
-        width={760}
+        width={pageWidth}
         renderTextLayer
         renderAnnotationLayer={false}
+        onLoadSuccess={(page) => setPdfPageWidth(page.originalWidth)}
         onRenderTextLayerSuccess={paintHighlights}
+        className="max-w-full"
       />
+      {bbox && scale > 0 && (
+        <div
+          className="absolute evidence-bbox-highlight pointer-events-none"
+          style={{
+            left: bbox.x0 * scale,
+            top: bbox.y0 * scale,
+            width: (bbox.x1 - bbox.x0) * scale,
+            height: (bbox.y1 - bbox.y0) * scale,
+          }}
+        />
+      )}
     </div>
   );
 }
@@ -77,21 +118,49 @@ export function DocumentPage() {
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [pdfLoading, setPdfLoading] = useState(true);
   const [pdfError, setPdfError] = useState<string | null>(null);
+  const [pageWidth, setPageWidth] = useState(760);
+  const [pdfHighlightMatched, setPdfHighlightMatched] = useState(false);
+  const pdfContainerRef = useRef<HTMLDivElement>(null);
+
+  const locateQuery = useMemo(() => {
+    const query: Record<string, string> = { text: highlightText! };
+    if (pageFromUrl != null) query.page = String(pageFromUrl);
+    return query;
+  }, [highlightText, pageFromUrl]);
 
   const { data: locate, isLoading: locating } = useQuery({
-    queryKey: ["document-locate", documentId, highlightText],
+    queryKey: ["document-locate", documentId, highlightText, pageFromUrl],
     queryFn: () =>
       api<SourceLocateResult>(`/documents/${documentId}/locate`, {
-        query: { text: highlightText! },
+        query: locateQuery,
       }),
     enabled: !!documentId && !!highlightText?.trim(),
   });
 
   const targetPage = pageFromUrl ?? locate?.page ?? null;
+  const sourceBbox = useMemo(() => parseSourceBbox(locate?.bbox), [locate?.bbox]);
+  const highlights = useMemo(
+    () => (highlightText ? buildEvidenceHighlights([highlightText]) : { patterns: [], quoteTexts: [] }),
+    [highlightText],
+  );
 
   useEffect(() => {
     if (targetPage != null) setPage(targetPage);
   }, [targetPage]);
+
+  useEffect(() => {
+    setPdfHighlightMatched(false);
+  }, [highlightText, page, locate?.bbox]);
+
+  useEffect(() => {
+    const el = pdfContainerRef.current;
+    if (!el) return;
+    const update = () => setPageWidth(Math.max(240, el.clientWidth - 16));
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [pdfUrl]);
 
   useEffect(() => {
     if (!documentId) return;
@@ -135,6 +204,11 @@ export function DocumentPage() {
   const showHighlight = Boolean(
     highlightText?.trim() && (targetPage == null || page === targetPage),
   );
+  const showMarkdownFallback =
+    showHighlight &&
+    Boolean(locate?.reference_text) &&
+    !pdfHighlightMatched &&
+    sourceBbox == null;
 
   return (
     <div className="max-w-5xl mx-auto space-y-5">
@@ -147,9 +221,9 @@ export function DocumentPage() {
         {company?.name && (
           <div className="text-sm text-ink-soft">{company.name}</div>
         )}
-        {highlightText && locate?.page && (
+        {highlightText && (locate?.page ?? targetPage) && (
           <p className="text-xs text-ink-soft pt-1">
-            Showing source on page {locate.page}
+            Showing source on page {locate?.page ?? targetPage}
           </p>
         )}
       </header>
@@ -176,7 +250,10 @@ export function DocumentPage() {
             </button>
           </div>
         </div>
-        <div className="flex justify-center overflow-auto bg-bg-deep/40 rounded-xl p-2">
+        <div
+          ref={pdfContainerRef}
+          className="flex justify-center overflow-x-auto bg-bg-deep/40 rounded-xl p-2 w-full"
+        >
           {pdfLoading ? (
             <div className="py-24">
               <Spinner size={20} />
@@ -197,20 +274,41 @@ export function DocumentPage() {
               {showHighlight ? (
                 <PdfPageWithHighlights
                   pageNumber={page}
+                  pageWidth={pageWidth}
                   highlightText={highlightText}
                   referenceText={locate?.reference_text ?? null}
+                  bbox={sourceBbox}
+                  onHighlightStatus={setPdfHighlightMatched}
                 />
               ) : (
                 <Page
                   pageNumber={page}
-                  width={760}
+                  width={pageWidth}
                   renderTextLayer
                   renderAnnotationLayer={false}
+                  className="max-w-full"
                 />
               )}
             </Document>
           ) : null}
         </div>
+
+        {showMarkdownFallback && locate?.reference_text && (
+          <div className="mt-4 rounded-xl border border-line/70 bg-surface/60 p-4 space-y-2">
+            <p className="text-xs font-medium text-ink-soft">
+              Parsed source excerpt
+            </p>
+            <p className="text-[11px] text-ink-mute">
+              PDF text layer did not match — showing the parsed filing text instead.
+            </p>
+            <div
+              className="text-xs text-ink leading-relaxed whitespace-pre-wrap font-mono max-h-64 overflow-y-auto"
+              dangerouslySetInnerHTML={{
+                __html: highlightMatchInText(locate.reference_text, highlights.patterns),
+              }}
+            />
+          </div>
+        )}
       </div>
     </div>
   );

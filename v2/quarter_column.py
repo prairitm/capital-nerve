@@ -62,6 +62,45 @@ _QUARTER_SECTION = re.compile(r"^Quarter\s+Ended\s*$", re.I)
 _NINE_MONTHS_SECTION = re.compile(r"^Nine\s+Months\s+Ended\s*$", re.I)
 _YEAR_SECTION = re.compile(r"^Year\s+Ended\s*$", re.I)
 _PARTICULARS = re.compile(r"^Particulars\s*$", re.I)
+_PAGE_HEADER_RE = re.compile(r"^# Page (\d+)\s*$")
+
+
+def _page_markers(markdown: str) -> list[tuple[int, int]]:
+    markers: list[tuple[int, int]] = []
+    for i, line in enumerate(markdown.splitlines()):
+        m = _PAGE_HEADER_RE.match(line.strip())
+        if m:
+            markers.append((i, int(m.group(1))))
+    return markers
+
+
+def _page_at_line(markers: list[tuple[int, int]], line: int) -> int | None:
+    page: int | None = None
+    for mline, mpage in markers:
+        if mline <= line:
+            page = mpage
+        else:
+            break
+    return page
+
+
+def _iter_page_sections(markdown: str) -> list[tuple[int, str]]:
+    lines = markdown.splitlines()
+    sections: list[tuple[int, str]] = []
+    current_page = 1
+    buffer: list[str] = []
+    for line in lines:
+        m = _PAGE_HEADER_RE.match(line.strip())
+        if m:
+            if buffer:
+                sections.append((current_page, "\n".join(buffer)))
+            current_page = int(m.group(1))
+            buffer = []
+        else:
+            buffer.append(line)
+    if buffer:
+        sections.append((current_page, "\n".join(buffer)))
+    return sections
 
 
 def extract_facts_from_quarter_column(
@@ -94,8 +133,9 @@ def _extract_from_markdown_tables(
 ) -> list[dict[str, Any]]:
     found: dict[str, dict[str, Any]] = {}
     target_end = date.fromisoformat(target.quarter_end)
+    page_markers = _page_markers(markdown)
 
-    for table, context in _iter_markdown_tables(markdown):
+    for table, context, start_line in _iter_markdown_tables(markdown):
         if _SEGMENT_CONTEXT.search(context) or _SEGMENT_CONTEXT.search("\n".join(table[:3])):
             continue
         col_idx = _quarter_column_index(table, target_end)
@@ -109,7 +149,8 @@ def _extract_from_markdown_tables(
         if score == 0:
             continue
 
-        for row in _rows_from_table(table, col_idx, fact_keys, catalog):
+        source_page = _page_at_line(page_markers, start_line)
+        for row in _rows_from_table(table, col_idx, fact_keys, catalog, source_page=source_page):
             prev = found.get(row["fact_key"])
             if prev is None or score >= prev.get("_table_score", 0):
                 row["_table_score"] = score
@@ -118,9 +159,9 @@ def _extract_from_markdown_tables(
     return [{k: v for k, v in row.items() if k != "_table_score"} for row in found.values()]
 
 
-def _iter_markdown_tables(markdown: str) -> list[tuple[list[str], str]]:
+def _iter_markdown_tables(markdown: str) -> list[tuple[list[str], str, int]]:
     lines = markdown.splitlines()
-    tables: list[tuple[list[str], str]] = []
+    tables: list[tuple[list[str], str, int]] = []
     i = 0
     while i < len(lines):
         if not lines[i].strip().startswith("|"):
@@ -133,7 +174,7 @@ def _iter_markdown_tables(markdown: str) -> list[tuple[list[str], str]]:
             i += 1
         if len(block) >= 2 and _is_table_separator(block[1]):
             context = "\n".join(lines[max(0, start - 8) : start])
-            tables.append((block, context))
+            tables.append((block, context, start))
     return tables
 
 
@@ -265,6 +306,8 @@ def _rows_from_table(
     col_idx: int,
     fact_keys: set[str],
     catalog: dict[str, Any],
+    *,
+    source_page: int | None = None,
 ) -> list[dict[str, Any]]:
     rows: list[dict[str, Any]] = []
     data_started = False
@@ -291,16 +334,17 @@ def _rows_from_table(
         if not fact_key:
             continue
 
-        rows.append(
-            {
-                "fact_key": fact_key,
-                "numeric_value": numeric,
-                "unit": catalog.get(fact_key, {}).get("unit"),
-                "basis": "consolidated",
-                "evidence": f"{label} {value_cell.strip()}",
-                "confidence": 0.92,
-            }
-        )
+        row: dict[str, Any] = {
+            "fact_key": fact_key,
+            "numeric_value": numeric,
+            "unit": catalog.get(fact_key, {}).get("unit"),
+            "basis": "consolidated",
+            "evidence": f"{label} {value_cell.strip()}",
+            "confidence": 0.92,
+        }
+        if source_page is not None:
+            row["source_page"] = source_page
+        rows.append(row)
     return rows
 
 
@@ -363,8 +407,9 @@ def _extract_stacked_fallback(
     catalog: dict[str, Any],
 ) -> list[dict[str, Any]]:
     found: dict[str, dict[str, Any]] = {}
-    for chunk in re.split(r"\f|\n# Page \d+", text):
+    for page_num, chunk in _iter_page_sections(text):
         for item in _extract_stacked_block(chunk, fact_keys, catalog):
+            item["source_page"] = page_num
             found[item["fact_key"]] = item
     return list(found.values())
 

@@ -42,8 +42,8 @@ def upsert_values(
             INSERT INTO extracted_values (
                 id, company_id, event_id, value_code, value_numeric, unit,
                 period_type, period_start, period_end, basis,
-                source_text, confidence
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                source_text, source_page, confidence
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT(id) DO UPDATE SET
                 event_id = excluded.event_id,
                 value_numeric = excluded.value_numeric,
@@ -52,6 +52,7 @@ def upsert_values(
                 period_start = excluded.period_start,
                 period_end = excluded.period_end,
                 source_text = excluded.source_text,
+                source_page = excluded.source_page,
                 confidence = excluded.confidence
             """,
             (
@@ -66,6 +67,7 @@ def upsert_values(
                 period_end,
                 basis,
                 row.get("source_text") or row.get("evidence"),
+                row.get("source_page"),
                 row.get("confidence"),
             ),
         )

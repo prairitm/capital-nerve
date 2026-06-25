@@ -167,4 +167,5 @@ export interface DocumentDetail {
 export interface SourceLocateResult {
   page: number | null;
   reference_text: string | null;
+  bbox: number[] | null;
 }

@@ -296,6 +296,8 @@ def extract_facts(
             "unit": canonicalize_unit(entry.get("unit")),
             "basis": (entry.get("basis") or "consolidated").strip().lower(),
             "evidence": entry.get("evidence") or "",
+            "source_text": entry.get("evidence") or "",
+            "source_page": entry.get("source_page"),
             "confidence": float(entry.get("confidence") or 0.7),
             "period": entry.get("period") or period_label,
             "document_id": document_id,
