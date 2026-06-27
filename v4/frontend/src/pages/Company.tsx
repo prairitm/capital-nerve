@@ -11,6 +11,7 @@ import { TrendChart } from "@/components/charts/TrendChart";
 import { BackButton } from "@/components/common/BackButton";
 import { PageLoader } from "@/components/common/Spinner";
 import { Empty } from "@/components/common/Empty";
+import { Pagination, usePagination } from "@/components/common/Pagination";
 import { buildCompanyFeedGroupFromHub } from "@/lib/events";
 import { formatMetricValue, formatPct } from "@/lib/format";
 
@@ -18,6 +19,8 @@ const TREND_CODES = ["revenue_yoy_growth", "ebitda_margin", "pat_margin"];
 
 function FinancialSnapshotTable({ rows, periodLabel }: { rows: SnapshotRow[]; periodLabel?: string | null }) {
   const hasPriorData = rows.some((r) => r.previous_value != null);
+  const pagination = usePagination(rows, 10, periodLabel);
+  const visibleRows = pagination.pageItems;
 
   return (
     <section className="card overflow-hidden">
@@ -34,7 +37,7 @@ function FinancialSnapshotTable({ rows, periodLabel }: { rows: SnapshotRow[]; pe
         </p>
       </div>
       <div className="md:hidden divide-y divide-line/40">
-        {rows.map((row) => {
+        {visibleRows.map((row) => {
           const positive = row.yoy_change_pct != null && row.yoy_change_pct > 0;
           const yoyLabel =
             row.yoy_change_pct == null
@@ -91,7 +94,7 @@ function FinancialSnapshotTable({ rows, periodLabel }: { rows: SnapshotRow[]; pe
             </tr>
           </thead>
           <tbody>
-            {rows.map((row) => {
+            {visibleRows.map((row) => {
               const positive = row.yoy_change_pct != null && row.yoy_change_pct > 0;
               return (
                 <tr key={row.code} className="border-t border-line/40">
@@ -126,6 +129,14 @@ function FinancialSnapshotTable({ rows, periodLabel }: { rows: SnapshotRow[]; pe
           </tbody>
         </table>
       </div>
+      <Pagination
+        page={pagination.page}
+        pageCount={pagination.pageCount}
+        pageStart={pagination.pageStart}
+        pageEnd={pagination.pageEnd}
+        total={rows.length}
+        onPageChange={pagination.setPage}
+      />
     </section>
   );
 }

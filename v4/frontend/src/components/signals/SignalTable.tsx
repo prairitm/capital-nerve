@@ -7,6 +7,7 @@ import {
 } from "@/components/common/ColumnHeaderFilter";
 import { SeverityBadge } from "@/components/common/SeverityBadge";
 import { SignalBadge } from "@/components/common/SignalBadge";
+import { Pagination, usePagination } from "@/components/common/Pagination";
 import {
   SIGNAL_CATEGORY_FILTERS,
   SIGNAL_DIRECTION_FILTERS,
@@ -36,6 +37,12 @@ export function SignalTable({
   const navigate = useNavigate();
   const hasFilters = Boolean(filters);
   const activeFilters = filters ? signalFiltersActive(filters) : false;
+  const pagination = usePagination(
+    signals,
+    10,
+    filters ? `${filters.category}|${filters.direction}|${filters.severity}` : signals.length,
+  );
+  const visibleSignals = pagination.pageItems;
 
   if (!hasFilters && signals.length === 0) return null;
 
@@ -96,7 +103,7 @@ export function SignalTable({
             No signals match these filters.
           </div>
         ) : (
-          signals.map((s) => {
+          visibleSignals.map((s) => {
             const name = s.signal_name || s.title || s.signal_type;
             const category = signalCategoryLabel(s.category);
             const value = primaryTriggerValue(s, metrics);
@@ -203,7 +210,7 @@ export function SignalTable({
                 </td>
               </tr>
             ) : (
-              signals.map((s) => {
+              visibleSignals.map((s) => {
                 const name = s.signal_name || s.title || s.signal_type;
                 const category = signalCategoryLabel(s.category);
                 const value = primaryTriggerValue(s, metrics);
@@ -275,6 +282,14 @@ export function SignalTable({
           </tbody>
         </table>
       </div>
+      <Pagination
+        page={pagination.page}
+        pageCount={pagination.pageCount}
+        pageStart={pagination.pageStart}
+        pageEnd={pagination.pageEnd}
+        total={signals.length}
+        onPageChange={pagination.setPage}
+      />
     </section>
   );
 }

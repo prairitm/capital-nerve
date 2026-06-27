@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { ChevronRight } from "lucide-react";
 import clsx from "clsx";
 import type { Signal } from "@/api/types";
+import { Pagination, usePagination } from "@/components/common/Pagination";
 import type { QuarterEventGroup, TimelineEvent } from "@/lib/events";
 import { eventTypeLabel, formatDate, resolveEventDisplayTitle } from "@/lib/format";
 
@@ -71,6 +72,35 @@ export function CompanyEventsTable({
     }
     return map;
   }, [signals]);
+  const eventRows = useMemo(
+    () =>
+      quarterGroups.flatMap((quarter) =>
+        quarter.events.map((event) => ({
+          event,
+          quarterKey: quarter.key,
+          quarterLabel: quarter.label,
+          quarterPeriodEndDate: quarter.periodEndDate,
+        })),
+      ),
+    [quarterGroups],
+  );
+  const pagination = usePagination(eventRows, 10, ticker);
+  const visibleQuarterGroups = useMemo(() => {
+    const map = new Map<string, QuarterEventGroup<TimelineEvent>>();
+
+    for (const row of pagination.pageItems) {
+      const group = map.get(row.quarterKey) ?? {
+        key: row.quarterKey,
+        label: row.quarterLabel,
+        periodEndDate: row.quarterPeriodEndDate,
+        events: [],
+      };
+      group.events.push(row.event);
+      map.set(row.quarterKey, group);
+    }
+
+    return [...map.values()];
+  }, [pagination.pageItems]);
 
   if (quarterGroups.length === 0) return null;
 
@@ -151,7 +181,7 @@ export function CompanyEventsTable({
   return (
     <section className="card overflow-hidden">
       <div className="md:hidden divide-y divide-line/40">
-        {quarterGroups.map((quarter) => (
+        {visibleQuarterGroups.map((quarter) => (
           <Fragment key={quarter.key}>
             {renderQuarterHeader(quarter.label)}
             {quarter.events.map((event) => {
@@ -176,7 +206,7 @@ export function CompanyEventsTable({
             </tr>
           </thead>
           <tbody>
-            {quarterGroups.map((quarter) => (
+            {visibleQuarterGroups.map((quarter) => (
               <Fragment key={quarter.key}>
                 <tr className="bg-surface-2/50 border-t border-line/40 first:border-t-0">
                   <td colSpan={4} className="px-5 py-2 text-xs font-semibold uppercase tracking-wider text-ink">
@@ -196,6 +226,14 @@ export function CompanyEventsTable({
           </tbody>
         </table>
       </div>
+      <Pagination
+        page={pagination.page}
+        pageCount={pagination.pageCount}
+        pageStart={pagination.pageStart}
+        pageEnd={pagination.pageEnd}
+        total={eventRows.length}
+        onPageChange={pagination.setPage}
+      />
     </section>
   );
 }

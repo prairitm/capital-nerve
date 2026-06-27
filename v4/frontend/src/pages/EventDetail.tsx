@@ -9,6 +9,7 @@ import { Empty } from "@/components/common/Empty";
 import { BackButton } from "@/components/common/BackButton";
 import { basisLabel, eventTypeLabel, formatDate, formatMetricValue } from "@/lib/format";
 import { FactSourceLink } from "@/components/common/FactSourceLink";
+import { Pagination, usePagination } from "@/components/common/Pagination";
 
 function FactLineItem({ fact }: { fact: ExtractedValue }) {
   return (
@@ -29,6 +30,10 @@ export function EventDetail() {
     queryFn: () => api<EventDetailT>(`/events/${eventId}`),
     enabled: !!eventId,
   });
+  const metricsPagination = usePagination(data?.metrics ?? [], 10, data?.event.id);
+  const factsPagination = usePagination(data?.facts ?? [], 10, data?.event.id);
+  const visibleMetrics = metricsPagination.pageItems;
+  const visibleFacts = factsPagination.pageItems;
 
   if (isLoading) return <PageLoader />;
   if (!data) return <div className="text-ink-mute">Event not found.</div>;
@@ -72,7 +77,7 @@ export function EventDetail() {
             <h2 className="text-base font-semibold">Computed metrics</h2>
           </div>
           <div className="md:hidden divide-y divide-line/40">
-            {metrics.map((m) => (
+            {visibleMetrics.map((m) => (
               <div
                 key={m.metric_code}
                 className="px-5 py-3 flex items-center justify-between gap-4"
@@ -86,7 +91,7 @@ export function EventDetail() {
           </div>
           <table className="hidden md:table w-full text-sm">
             <tbody>
-              {metrics.map((m) => (
+              {visibleMetrics.map((m) => (
                 <tr key={m.metric_code} className="border-t border-line/40 first:border-t-0">
                   <td className="px-5 py-2.5 text-ink-mute">{m.metric_name}</td>
                   <td className="px-5 py-2.5 text-right num text-ink font-medium">
@@ -96,6 +101,14 @@ export function EventDetail() {
               ))}
             </tbody>
           </table>
+          <Pagination
+            page={metricsPagination.page}
+            pageCount={metricsPagination.pageCount}
+            pageStart={metricsPagination.pageStart}
+            pageEnd={metricsPagination.pageEnd}
+            total={metrics.length}
+            onPageChange={metricsPagination.setPage}
+          />
         </section>
       )}
 
@@ -107,7 +120,7 @@ export function EventDetail() {
             <p className="text-xs text-ink-soft mt-0.5">Values pulled from the filing.</p>
           </div>
           <div className="md:hidden divide-y divide-line/40">
-            {facts.map((f) => (
+            {visibleFacts.map((f) => (
               <div key={`${f.value_code}-${f.basis}`} className="px-5 py-3.5">
                 <div className="flex items-start justify-between gap-4">
                   <div className="min-w-0">
@@ -133,7 +146,7 @@ export function EventDetail() {
                 </tr>
               </thead>
               <tbody>
-                {facts.map((f) => (
+                {visibleFacts.map((f) => (
                   <tr key={`${f.value_code}-${f.basis}`} className="border-t border-line/40 align-top">
                     <td className="px-5 py-2.5">
                       <FactLineItem fact={f} />
@@ -149,6 +162,14 @@ export function EventDetail() {
               </tbody>
             </table>
           </div>
+          <Pagination
+            page={factsPagination.page}
+            pageCount={factsPagination.pageCount}
+            pageStart={factsPagination.pageStart}
+            pageEnd={factsPagination.pageEnd}
+            total={facts.length}
+            onPageChange={factsPagination.setPage}
+          />
         </section>
       ) : (
         <Empty

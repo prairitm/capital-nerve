@@ -6,6 +6,7 @@ import type { SignalDetail as SignalDetailT } from "@/api/types";
 import { PageLoader } from "@/components/common/Spinner";
 import { BackButton } from "@/components/common/BackButton";
 import { FactSourceLink } from "@/components/common/FactSourceLink";
+import { Pagination, usePagination } from "@/components/common/Pagination";
 import { SignalBadge } from "@/components/common/SignalBadge";
 import { SeverityBadge } from "@/components/common/SeverityBadge";
 import {
@@ -24,12 +25,16 @@ export function SignalDetail() {
     queryFn: () => api<SignalDetailT>(`/signals/${signalId}`),
     enabled: !!signalId,
   });
+  const metricRows = data
+    ? buildTriggerMetricRows(data.trigger_values, data.referenced_metrics)
+    : [];
+  const metricsPagination = usePagination(metricRows, 10, signalId);
+  const visibleMetricRows = metricsPagination.pageItems;
 
   if (isLoading) return <PageLoader />;
   if (!data) return <div className="text-ink-mute">Signal not found.</div>;
 
   const ticker = data.company?.ticker;
-  const metricRows = buildTriggerMetricRows(data.trigger_values, data.referenced_metrics);
   const triggerNarrative = buildTriggerNarrative(
     data.rule_text,
     data.trigger_values,
@@ -103,7 +108,7 @@ export function SignalDetail() {
             {metricRows.length > 1 && (
               <>
                 <div className="md:hidden divide-y divide-line/40 -mx-5">
-                  {metricRows.map((row) => (
+                  {visibleMetricRows.map((row) => (
                     <div
                       key={row.code}
                       className="px-5 py-2.5 flex items-center justify-between gap-4"
@@ -123,7 +128,7 @@ export function SignalDetail() {
                     </tr>
                   </thead>
                   <tbody>
-                    {metricRows.map((row) => (
+                    {visibleMetricRows.map((row) => (
                       <tr key={row.code} className="border-t border-line/40">
                         <td className="py-2.5 text-ink-mute">{row.name}</td>
                         <td className="py-2.5 text-right num text-ink font-medium">
@@ -133,6 +138,14 @@ export function SignalDetail() {
                     ))}
                   </tbody>
                 </table>
+                <Pagination
+                  page={metricsPagination.page}
+                  pageCount={metricsPagination.pageCount}
+                  pageStart={metricsPagination.pageStart}
+                  pageEnd={metricsPagination.pageEnd}
+                  total={metricRows.length}
+                  onPageChange={metricsPagination.setPage}
+                />
               </>
             )}
 
