@@ -1,0 +1,1566 @@
+{
+  "revenue_yoy_growth": {
+    "name": "Revenue YoY Growth",
+    "unit": "%",
+    "category": "growth",
+    "formula": "(revenue-revenue_py)/abs(revenue_py)*100",
+    "inputs": [
+      {
+        "var": "revenue",
+        "fact_key": "revenue_from_operations",
+        "scope": "CURRENT"
+      },
+      {
+        "var": "revenue_py",
+        "fact_key": "revenue_from_operations",
+        "scope": "PY"
+      }
+    ]
+  },
+  "revenue_qoq_growth": {
+    "name": "Revenue QoQ Growth",
+    "unit": "%",
+    "category": "growth",
+    "formula": "(revenue-revenue_pq)/abs(revenue_pq)*100",
+    "inputs": [
+      {
+        "var": "revenue",
+        "fact_key": "revenue_from_operations",
+        "scope": "CURRENT"
+      },
+      {
+        "var": "revenue_pq",
+        "fact_key": "revenue_from_operations",
+        "scope": "PQ"
+      }
+    ],
+    "notes": "Suppress or seasonally adjust for seasonal companies."
+  },
+  "ebitda_yoy_growth": {
+    "name": "EBITDA YoY Growth",
+    "unit": "%",
+    "category": "growth",
+    "formula": "(ebitda-ebitda_py)/abs(ebitda_py)*100",
+    "inputs": [
+      {
+        "var": "ebitda",
+        "fact_key": "ebitda",
+        "scope": "CURRENT"
+      },
+      {
+        "var": "ebitda_py",
+        "fact_key": "ebitda",
+        "scope": "PY"
+      }
+    ]
+  },
+  "ebit_yoy_growth": {
+    "name": "EBIT YoY Growth",
+    "unit": "%",
+    "category": "growth",
+    "formula": "(ebit-ebit_py)/abs(ebit_py)*100",
+    "inputs": [
+      {
+        "var": "ebit",
+        "fact_key": "ebit",
+        "scope": "CURRENT"
+      },
+      {
+        "var": "ebit_py",
+        "fact_key": "ebit",
+        "scope": "PY"
+      }
+    ]
+  },
+  "pbt_yoy_growth": {
+    "name": "PBT YoY Growth",
+    "unit": "%",
+    "category": "growth",
+    "formula": "(pbt-pbt_py)/abs(pbt_py)*100",
+    "inputs": [
+      {
+        "var": "pbt",
+        "fact_key": "pbt",
+        "scope": "CURRENT"
+      },
+      {
+        "var": "pbt_py",
+        "fact_key": "pbt",
+        "scope": "PY"
+      }
+    ]
+  },
+  "pat_yoy_growth": {
+    "name": "PAT YoY Growth",
+    "unit": "%",
+    "category": "growth",
+    "formula": "(pat-pat_py)/abs(pat_py)*100",
+    "inputs": [
+      {
+        "var": "pat",
+        "fact_key": "pat",
+        "scope": "CURRENT"
+      },
+      {
+        "var": "pat_py",
+        "fact_key": "pat",
+        "scope": "PY"
+      }
+    ]
+  },
+  "pat_qoq_growth": {
+    "name": "PAT QoQ Growth",
+    "unit": "%",
+    "category": "growth",
+    "formula": "(pat-pat_pq)/abs(pat_pq)*100",
+    "inputs": [
+      {
+        "var": "pat",
+        "fact_key": "pat",
+        "scope": "CURRENT"
+      },
+      {
+        "var": "pat_pq",
+        "fact_key": "pat",
+        "scope": "PQ"
+      }
+    ],
+    "notes": "Suppress or seasonally adjust for seasonal companies."
+  },
+  "eps_basic_yoy_growth": {
+    "name": "EPS Basic YoY Growth",
+    "unit": "%",
+    "category": "growth",
+    "formula": "(eps-eps_py)/abs(eps_py)*100",
+    "inputs": [
+      {
+        "var": "eps",
+        "fact_key": "eps_basic",
+        "scope": "CURRENT"
+      },
+      {
+        "var": "eps_py",
+        "fact_key": "eps_basic",
+        "scope": "PY"
+      }
+    ]
+  },
+  "share_count_yoy_growth": {
+    "name": "Share Count YoY Growth",
+    "unit": "%",
+    "category": "dilution",
+    "formula": "(shares-shares_py)/shares_py*100",
+    "inputs": [
+      {
+        "var": "shares",
+        "fact_key": "weighted_average_shares_diluted",
+        "scope": "CURRENT"
+      },
+      {
+        "var": "shares_py",
+        "fact_key": "weighted_average_shares_diluted",
+        "scope": "PY"
+      }
+    ]
+  },
+  "cfo_yoy_growth": {
+    "name": "CFO YoY Growth",
+    "unit": "%",
+    "category": "cash_flow",
+    "formula": "(cfo-cfo_py)/abs(cfo_py)*100",
+    "inputs": [
+      {
+        "var": "cfo",
+        "fact_key": "cfo",
+        "scope": "CURRENT"
+      },
+      {
+        "var": "cfo_py",
+        "fact_key": "cfo",
+        "scope": "PY"
+      }
+    ]
+  },
+  "ebitda_margin": {
+    "name": "EBITDA Margin",
+    "unit": "%",
+    "category": "margin",
+    "formula": "ebitda/revenue*100",
+    "inputs": [
+      {
+        "var": "ebitda",
+        "fact_key": "ebitda",
+        "scope": "CURRENT"
+      },
+      {
+        "var": "revenue",
+        "fact_key": "revenue_from_operations",
+        "scope": "CURRENT"
+      }
+    ]
+  },
+  "ebitda_margin_change_yoy_bps": {
+    "name": "EBITDA Margin Change YoY Bps",
+    "unit": "bps",
+    "category": "margin",
+    "formula": "(ebitda/revenue-ebitda_py/revenue_py)*10000",
+    "inputs": [
+      {
+        "var": "ebitda",
+        "fact_key": "ebitda",
+        "scope": "CURRENT"
+      },
+      {
+        "var": "revenue",
+        "fact_key": "revenue_from_operations",
+        "scope": "CURRENT"
+      },
+      {
+        "var": "ebitda_py",
+        "fact_key": "ebitda",
+        "scope": "PY"
+      },
+      {
+        "var": "revenue_py",
+        "fact_key": "revenue_from_operations",
+        "scope": "PY"
+      }
+    ]
+  },
+  "ebit_margin": {
+    "name": "EBIT Margin",
+    "unit": "%",
+    "category": "margin",
+    "formula": "ebit/revenue*100",
+    "inputs": [
+      {
+        "var": "ebit",
+        "fact_key": "ebit",
+        "scope": "CURRENT"
+      },
+      {
+        "var": "revenue",
+        "fact_key": "revenue_from_operations",
+        "scope": "CURRENT"
+      }
+    ]
+  },
+  "pbt_margin": {
+    "name": "PBT Margin",
+    "unit": "%",
+    "category": "margin",
+    "formula": "pbt/revenue*100",
+    "inputs": [
+      {
+        "var": "pbt",
+        "fact_key": "pbt",
+        "scope": "CURRENT"
+      },
+      {
+        "var": "revenue",
+        "fact_key": "revenue_from_operations",
+        "scope": "CURRENT"
+      }
+    ]
+  },
+  "pat_margin": {
+    "name": "PAT Margin",
+    "unit": "%",
+    "category": "margin",
+    "formula": "pat/revenue*100",
+    "inputs": [
+      {
+        "var": "pat",
+        "fact_key": "pat",
+        "scope": "CURRENT"
+      },
+      {
+        "var": "revenue",
+        "fact_key": "revenue_from_operations",
+        "scope": "CURRENT"
+      }
+    ]
+  },
+  "input_cost_ratio": {
+    "name": "Input Cost Ratio",
+    "unit": "%",
+    "category": "expense",
+    "formula": "(materials+purchases+inventory_change)/revenue*100",
+    "inputs": [
+      {
+        "var": "materials",
+        "fact_key": "cost_of_materials_consumed",
+        "scope": "CURRENT"
+      },
+      {
+        "var": "purchases",
+        "fact_key": "purchase_of_stock_in_trade",
+        "scope": "CURRENT"
+      },
+      {
+        "var": "inventory_change",
+        "fact_key": "changes_in_inventories",
+        "scope": "CURRENT"
+      },
+      {
+        "var": "revenue",
+        "fact_key": "revenue_from_operations",
+        "scope": "CURRENT"
+      }
+    ],
+    "applicability": [
+      "MANUFACTURING",
+      "TRADING",
+      "CONSUMER",
+      "PHARMA"
+    ]
+  },
+  "input_cost_ratio_change_yoy_bps": {
+    "name": "Input Cost Ratio Change YoY Bps",
+    "unit": "bps",
+    "category": "expense",
+    "formula": "(((materials+purchases+inventory_change)/revenue)-((materials_py+purchases_py+inventory_change_py)/revenue_py))*10000",
+    "inputs": [
+      {
+        "var": "materials",
+        "fact_key": "cost_of_materials_consumed",
+        "scope": "CURRENT"
+      },
+      {
+        "var": "purchases",
+        "fact_key": "purchase_of_stock_in_trade",
+        "scope": "CURRENT"
+      },
+      {
+        "var": "inventory_change",
+        "fact_key": "changes_in_inventories",
+        "scope": "CURRENT"
+      },
+      {
+        "var": "revenue",
+        "fact_key": "revenue_from_operations",
+        "scope": "CURRENT"
+      },
+      {
+        "var": "materials_py",
+        "fact_key": "cost_of_materials_consumed",
+        "scope": "PY"
+      },
+      {
+        "var": "purchases_py",
+        "fact_key": "purchase_of_stock_in_trade",
+        "scope": "PY"
+      },
+      {
+        "var": "inventory_change_py",
+        "fact_key": "changes_in_inventories",
+        "scope": "PY"
+      },
+      {
+        "var": "revenue_py",
+        "fact_key": "revenue_from_operations",
+        "scope": "PY"
+      }
+    ],
+    "applicability": [
+      "MANUFACTURING",
+      "TRADING",
+      "CONSUMER",
+      "PHARMA"
+    ]
+  },
+  "gross_margin_proxy": {
+    "name": "Gross Margin Proxy",
+    "unit": "%",
+    "category": "margin",
+    "formula": "(revenue-materials-purchases-inventory_change)/revenue*100",
+    "inputs": [
+      {
+        "var": "revenue",
+        "fact_key": "revenue_from_operations",
+        "scope": "CURRENT"
+      },
+      {
+        "var": "materials",
+        "fact_key": "cost_of_materials_consumed",
+        "scope": "CURRENT"
+      },
+      {
+        "var": "purchases",
+        "fact_key": "purchase_of_stock_in_trade",
+        "scope": "CURRENT"
+      },
+      {
+        "var": "inventory_change",
+        "fact_key": "changes_in_inventories",
+        "scope": "CURRENT"
+      }
+    ],
+    "notes": "Proxy only; use where expense presentation is comparable."
+  },
+  "employee_cost_ratio": {
+    "name": "Employee Cost Ratio",
+    "unit": "%",
+    "category": "expense",
+    "formula": "employee_cost/revenue*100",
+    "inputs": [
+      {
+        "var": "employee_cost",
+        "fact_key": "employee_benefit_expense",
+        "scope": "CURRENT"
+      },
+      {
+        "var": "revenue",
+        "fact_key": "revenue_from_operations",
+        "scope": "CURRENT"
+      }
+    ]
+  },
+  "employee_cost_ratio_change_yoy_bps": {
+    "name": "Employee Cost Ratio Change YoY Bps",
+    "unit": "bps",
+    "category": "expense",
+    "formula": "(employee_cost/revenue-employee_cost_py/revenue_py)*10000",
+    "inputs": [
+      {
+        "var": "employee_cost",
+        "fact_key": "employee_benefit_expense",
+        "scope": "CURRENT"
+      },
+      {
+        "var": "revenue",
+        "fact_key": "revenue_from_operations",
+        "scope": "CURRENT"
+      },
+      {
+        "var": "employee_cost_py",
+        "fact_key": "employee_benefit_expense",
+        "scope": "PY"
+      },
+      {
+        "var": "revenue_py",
+        "fact_key": "revenue_from_operations",
+        "scope": "PY"
+      }
+    ]
+  },
+  "finance_cost_burden": {
+    "name": "Finance Cost Burden",
+    "unit": "%",
+    "category": "expense",
+    "formula": "finance_cost/abs(ebitda)*100",
+    "inputs": [
+      {
+        "var": "finance_cost",
+        "fact_key": "finance_cost",
+        "scope": "CURRENT"
+      },
+      {
+        "var": "ebitda",
+        "fact_key": "ebitda",
+        "scope": "CURRENT"
+      }
+    ],
+    "valid_when": "ebitda>0"
+  },
+  "operating_leverage_spread": {
+    "name": "Operating Leverage Spread",
+    "unit": "pp",
+    "category": "growth_quality",
+    "formula": "ebitda_yoy_growth-revenue_yoy_growth",
+    "inputs": [
+      {
+        "var": "ebitda_yoy_growth",
+        "metric_key": "ebitda_yoy_growth"
+      },
+      {
+        "var": "revenue_yoy_growth",
+        "metric_key": "revenue_yoy_growth"
+      }
+    ]
+  },
+  "other_income_to_pbt": {
+    "name": "Other Income To PBT",
+    "unit": "%",
+    "category": "earnings_quality",
+    "formula": "other_income/abs(pbt)*100",
+    "inputs": [
+      {
+        "var": "other_income",
+        "fact_key": "other_income",
+        "scope": "CURRENT"
+      },
+      {
+        "var": "pbt",
+        "fact_key": "pbt",
+        "scope": "CURRENT"
+      }
+    ],
+    "valid_when": "pbt!=0"
+  },
+  "other_income_to_total_income": {
+    "name": "Other Income To Total Income",
+    "unit": "%",
+    "category": "earnings_quality",
+    "formula": "other_income/total_income*100",
+    "inputs": [
+      {
+        "var": "other_income",
+        "fact_key": "other_income",
+        "scope": "CURRENT"
+      },
+      {
+        "var": "total_income",
+        "fact_key": "total_income",
+        "scope": "CURRENT"
+      }
+    ]
+  },
+  "exceptional_to_pbt": {
+    "name": "Exceptional To PBT",
+    "unit": "%",
+    "category": "earnings_quality",
+    "formula": "abs(exceptional)/abs(pbt)*100",
+    "inputs": [
+      {
+        "var": "exceptional",
+        "fact_key": "exceptional_items",
+        "scope": "CURRENT"
+      },
+      {
+        "var": "pbt",
+        "fact_key": "pbt",
+        "scope": "CURRENT"
+      }
+    ],
+    "valid_when": "pbt!=0"
+  },
+  "exceptional_to_pat": {
+    "name": "Exceptional To PAT",
+    "unit": "%",
+    "category": "earnings_quality",
+    "formula": "abs(exceptional)/abs(pat)*100",
+    "inputs": [
+      {
+        "var": "exceptional",
+        "fact_key": "exceptional_items",
+        "scope": "CURRENT"
+      },
+      {
+        "var": "pat",
+        "fact_key": "pat",
+        "scope": "CURRENT"
+      }
+    ],
+    "valid_when": "pat!=0"
+  },
+  "effective_tax_rate": {
+    "name": "Effective Tax Rate",
+    "unit": "%",
+    "category": "tax",
+    "formula": "tax/pbt*100",
+    "inputs": [
+      {
+        "var": "tax",
+        "fact_key": "tax_expense",
+        "scope": "CURRENT"
+      },
+      {
+        "var": "pbt",
+        "fact_key": "pbt",
+        "scope": "CURRENT"
+      }
+    ],
+    "valid_when": "pbt>0"
+  },
+  "parent_pat_share": {
+    "name": "Parent PAT Share",
+    "unit": "%",
+    "category": "ownership",
+    "formula": "parent_pat/pat*100",
+    "inputs": [
+      {
+        "var": "parent_pat",
+        "fact_key": "pat_attributable_to_parent",
+        "scope": "CURRENT"
+      },
+      {
+        "var": "pat",
+        "fact_key": "pat",
+        "scope": "CURRENT"
+      }
+    ],
+    "valid_when": "pat!=0"
+  },
+  "diluted_eps_discount": {
+    "name": "Diluted EPS Discount",
+    "unit": "%",
+    "category": "dilution",
+    "formula": "(basic-diluted)/abs(basic)*100",
+    "inputs": [
+      {
+        "var": "basic",
+        "fact_key": "eps_basic",
+        "scope": "CURRENT"
+      },
+      {
+        "var": "diluted",
+        "fact_key": "eps_diluted",
+        "scope": "CURRENT"
+      }
+    ],
+    "valid_when": "basic!=0"
+  },
+  "cfo_to_pat": {
+    "name": "CFO To PAT",
+    "unit": "x",
+    "category": "cash_quality",
+    "formula": "cfo/pat",
+    "inputs": [
+      {
+        "var": "cfo",
+        "fact_key": "cfo",
+        "scope": "CURRENT"
+      },
+      {
+        "var": "pat",
+        "fact_key": "pat",
+        "scope": "CURRENT"
+      }
+    ],
+    "valid_when": "pat>0"
+  },
+  "cfo_to_ebitda": {
+    "name": "CFO To EBITDA",
+    "unit": "x",
+    "category": "cash_quality",
+    "formula": "cfo/ebitda",
+    "inputs": [
+      {
+        "var": "cfo",
+        "fact_key": "cfo",
+        "scope": "CURRENT"
+      },
+      {
+        "var": "ebitda",
+        "fact_key": "ebitda",
+        "scope": "CURRENT"
+      }
+    ],
+    "valid_when": "ebitda>0"
+  },
+  "free_cash_flow": {
+    "name": "Free Cash Flow",
+    "unit": "crore",
+    "category": "cash_flow",
+    "formula": "cfo-capex",
+    "inputs": [
+      {
+        "var": "cfo",
+        "fact_key": "cfo",
+        "scope": "CURRENT"
+      },
+      {
+        "var": "capex",
+        "fact_key": "purchase_of_ppe_and_intangibles",
+        "scope": "CURRENT"
+      }
+    ]
+  },
+  "free_cash_flow_margin": {
+    "name": "Free Cash Flow Margin",
+    "unit": "%",
+    "category": "cash_flow",
+    "formula": "(cfo-capex)/revenue*100",
+    "inputs": [
+      {
+        "var": "cfo",
+        "fact_key": "cfo",
+        "scope": "CURRENT"
+      },
+      {
+        "var": "capex",
+        "fact_key": "purchase_of_ppe_and_intangibles",
+        "scope": "CURRENT"
+      },
+      {
+        "var": "revenue",
+        "fact_key": "revenue_from_operations",
+        "scope": "CURRENT"
+      }
+    ]
+  },
+  "capex_intensity": {
+    "name": "Capex Intensity",
+    "unit": "%",
+    "category": "capital_allocation",
+    "formula": "capex/revenue*100",
+    "inputs": [
+      {
+        "var": "capex",
+        "fact_key": "purchase_of_ppe_and_intangibles",
+        "scope": "CURRENT"
+      },
+      {
+        "var": "revenue",
+        "fact_key": "revenue_from_operations",
+        "scope": "CURRENT"
+      }
+    ]
+  },
+  "capex_to_cfo": {
+    "name": "Capex To CFO",
+    "unit": "x",
+    "category": "capital_allocation",
+    "formula": "capex/cfo",
+    "inputs": [
+      {
+        "var": "capex",
+        "fact_key": "purchase_of_ppe_and_intangibles",
+        "scope": "CURRENT"
+      },
+      {
+        "var": "cfo",
+        "fact_key": "cfo",
+        "scope": "CURRENT"
+      }
+    ],
+    "valid_when": "cfo>0"
+  },
+  "working_capital_cash_contribution": {
+    "name": "Working Capital Cash Contribution",
+    "unit": "%",
+    "category": "working_capital",
+    "formula": "working_capital_change/abs(cash_profit_before_wc)*100",
+    "inputs": [
+      {
+        "var": "working_capital_change",
+        "fact_key": "working_capital_change",
+        "scope": "CURRENT"
+      },
+      {
+        "var": "cash_profit_before_wc",
+        "fact_key": "cash_profit_before_working_capital_changes",
+        "scope": "CURRENT"
+      }
+    ],
+    "valid_when": "cash_profit_before_wc!=0"
+  },
+  "net_borrowing_cash_flow": {
+    "name": "Net Borrowing Cash Flow",
+    "unit": "crore",
+    "category": "financing",
+    "formula": "raised-repaid",
+    "inputs": [
+      {
+        "var": "raised",
+        "fact_key": "borrowings_raised",
+        "scope": "CURRENT"
+      },
+      {
+        "var": "repaid",
+        "fact_key": "borrowings_repaid",
+        "scope": "CURRENT"
+      }
+    ]
+  },
+  "trade_payables_total": {
+    "name": "Trade Payables Total",
+    "unit": "crore",
+    "category": "working_capital",
+    "formula": "payables_msme+payables_other",
+    "inputs": [
+      {
+        "var": "payables_msme",
+        "fact_key": "trade_payables_msme",
+        "scope": "CURRENT"
+      },
+      {
+        "var": "payables_other",
+        "fact_key": "trade_payables_other",
+        "scope": "CURRENT"
+      }
+    ]
+  },
+  "net_working_capital": {
+    "name": "Net Working Capital",
+    "unit": "crore",
+    "category": "working_capital",
+    "formula": "receivables+inventory-payables_msme-payables_other",
+    "inputs": [
+      {
+        "var": "receivables",
+        "fact_key": "trade_receivables",
+        "scope": "CURRENT"
+      },
+      {
+        "var": "inventory",
+        "fact_key": "inventories",
+        "scope": "CURRENT",
+        "optional": true
+      },
+      {
+        "var": "payables_msme",
+        "fact_key": "trade_payables_msme",
+        "scope": "CURRENT"
+      },
+      {
+        "var": "payables_other",
+        "fact_key": "trade_payables_other",
+        "scope": "CURRENT"
+      }
+    ]
+  },
+  "receivables_yoy_growth": {
+    "name": "Receivables YoY Growth",
+    "unit": "%",
+    "category": "working_capital",
+    "formula": "(receivables-receivables_py)/abs(receivables_py)*100",
+    "inputs": [
+      {
+        "var": "receivables",
+        "fact_key": "trade_receivables",
+        "scope": "CURRENT"
+      },
+      {
+        "var": "receivables_py",
+        "fact_key": "trade_receivables",
+        "scope": "PY"
+      }
+    ]
+  },
+  "inventory_yoy_growth": {
+    "name": "Inventory YoY Growth",
+    "unit": "%",
+    "category": "working_capital",
+    "formula": "(inventory-inventory_py)/abs(inventory_py)*100",
+    "inputs": [
+      {
+        "var": "inventory",
+        "fact_key": "inventories",
+        "scope": "CURRENT"
+      },
+      {
+        "var": "inventory_py",
+        "fact_key": "inventories",
+        "scope": "PY"
+      }
+    ]
+  },
+  "payables_yoy_growth": {
+    "name": "Payables YoY Growth",
+    "unit": "%",
+    "category": "working_capital",
+    "formula": "((msme+other)-(msme_py+other_py))/abs(msme_py+other_py)*100",
+    "inputs": [
+      {
+        "var": "msme",
+        "fact_key": "trade_payables_msme",
+        "scope": "CURRENT"
+      },
+      {
+        "var": "other",
+        "fact_key": "trade_payables_other",
+        "scope": "CURRENT"
+      },
+      {
+        "var": "msme_py",
+        "fact_key": "trade_payables_msme",
+        "scope": "PY"
+      },
+      {
+        "var": "other_py",
+        "fact_key": "trade_payables_other",
+        "scope": "PY"
+      }
+    ]
+  },
+  "receivable_days": {
+    "name": "Receivable Days",
+    "unit": "days",
+    "category": "working_capital",
+    "formula": "average(receivables,receivables_pq)/(revenue*annualization_factor)*365",
+    "inputs": [
+      {
+        "var": "receivables",
+        "fact_key": "trade_receivables",
+        "scope": "CURRENT"
+      },
+      {
+        "var": "receivables_pq",
+        "fact_key": "trade_receivables",
+        "scope": "PQ"
+      },
+      {
+        "var": "revenue",
+        "fact_key": "revenue_from_operations",
+        "scope": "CURRENT"
+      },
+      {
+        "var": "annualization_factor",
+        "runtime_parameter": "annualization_factor"
+      }
+    ]
+  },
+  "inventory_days": {
+    "name": "Inventory Days",
+    "unit": "days",
+    "category": "working_capital",
+    "formula": "average(inventory,inventory_pq)/((materials+purchases+inventory_change)*annualization_factor)*365",
+    "inputs": [
+      {
+        "var": "inventory",
+        "fact_key": "inventories",
+        "scope": "CURRENT"
+      },
+      {
+        "var": "inventory_pq",
+        "fact_key": "inventories",
+        "scope": "PQ"
+      },
+      {
+        "var": "materials",
+        "fact_key": "cost_of_materials_consumed",
+        "scope": "CURRENT"
+      },
+      {
+        "var": "purchases",
+        "fact_key": "purchase_of_stock_in_trade",
+        "scope": "CURRENT"
+      },
+      {
+        "var": "inventory_change",
+        "fact_key": "changes_in_inventories",
+        "scope": "CURRENT"
+      },
+      {
+        "var": "annualization_factor",
+        "runtime_parameter": "annualization_factor"
+      }
+    ]
+  },
+  "payable_days": {
+    "name": "Payable Days",
+    "unit": "days",
+    "category": "working_capital",
+    "formula": "average(payables,payables_pq)/((materials+purchases+inventory_change)*annualization_factor)*365",
+    "inputs": [
+      {
+        "var": "payables",
+        "metric_key": "trade_payables_total"
+      },
+      {
+        "var": "payables_pq",
+        "metric_key": "trade_payables_total",
+        "scope": "PQ"
+      },
+      {
+        "var": "materials",
+        "fact_key": "cost_of_materials_consumed",
+        "scope": "CURRENT"
+      },
+      {
+        "var": "purchases",
+        "fact_key": "purchase_of_stock_in_trade",
+        "scope": "CURRENT"
+      },
+      {
+        "var": "inventory_change",
+        "fact_key": "changes_in_inventories",
+        "scope": "CURRENT"
+      },
+      {
+        "var": "annualization_factor",
+        "runtime_parameter": "annualization_factor"
+      }
+    ]
+  },
+  "cash_conversion_cycle": {
+    "name": "Cash Conversion Cycle",
+    "unit": "days",
+    "category": "working_capital",
+    "formula": "receivable_days+inventory_days-payable_days",
+    "inputs": [
+      {
+        "var": "receivable_days",
+        "metric_key": "receivable_days"
+      },
+      {
+        "var": "inventory_days",
+        "metric_key": "inventory_days"
+      },
+      {
+        "var": "payable_days",
+        "metric_key": "payable_days"
+      }
+    ]
+  },
+  "cash_conversion_cycle_change_yoy": {
+    "name": "Cash Conversion Cycle Change YoY",
+    "unit": "days",
+    "category": "working_capital",
+    "formula": "ccc-ccc_py",
+    "inputs": [
+      {
+        "var": "ccc",
+        "metric_key": "cash_conversion_cycle"
+      },
+      {
+        "var": "ccc_py",
+        "metric_key": "cash_conversion_cycle",
+        "scope": "PY"
+      }
+    ]
+  },
+  "gross_debt": {
+    "name": "Gross Debt",
+    "unit": "crore",
+    "category": "leverage",
+    "formula": "ncb+cb+ncl+cl",
+    "inputs": [
+      {
+        "var": "ncb",
+        "fact_key": "non_current_borrowings",
+        "scope": "CURRENT"
+      },
+      {
+        "var": "cb",
+        "fact_key": "current_borrowings",
+        "scope": "CURRENT"
+      },
+      {
+        "var": "ncl",
+        "fact_key": "non_current_lease_liabilities",
+        "scope": "CURRENT",
+        "optional": true
+      },
+      {
+        "var": "cl",
+        "fact_key": "current_lease_liabilities",
+        "scope": "CURRENT",
+        "optional": true
+      }
+    ]
+  },
+  "net_debt": {
+    "name": "Net Debt",
+    "unit": "crore",
+    "category": "leverage",
+    "formula": "gross_debt-cash-bank-liquid_investments",
+    "inputs": [
+      {
+        "var": "gross_debt",
+        "metric_key": "gross_debt"
+      },
+      {
+        "var": "cash",
+        "fact_key": "cash_and_cash_equivalents",
+        "scope": "CURRENT"
+      },
+      {
+        "var": "bank",
+        "fact_key": "other_bank_balances",
+        "scope": "CURRENT",
+        "optional": true
+      },
+      {
+        "var": "liquid_investments",
+        "fact_key": "current_investments",
+        "scope": "CURRENT",
+        "optional": true
+      }
+    ],
+    "notes": "Exclude restricted balances and illiquid investments."
+  },
+  "gross_debt_yoy_growth": {
+    "name": "Gross Debt YoY Growth",
+    "unit": "%",
+    "category": "leverage",
+    "formula": "(debt-debt_py)/abs(debt_py)*100",
+    "inputs": [
+      {
+        "var": "debt",
+        "metric_key": "gross_debt"
+      },
+      {
+        "var": "debt_py",
+        "metric_key": "gross_debt",
+        "scope": "PY"
+      }
+    ]
+  },
+  "net_debt_yoy_change": {
+    "name": "Net Debt YoY Change",
+    "unit": "%",
+    "category": "leverage",
+    "formula": "(net_debt-net_debt_py)/abs(net_debt_py)*100",
+    "inputs": [
+      {
+        "var": "net_debt",
+        "metric_key": "net_debt"
+      },
+      {
+        "var": "net_debt_py",
+        "metric_key": "net_debt",
+        "scope": "PY"
+      }
+    ]
+  },
+  "debt_to_equity": {
+    "name": "Debt To Equity",
+    "unit": "x",
+    "category": "leverage",
+    "formula": "gross_debt/equity",
+    "inputs": [
+      {
+        "var": "gross_debt",
+        "metric_key": "gross_debt"
+      },
+      {
+        "var": "equity",
+        "fact_key": "total_equity",
+        "scope": "CURRENT"
+      }
+    ],
+    "valid_when": "equity>0"
+  },
+  "net_debt_to_annualized_ebitda": {
+    "name": "Net Debt To Annualized EBITDA",
+    "unit": "x",
+    "category": "leverage",
+    "formula": "net_debt/(ebitda*annualization_factor)",
+    "inputs": [
+      {
+        "var": "net_debt",
+        "metric_key": "net_debt"
+      },
+      {
+        "var": "ebitda",
+        "fact_key": "ebitda",
+        "scope": "CURRENT"
+      },
+      {
+        "var": "annualization_factor",
+        "runtime_parameter": "annualization_factor"
+      }
+    ],
+    "valid_when": "ebitda>0"
+  },
+  "ebit_interest_coverage": {
+    "name": "EBIT Interest Coverage",
+    "unit": "x",
+    "category": "leverage",
+    "formula": "ebit/finance_cost",
+    "inputs": [
+      {
+        "var": "ebit",
+        "fact_key": "ebit",
+        "scope": "CURRENT"
+      },
+      {
+        "var": "finance_cost",
+        "fact_key": "finance_cost",
+        "scope": "CURRENT"
+      }
+    ],
+    "valid_when": "finance_cost>0"
+  },
+  "current_ratio": {
+    "name": "Current Ratio",
+    "unit": "x",
+    "category": "liquidity",
+    "formula": "current_assets/current_liabilities",
+    "inputs": [
+      {
+        "var": "current_assets",
+        "fact_key": "total_current_assets",
+        "scope": "CURRENT"
+      },
+      {
+        "var": "current_liabilities",
+        "fact_key": "total_current_liabilities",
+        "scope": "CURRENT"
+      }
+    ]
+  },
+  "quick_ratio": {
+    "name": "Quick Ratio",
+    "unit": "x",
+    "category": "liquidity",
+    "formula": "(current_assets-inventory)/current_liabilities",
+    "inputs": [
+      {
+        "var": "current_assets",
+        "fact_key": "total_current_assets",
+        "scope": "CURRENT"
+      },
+      {
+        "var": "inventory",
+        "fact_key": "inventories",
+        "scope": "CURRENT",
+        "optional": true
+      },
+      {
+        "var": "current_liabilities",
+        "fact_key": "total_current_liabilities",
+        "scope": "CURRENT"
+      }
+    ]
+  },
+  "short_term_debt_share": {
+    "name": "Short Term Debt Share",
+    "unit": "%",
+    "category": "leverage",
+    "formula": "(current_borrowings+current_lease)/gross_debt*100",
+    "inputs": [
+      {
+        "var": "current_borrowings",
+        "fact_key": "current_borrowings",
+        "scope": "CURRENT"
+      },
+      {
+        "var": "current_lease",
+        "fact_key": "current_lease_liabilities",
+        "scope": "CURRENT",
+        "optional": true
+      },
+      {
+        "var": "gross_debt",
+        "metric_key": "gross_debt"
+      }
+    ]
+  },
+  "cash_to_gross_debt": {
+    "name": "Cash To Gross Debt",
+    "unit": "%",
+    "category": "leverage",
+    "formula": "(cash+bank+liquid_investments)/gross_debt*100",
+    "inputs": [
+      {
+        "var": "cash",
+        "fact_key": "cash_and_cash_equivalents",
+        "scope": "CURRENT"
+      },
+      {
+        "var": "bank",
+        "fact_key": "other_bank_balances",
+        "scope": "CURRENT",
+        "optional": true
+      },
+      {
+        "var": "liquid_investments",
+        "fact_key": "current_investments",
+        "scope": "CURRENT",
+        "optional": true
+      },
+      {
+        "var": "gross_debt",
+        "metric_key": "gross_debt"
+      }
+    ]
+  },
+  "asset_turnover_annualized": {
+    "name": "Asset Turnover Annualized",
+    "unit": "x",
+    "category": "efficiency",
+    "formula": "(revenue*annualization_factor)/average(assets,assets_pq)",
+    "inputs": [
+      {
+        "var": "revenue",
+        "fact_key": "revenue_from_operations",
+        "scope": "CURRENT"
+      },
+      {
+        "var": "annualization_factor",
+        "runtime_parameter": "annualization_factor"
+      },
+      {
+        "var": "assets",
+        "fact_key": "total_assets",
+        "scope": "CURRENT"
+      },
+      {
+        "var": "assets_pq",
+        "fact_key": "total_assets",
+        "scope": "PQ"
+      }
+    ]
+  },
+  "roe_annualized": {
+    "name": "Roe Annualized",
+    "unit": "%",
+    "category": "returns",
+    "formula": "(parent_pat*annualization_factor)/average(parent_equity,parent_equity_pq)*100",
+    "inputs": [
+      {
+        "var": "parent_pat",
+        "fact_key": "pat_attributable_to_parent",
+        "scope": "CURRENT"
+      },
+      {
+        "var": "annualization_factor",
+        "runtime_parameter": "annualization_factor"
+      },
+      {
+        "var": "parent_equity",
+        "fact_key": "equity_attributable_to_parent",
+        "scope": "CURRENT"
+      },
+      {
+        "var": "parent_equity_pq",
+        "fact_key": "equity_attributable_to_parent",
+        "scope": "PQ"
+      }
+    ]
+  },
+  "capital_employed": {
+    "name": "Capital Employed",
+    "unit": "crore",
+    "category": "returns",
+    "formula": "equity+gross_debt-cash-bank-liquid_investments",
+    "inputs": [
+      {
+        "var": "equity",
+        "fact_key": "total_equity",
+        "scope": "CURRENT"
+      },
+      {
+        "var": "gross_debt",
+        "metric_key": "gross_debt"
+      },
+      {
+        "var": "cash",
+        "fact_key": "cash_and_cash_equivalents",
+        "scope": "CURRENT"
+      },
+      {
+        "var": "bank",
+        "fact_key": "other_bank_balances",
+        "scope": "CURRENT",
+        "optional": true
+      },
+      {
+        "var": "liquid_investments",
+        "fact_key": "current_investments",
+        "scope": "CURRENT",
+        "optional": true
+      }
+    ]
+  },
+  "roce_annualized": {
+    "name": "Roce Annualized",
+    "unit": "%",
+    "category": "returns",
+    "formula": "(ebit*annualization_factor)/average(capital_employed,capital_employed_pq)*100",
+    "inputs": [
+      {
+        "var": "ebit",
+        "fact_key": "ebit",
+        "scope": "CURRENT"
+      },
+      {
+        "var": "annualization_factor",
+        "runtime_parameter": "annualization_factor"
+      },
+      {
+        "var": "capital_employed",
+        "metric_key": "capital_employed"
+      },
+      {
+        "var": "capital_employed_pq",
+        "metric_key": "capital_employed",
+        "scope": "PQ"
+      }
+    ]
+  },
+  "segment_revenue_yoy_growth": {
+    "name": "Segment Revenue YoY Growth",
+    "unit": "%",
+    "category": "segment",
+    "formula": "(segment_revenue-segment_revenue_py)/abs(segment_revenue_py)*100",
+    "inputs": [
+      {
+        "var": "segment_revenue",
+        "fact_key": "segment_revenue",
+        "scope": "CURRENT"
+      },
+      {
+        "var": "segment_revenue_py",
+        "fact_key": "segment_revenue",
+        "scope": "PY"
+      }
+    ],
+    "preserve_dimensions": true
+  },
+  "segment_result_margin": {
+    "name": "Segment Result Margin",
+    "unit": "%",
+    "category": "segment",
+    "formula": "segment_result/segment_revenue*100",
+    "inputs": [
+      {
+        "var": "segment_result",
+        "fact_key": "segment_result",
+        "scope": "CURRENT"
+      },
+      {
+        "var": "segment_revenue",
+        "fact_key": "segment_revenue",
+        "scope": "CURRENT"
+      }
+    ],
+    "preserve_dimensions": true
+  },
+  "segment_result_margin_change_yoy_bps": {
+    "name": "Segment Result Margin Change YoY Bps",
+    "unit": "bps",
+    "category": "segment",
+    "formula": "(segment_result/segment_revenue-segment_result_py/segment_revenue_py)*10000",
+    "inputs": [
+      {
+        "var": "segment_result",
+        "fact_key": "segment_result",
+        "scope": "CURRENT"
+      },
+      {
+        "var": "segment_revenue",
+        "fact_key": "segment_revenue",
+        "scope": "CURRENT"
+      },
+      {
+        "var": "segment_result_py",
+        "fact_key": "segment_result",
+        "scope": "PY"
+      },
+      {
+        "var": "segment_revenue_py",
+        "fact_key": "segment_revenue",
+        "scope": "PY"
+      }
+    ],
+    "preserve_dimensions": true
+  },
+  "segment_revenue_mix": {
+    "name": "Segment Revenue Mix",
+    "unit": "%",
+    "category": "segment",
+    "formula": "segment_revenue/revenue*100",
+    "inputs": [
+      {
+        "var": "segment_revenue",
+        "fact_key": "segment_revenue",
+        "scope": "CURRENT"
+      },
+      {
+        "var": "revenue",
+        "fact_key": "revenue_from_operations",
+        "scope": "CURRENT"
+      }
+    ],
+    "preserve_dimensions": true
+  },
+  "largest_segment_revenue_mix": {
+    "name": "Largest Segment Revenue Mix",
+    "unit": "%",
+    "category": "concentration",
+    "formula": "max_by_dimension(segment_revenue)/revenue*100",
+    "inputs": [
+      {
+        "var": "segment_revenue",
+        "fact_key": "segment_revenue",
+        "scope": "CURRENT"
+      },
+      {
+        "var": "revenue",
+        "fact_key": "revenue_from_operations",
+        "scope": "CURRENT"
+      }
+    ],
+    "formula_type": "AGGREGATION"
+  },
+  "subsidiary_pat_contribution": {
+    "name": "Subsidiary PAT Contribution",
+    "unit": "%",
+    "category": "scope_comparison",
+    "formula": "(consolidated_parent_pat-standalone_pat)/consolidated_parent_pat*100",
+    "inputs": [
+      {
+        "var": "consolidated_parent_pat",
+        "fact_key": "pat_attributable_to_parent",
+        "scope": "CONSOLIDATED_CURRENT"
+      },
+      {
+        "var": "standalone_pat",
+        "fact_key": "pat",
+        "scope": "STANDALONE_CURRENT"
+      }
+    ],
+    "notes": "Implied contribution; consolidation eliminations may distort it."
+  },
+  "balance_sheet_equation_gap": {
+    "name": "Balance Sheet Equation Gap",
+    "unit": "crore",
+    "category": "data_quality",
+    "formula": "assets-equity-liabilities",
+    "inputs": [
+      {
+        "var": "assets",
+        "fact_key": "total_assets",
+        "scope": "CURRENT"
+      },
+      {
+        "var": "equity",
+        "fact_key": "total_equity",
+        "scope": "CURRENT"
+      },
+      {
+        "var": "liabilities",
+        "fact_key": "total_liabilities",
+        "scope": "CURRENT"
+      }
+    ]
+  },
+  "cash_flow_reconciliation_gap": {
+    "name": "Cash Flow Reconciliation Gap",
+    "unit": "crore",
+    "category": "data_quality",
+    "formula": "opening+net_change-closing",
+    "inputs": [
+      {
+        "var": "opening",
+        "fact_key": "cash_opening",
+        "scope": "CURRENT"
+      },
+      {
+        "var": "net_change",
+        "fact_key": "net_change_in_cash",
+        "scope": "CURRENT"
+      },
+      {
+        "var": "closing",
+        "fact_key": "cash_closing",
+        "scope": "CURRENT"
+      }
+    ]
+  },
+  "segment_revenue_reconciliation_gap_pct": {
+    "name": "Segment Revenue Reconciliation Gap Pct",
+    "unit": "%",
+    "category": "data_quality",
+    "formula": "(sum_by_dimension(segment_revenue)-revenue)/revenue*100",
+    "inputs": [
+      {
+        "var": "segment_revenue",
+        "fact_key": "segment_revenue",
+        "scope": "CURRENT"
+      },
+      {
+        "var": "revenue",
+        "fact_key": "revenue_from_operations",
+        "scope": "CURRENT"
+      }
+    ],
+    "formula_type": "AGGREGATION",
+    "notes": "Allow disclosed eliminations and unallocated revenue."
+  }
+}

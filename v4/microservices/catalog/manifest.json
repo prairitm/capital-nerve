@@ -1,0 +1,9 @@
+{
+  "catalog_version": "0.1.0",
+  "description": "Capital Nerve v2 declarative facts, metrics, and signals (Phase 1 financial results).",
+  "files": {
+    "facts": "facts.json",
+    "metrics": "metrics.json",
+    "signals": "signals.json"
+  }
+}

@@ -1,0 +1,947 @@
+{
+  "revenue_contraction": {
+    "name": "Revenue Contraction",
+    "category": "growth",
+    "direction": "NEGATIVE",
+    "severity": "HIGH",
+    "description": "Revenue declined YoY.",
+    "rule": {
+      "metric_key": "revenue_yoy_growth",
+      "op": "<",
+      "value": 0
+    }
+  },
+  "strong_revenue_growth": {
+    "name": "Strong Revenue Growth",
+    "category": "growth",
+    "direction": "POSITIVE",
+    "severity": "MEDIUM",
+    "description": "Revenue grew above the baseline threshold.",
+    "rule": {
+      "metric_key": "revenue_yoy_growth",
+      "op": ">",
+      "value": 12
+    },
+    "threshold_profile_required": true
+  },
+  "ebitda_contraction": {
+    "name": "EBITDA Contraction",
+    "category": "growth",
+    "direction": "NEGATIVE",
+    "severity": "HIGH",
+    "description": "EBITDA declined YoY.",
+    "rule": {
+      "metric_key": "ebitda_yoy_growth",
+      "op": "<",
+      "value": 0
+    }
+  },
+  "margin_expansion": {
+    "name": "Margin Expansion",
+    "category": "margin",
+    "direction": "POSITIVE",
+    "severity": "MEDIUM",
+    "description": "EBITDA margin expanded materially YoY.",
+    "rule": {
+      "metric_key": "ebitda_margin_change_yoy_bps",
+      "op": ">",
+      "value": 75
+    },
+    "threshold_profile_required": true
+  },
+  "margin_compression": {
+    "name": "Margin Compression",
+    "category": "margin",
+    "direction": "NEGATIVE",
+    "severity": "HIGH",
+    "description": "EBITDA margin contracted materially YoY.",
+    "rule": {
+      "metric_key": "ebitda_margin_change_yoy_bps",
+      "op": "<",
+      "value": -75
+    },
+    "threshold_profile_required": true
+  },
+  "positive_operating_leverage": {
+    "name": "Positive Operating Leverage",
+    "category": "growth_quality",
+    "direction": "POSITIVE",
+    "severity": "HIGH",
+    "description": "EBITDA grew faster than revenue and margins expanded.",
+    "rule": {
+      "all": [
+        {
+          "metric_key": "operating_leverage_spread",
+          "op": ">",
+          "value": 3
+        },
+        {
+          "metric_key": "ebitda_margin_change_yoy_bps",
+          "op": ">",
+          "value": 50
+        }
+      ]
+    }
+  },
+  "negative_operating_leverage": {
+    "name": "Negative Operating Leverage",
+    "category": "growth_quality",
+    "direction": "NEGATIVE",
+    "severity": "HIGH",
+    "description": "Revenue growth failed to translate into operating-profit growth.",
+    "rule": {
+      "all": [
+        {
+          "metric_key": "revenue_yoy_growth",
+          "op": ">",
+          "value": 0
+        },
+        {
+          "metric_key": "operating_leverage_spread",
+          "op": "<",
+          "value": -3
+        },
+        {
+          "metric_key": "ebitda_margin_change_yoy_bps",
+          "op": "<",
+          "value": -50
+        }
+      ]
+    }
+  },
+  "input_cost_pressure": {
+    "name": "Input Cost Pressure",
+    "category": "expense",
+    "direction": "NEGATIVE",
+    "severity": "HIGH",
+    "description": "Input costs rose as a share of revenue while margins compressed.",
+    "rule": {
+      "all": [
+        {
+          "metric_key": "input_cost_ratio_change_yoy_bps",
+          "op": ">",
+          "value": 150
+        },
+        {
+          "metric_key": "ebitda_margin_change_yoy_bps",
+          "op": "<",
+          "value": -50
+        }
+      ]
+    }
+  },
+  "employee_cost_pressure": {
+    "name": "Employee Cost Pressure",
+    "category": "expense",
+    "direction": "NEGATIVE",
+    "severity": "MEDIUM",
+    "description": "Employee costs rose materially as a share of revenue.",
+    "rule": {
+      "metric_key": "employee_cost_ratio_change_yoy_bps",
+      "op": ">",
+      "value": 150
+    },
+    "threshold_profile_required": true
+  },
+  "pat_decline_despite_revenue_growth": {
+    "name": "PAT Decline Despite Revenue Growth",
+    "category": "earnings_quality",
+    "direction": "NEGATIVE",
+    "severity": "HIGH",
+    "description": "Revenue grew but PAT declined.",
+    "rule": {
+      "all": [
+        {
+          "metric_key": "revenue_yoy_growth",
+          "op": ">",
+          "value": 0
+        },
+        {
+          "metric_key": "pat_yoy_growth",
+          "op": "<",
+          "value": 0
+        }
+      ]
+    }
+  },
+  "pat_growth_despite_ebitda_decline": {
+    "name": "PAT Growth Despite EBITDA Decline",
+    "category": "earnings_quality",
+    "direction": "MIXED",
+    "severity": "HIGH",
+    "description": "PAT rose despite weaker operating profit.",
+    "rule": {
+      "all": [
+        {
+          "metric_key": "pat_yoy_growth",
+          "op": ">",
+          "value": 0
+        },
+        {
+          "metric_key": "ebitda_yoy_growth",
+          "op": "<",
+          "value": 0
+        }
+      ]
+    }
+  },
+  "clean_earnings_growth": {
+    "name": "Clean Earnings Growth",
+    "category": "earnings_quality",
+    "direction": "POSITIVE",
+    "severity": "HIGH",
+    "description": "Revenue, EBITDA, PAT and CFO improved without material non-operating support.",
+    "rule": {
+      "all": [
+        {
+          "metric_key": "revenue_yoy_growth",
+          "op": ">",
+          "value": 8
+        },
+        {
+          "metric_key": "ebitda_yoy_growth",
+          "op": ">",
+          "value": 8
+        },
+        {
+          "metric_key": "pat_yoy_growth",
+          "op": ">",
+          "value": 8
+        },
+        {
+          "metric_key": "cfo_yoy_growth",
+          "op": ">",
+          "value": 0
+        },
+        {
+          "metric_key": "other_income_to_pbt",
+          "op": "<",
+          "value": 15
+        },
+        {
+          "metric_key": "exceptional_to_pat",
+          "op": "<",
+          "value": 10
+        }
+      ]
+    }
+  },
+  "dirty_earnings_growth": {
+    "name": "Dirty Earnings Growth",
+    "category": "earnings_quality",
+    "direction": "NEGATIVE",
+    "severity": "HIGH",
+    "description": "PAT growth is materially supported by other income, exceptional items or tax.",
+    "rule": {
+      "all": [
+        {
+          "metric_key": "pat_yoy_growth",
+          "op": ">",
+          "value": 10
+        },
+        {
+          "any": [
+            {
+              "metric_key": "other_income_to_pbt",
+              "op": ">",
+              "value": 20
+            },
+            {
+              "metric_key": "exceptional_to_pat",
+              "op": ">",
+              "value": 20
+            },
+            {
+              "metric_key": "effective_tax_rate",
+              "op": "<",
+              "value": 10
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "other_income_dependency": {
+    "name": "Other Income Dependency",
+    "category": "earnings_quality",
+    "direction": "NEGATIVE",
+    "severity": "HIGH",
+    "description": "Other income forms a large share of PBT.",
+    "rule": {
+      "metric_key": "other_income_to_pbt",
+      "op": ">",
+      "value": 20
+    },
+    "threshold_profile_required": true
+  },
+  "exceptional_item_dependency": {
+    "name": "Exceptional Item Dependency",
+    "category": "earnings_quality",
+    "direction": "NEGATIVE",
+    "severity": "HIGH",
+    "description": "Exceptional items are large relative to PAT.",
+    "rule": {
+      "metric_key": "exceptional_to_pat",
+      "op": ">",
+      "value": 20
+    }
+  },
+  "tax_benefit_boost": {
+    "name": "Tax Benefit Boost",
+    "category": "tax",
+    "direction": "MIXED",
+    "severity": "MEDIUM",
+    "description": "A low effective tax rate may have boosted PAT.",
+    "rule": {
+      "all": [
+        {
+          "metric_key": "effective_tax_rate",
+          "op": "<",
+          "value": 10
+        },
+        {
+          "metric_key": "pat_yoy_growth",
+          "op": ">",
+          "value": 10
+        }
+      ]
+    }
+  },
+  "earnings_dilution": {
+    "name": "Earnings Dilution",
+    "category": "dilution",
+    "direction": "NEGATIVE",
+    "severity": "HIGH",
+    "description": "PAT growth is not translating into EPS because share count increased.",
+    "rule": {
+      "all": [
+        {
+          "metric_key": "pat_yoy_growth",
+          "op": ">",
+          "value": 5
+        },
+        {
+          "metric_key": "share_count_yoy_growth",
+          "op": ">",
+          "value": 5
+        },
+        {
+          "metric_key": "eps_basic_yoy_growth",
+          "op": "<",
+          "compare_metric_key": "pat_yoy_growth",
+          "offset": -5
+        }
+      ]
+    }
+  },
+  "potential_dilution_overhang": {
+    "name": "Potential Dilution Overhang",
+    "category": "dilution",
+    "direction": "NEGATIVE",
+    "severity": "MEDIUM",
+    "description": "Diluted EPS is materially below basic EPS.",
+    "rule": {
+      "metric_key": "diluted_eps_discount",
+      "op": ">",
+      "value": 3
+    }
+  },
+  "strong_cash_conversion": {
+    "name": "Strong Cash Conversion",
+    "category": "cash_quality",
+    "direction": "POSITIVE",
+    "severity": "HIGH",
+    "description": "CFO covers or exceeds PAT.",
+    "rule": {
+      "metric_key": "cfo_to_pat",
+      "op": ">=",
+      "value": 1.0
+    }
+  },
+  "weak_cash_conversion": {
+    "name": "Weak Cash Conversion",
+    "category": "cash_quality",
+    "direction": "NEGATIVE",
+    "severity": "HIGH",
+    "description": "CFO is less than half of PAT.",
+    "rule": {
+      "metric_key": "cfo_to_pat",
+      "op": "<",
+      "value": 0.5
+    }
+  },
+  "cash_backed_growth": {
+    "name": "Cash Backed Growth",
+    "category": "cash_quality",
+    "direction": "POSITIVE",
+    "severity": "HIGH",
+    "description": "PAT and CFO both grew with healthy conversion.",
+    "rule": {
+      "all": [
+        {
+          "metric_key": "pat_yoy_growth",
+          "op": ">",
+          "value": 8
+        },
+        {
+          "metric_key": "cfo_yoy_growth",
+          "op": ">",
+          "value": 8
+        },
+        {
+          "metric_key": "cfo_to_pat",
+          "op": ">",
+          "value": 0.8
+        }
+      ]
+    }
+  },
+  "profit_growth_not_cash_backed": {
+    "name": "Profit Growth Not Cash Backed",
+    "category": "cash_quality",
+    "direction": "NEGATIVE",
+    "severity": "HIGH",
+    "description": "PAT grew while CFO weakened and conversion remained poor.",
+    "rule": {
+      "all": [
+        {
+          "metric_key": "pat_yoy_growth",
+          "op": ">",
+          "value": 10
+        },
+        {
+          "metric_key": "cfo_yoy_growth",
+          "op": "<",
+          "value": 0
+        },
+        {
+          "metric_key": "cfo_to_pat",
+          "op": "<",
+          "value": 0.5
+        }
+      ]
+    }
+  },
+  "negative_free_cash_flow": {
+    "name": "Negative Free Cash Flow",
+    "category": "cash_flow",
+    "direction": "NEGATIVE",
+    "severity": "MEDIUM",
+    "description": "CFO did not cover capex.",
+    "rule": {
+      "metric_key": "free_cash_flow",
+      "op": "<",
+      "value": 0
+    }
+  },
+  "self_funded_capex": {
+    "name": "Self Funded Capex",
+    "category": "capital_allocation",
+    "direction": "POSITIVE",
+    "severity": "MEDIUM",
+    "description": "Operating cash flow comfortably funded capex.",
+    "rule": {
+      "all": [
+        {
+          "metric_key": "capex_to_cfo",
+          "op": "<",
+          "value": 0.8
+        },
+        {
+          "metric_key": "free_cash_flow",
+          "op": ">",
+          "value": 0
+        }
+      ]
+    }
+  },
+  "debt_funded_cash_deficit": {
+    "name": "Debt Funded Cash Deficit",
+    "category": "capital_allocation",
+    "direction": "NEGATIVE",
+    "severity": "HIGH",
+    "description": "Free cash flow was negative while net borrowings increased.",
+    "rule": {
+      "all": [
+        {
+          "metric_key": "free_cash_flow",
+          "op": "<",
+          "value": 0
+        },
+        {
+          "metric_key": "net_borrowing_cash_flow",
+          "op": ">",
+          "value": 0
+        }
+      ]
+    }
+  },
+  "working_capital_cash_drain": {
+    "name": "Working Capital Cash Drain",
+    "category": "working_capital",
+    "direction": "NEGATIVE",
+    "severity": "HIGH",
+    "description": "Working capital absorbed a large share of cash profit.",
+    "rule": {
+      "metric_key": "working_capital_cash_contribution",
+      "op": "<",
+      "value": -30
+    }
+  },
+  "receivables_stretch": {
+    "name": "Receivables Stretch",
+    "category": "working_capital",
+    "direction": "NEGATIVE",
+    "severity": "HIGH",
+    "description": "Receivables grew materially faster than revenue.",
+    "rule": {
+      "all": [
+        {
+          "metric_key": "receivables_yoy_growth",
+          "op": ">",
+          "value": 15
+        },
+        {
+          "metric_key": "receivables_yoy_growth",
+          "op": ">",
+          "compare_metric_key": "revenue_yoy_growth",
+          "offset": 10
+        }
+      ]
+    }
+  },
+  "inventory_build": {
+    "name": "Inventory Build",
+    "category": "working_capital",
+    "direction": "NEGATIVE",
+    "severity": "MEDIUM",
+    "description": "Inventory grew materially faster than revenue.",
+    "rule": {
+      "all": [
+        {
+          "metric_key": "inventory_yoy_growth",
+          "op": ">",
+          "value": 15
+        },
+        {
+          "metric_key": "inventory_yoy_growth",
+          "op": ">",
+          "compare_metric_key": "revenue_yoy_growth",
+          "offset": 10
+        }
+      ]
+    }
+  },
+  "cash_conversion_cycle_deterioration": {
+    "name": "Cash Conversion Cycle Deterioration",
+    "category": "working_capital",
+    "direction": "NEGATIVE",
+    "severity": "HIGH",
+    "description": "Cash conversion cycle lengthened materially.",
+    "rule": {
+      "metric_key": "cash_conversion_cycle_change_yoy",
+      "op": ">",
+      "value": 15
+    }
+  },
+  "supplier_funded_working_capital": {
+    "name": "Supplier Funded Working Capital",
+    "category": "working_capital",
+    "direction": "MIXED",
+    "severity": "MEDIUM",
+    "description": "Rapid payable growth may be temporarily supporting CFO.",
+    "rule": {
+      "all": [
+        {
+          "metric_key": "payables_yoy_growth",
+          "op": ">",
+          "compare_metric_key": "revenue_yoy_growth",
+          "offset": 15
+        },
+        {
+          "metric_key": "cfo_to_pat",
+          "op": ">",
+          "value": 1.0
+        }
+      ]
+    }
+  },
+  "working_capital_stress": {
+    "name": "Working Capital Stress",
+    "category": "working_capital",
+    "direction": "NEGATIVE",
+    "severity": "HIGH",
+    "description": "Receivables or inventory outgrew sales while cash conversion weakened.",
+    "rule": {
+      "all": [
+        {
+          "any": [
+            {
+              "metric_key": "receivables_yoy_growth",
+              "op": ">",
+              "compare_metric_key": "revenue_yoy_growth",
+              "offset": 10
+            },
+            {
+              "metric_key": "inventory_yoy_growth",
+              "op": ">",
+              "compare_metric_key": "revenue_yoy_growth",
+              "offset": 10
+            }
+          ]
+        },
+        {
+          "metric_key": "cfo_to_pat",
+          "op": "<",
+          "value": 0.5
+        }
+      ]
+    }
+  },
+  "finance_cost_pressure": {
+    "name": "Finance Cost Pressure",
+    "category": "leverage",
+    "direction": "NEGATIVE",
+    "severity": "HIGH",
+    "description": "Finance cost absorbs a large share of EBITDA.",
+    "rule": {
+      "metric_key": "finance_cost_burden",
+      "op": ">",
+      "value": 25
+    },
+    "threshold_profile_required": true
+  },
+  "interest_coverage_weakness": {
+    "name": "Interest Coverage Weakness",
+    "category": "leverage",
+    "direction": "NEGATIVE",
+    "severity": "HIGH",
+    "description": "EBIT does not comfortably cover finance costs.",
+    "rule": {
+      "metric_key": "ebit_interest_coverage",
+      "op": "<",
+      "value": 2.0
+    }
+  },
+  "leverage_stress": {
+    "name": "Leverage Stress",
+    "category": "leverage",
+    "direction": "NEGATIVE",
+    "severity": "HIGH",
+    "description": "Net debt is high relative to annualized EBITDA.",
+    "rule": {
+      "metric_key": "net_debt_to_annualized_ebitda",
+      "op": ">",
+      "value": 4.0
+    },
+    "threshold_profile_required": true
+  },
+  "deleveraging": {
+    "name": "Deleveraging",
+    "category": "leverage",
+    "direction": "POSITIVE",
+    "severity": "HIGH",
+    "description": "Net debt declined materially while leverage remained manageable.",
+    "rule": {
+      "all": [
+        {
+          "metric_key": "net_debt_yoy_change",
+          "op": "<",
+          "value": -10
+        },
+        {
+          "metric_key": "net_debt_to_annualized_ebitda",
+          "op": "<",
+          "value": 2.5
+        }
+      ]
+    }
+  },
+  "debt_build_up": {
+    "name": "Debt Build Up",
+    "category": "leverage",
+    "direction": "NEGATIVE",
+    "severity": "HIGH",
+    "description": "Gross debt increased materially.",
+    "rule": {
+      "metric_key": "gross_debt_yoy_growth",
+      "op": ">",
+      "value": 20
+    },
+    "threshold_profile_required": true
+  },
+  "short_term_refinancing_risk": {
+    "name": "Short Term Refinancing Risk",
+    "category": "liquidity",
+    "direction": "NEGATIVE",
+    "severity": "HIGH",
+    "description": "A high share of debt is short term while cash coverage is weak.",
+    "rule": {
+      "all": [
+        {
+          "metric_key": "short_term_debt_share",
+          "op": ">",
+          "value": 50
+        },
+        {
+          "metric_key": "cash_to_gross_debt",
+          "op": "<",
+          "value": 25
+        }
+      ]
+    }
+  },
+  "liquidity_stress": {
+    "name": "Liquidity Stress",
+    "category": "liquidity",
+    "direction": "NEGATIVE",
+    "severity": "HIGH",
+    "description": "Current and quick ratios show weak short-term coverage.",
+    "rule": {
+      "all": [
+        {
+          "metric_key": "current_ratio",
+          "op": "<",
+          "value": 1.0
+        },
+        {
+          "metric_key": "quick_ratio",
+          "op": "<",
+          "value": 0.7
+        }
+      ]
+    },
+    "threshold_profile_required": true
+  },
+  "net_cash_balance_sheet": {
+    "name": "Net Cash Balance Sheet",
+    "category": "leverage",
+    "direction": "POSITIVE",
+    "severity": "MEDIUM",
+    "description": "Cash and liquid balances exceed gross debt.",
+    "rule": {
+      "metric_key": "net_debt",
+      "op": "<",
+      "value": 0
+    }
+  },
+  "high_quality_returns": {
+    "name": "High Quality Returns",
+    "category": "returns",
+    "direction": "POSITIVE",
+    "severity": "HIGH",
+    "description": "ROCE is strong and supported by positive FCF.",
+    "rule": {
+      "all": [
+        {
+          "metric_key": "roce_annualized",
+          "op": ">",
+          "value": 18
+        },
+        {
+          "metric_key": "free_cash_flow",
+          "op": ">",
+          "value": 0
+        }
+      ]
+    },
+    "threshold_profile_required": true
+  },
+  "low_return_capital_intensity": {
+    "name": "Low Return Capital Intensity",
+    "category": "returns",
+    "direction": "NEGATIVE",
+    "severity": "MEDIUM",
+    "description": "Capex is high while ROCE remains weak.",
+    "rule": {
+      "all": [
+        {
+          "metric_key": "capex_intensity",
+          "op": ">",
+          "value": 10
+        },
+        {
+          "metric_key": "roce_annualized",
+          "op": "<",
+          "value": 10
+        }
+      ]
+    },
+    "threshold_profile_required": true
+  },
+  "segment_growth_divergence": {
+    "name": "Segment Growth Divergence",
+    "category": "segment",
+    "direction": "MIXED",
+    "severity": "MEDIUM",
+    "description": "A material segment contracted while consolidated revenue grew.",
+    "rule": {
+      "all": [
+        {
+          "metric_key": "revenue_yoy_growth",
+          "op": ">",
+          "value": 0
+        },
+        {
+          "metric_key": "segment_revenue_yoy_growth",
+          "op": "<",
+          "value": 0,
+          "aggregation": "ANY_DIMENSION"
+        },
+        {
+          "metric_key": "segment_revenue_mix",
+          "op": ">",
+          "value": 15,
+          "same_dimension": true
+        }
+      ]
+    }
+  },
+  "segment_margin_deterioration": {
+    "name": "Segment Margin Deterioration",
+    "category": "segment",
+    "direction": "NEGATIVE",
+    "severity": "HIGH",
+    "description": "A material segment suffered sharp margin deterioration.",
+    "rule": {
+      "all": [
+        {
+          "metric_key": "segment_result_margin_change_yoy_bps",
+          "op": "<",
+          "value": -200,
+          "aggregation": "ANY_DIMENSION"
+        },
+        {
+          "metric_key": "segment_revenue_mix",
+          "op": ">",
+          "value": 15,
+          "same_dimension": true
+        }
+      ]
+    }
+  },
+  "segment_concentration_risk": {
+    "name": "Segment Concentration Risk",
+    "category": "concentration",
+    "direction": "NEGATIVE",
+    "severity": "MEDIUM",
+    "description": "One segment contributes an excessive share of revenue.",
+    "rule": {
+      "metric_key": "largest_segment_revenue_mix",
+      "op": ">",
+      "value": 70
+    }
+  },
+  "subsidiary_dependent_earnings": {
+    "name": "Subsidiary Dependent Earnings",
+    "category": "scope_comparison",
+    "direction": "MIXED",
+    "severity": "MEDIUM",
+    "description": "A large share of consolidated PAT is implied to come from subsidiaries.",
+    "rule": {
+      "metric_key": "subsidiary_pat_contribution",
+      "op": ">",
+      "value": 50
+    },
+    "threshold_profile_required": true
+  },
+  "qualified_review_conclusion": {
+    "name": "Qualified Review Conclusion",
+    "category": "audit",
+    "direction": "NEGATIVE",
+    "severity": "HIGH",
+    "description": "The auditor or reviewer issued a qualified conclusion.",
+    "rule": {
+      "fact_key": "audit_conclusion",
+      "op": "==",
+      "value": "QUALIFIED"
+    }
+  },
+  "adverse_or_disclaimer_conclusion": {
+    "name": "Adverse Or Disclaimer Conclusion",
+    "category": "audit",
+    "direction": "NEGATIVE",
+    "severity": "CRITICAL",
+    "description": "The auditor issued an adverse conclusion or disclaimer.",
+    "rule": {
+      "fact_key": "audit_conclusion",
+      "op": "IN",
+      "value": [
+        "ADVERSE",
+        "DISCLAIMER"
+      ]
+    }
+  },
+  "emphasis_of_matter": {
+    "name": "Emphasis Of Matter",
+    "category": "audit",
+    "direction": "MIXED",
+    "severity": "MEDIUM",
+    "description": "The report contains an emphasis-of-matter paragraph.",
+    "rule": {
+      "fact_key": "emphasis_of_matter_flag",
+      "op": "==",
+      "value": true
+    }
+  },
+  "going_concern_risk": {
+    "name": "Going Concern Risk",
+    "category": "audit",
+    "direction": "NEGATIVE",
+    "severity": "CRITICAL",
+    "description": "The auditor identified material uncertainty related to going concern.",
+    "rule": {
+      "fact_key": "going_concern_uncertainty_flag",
+      "op": "==",
+      "value": true
+    }
+  },
+  "prior_period_restatement": {
+    "name": "Prior Period Restatement",
+    "category": "accounting_quality",
+    "direction": "MIXED",
+    "severity": "MEDIUM",
+    "description": "Comparative values were restated or regrouped.",
+    "rule": {
+      "fact_key": "restatement_flag",
+      "op": "==",
+      "value": true
+    }
+  },
+  "balance_sheet_reconciliation_issue": {
+    "name": "Balance Sheet Reconciliation Issue",
+    "category": "data_quality",
+    "direction": "NEGATIVE",
+    "severity": "CRITICAL",
+    "description": "Assets do not reconcile with equity and liabilities.",
+    "rule": {
+      "metric_key": "balance_sheet_equation_gap",
+      "op": "ABS_GT",
+      "value": 0.5
+    }
+  },
+  "cash_flow_reconciliation_issue": {
+    "name": "Cash Flow Reconciliation Issue",
+    "category": "data_quality",
+    "direction": "NEGATIVE",
+    "severity": "HIGH",
+    "description": "Opening cash plus net change does not reconcile with closing cash.",
+    "rule": {
+      "metric_key": "cash_flow_reconciliation_gap",
+      "op": "ABS_GT",
+      "value": 0.5
+    }
+  },
+  "segment_reconciliation_issue": {
+    "name": "Segment Reconciliation Issue",
+    "category": "data_quality",
+    "direction": "NEGATIVE",
+    "severity": "HIGH",
+    "description": "Segment revenue does not reconcile with reported revenue.",
+    "rule": {
+      "metric_key": "segment_revenue_reconciliation_gap_pct",
+      "op": "ABS_GT",
+      "value": 2.0
+    }
+  }
+}
