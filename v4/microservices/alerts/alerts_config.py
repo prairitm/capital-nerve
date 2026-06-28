@@ -12,7 +12,7 @@ REPO_ROOT = MICROSERVICES_DIR.parent.parent.parent
 
 class Settings:
     def __init__(self) -> None:
-        default_db_path = REPO_ROOT / "v3" / "data" / "capital_nerve.db"
+        default_db_path = REPO_ROOT / "v4" / "data" / "capital_nerve.db"
         self.db_path = Path(
             os.getenv("ALERTS_SERVICE_DB_PATH", str(default_db_path))
         ).resolve()

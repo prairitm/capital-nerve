@@ -3,8 +3,11 @@
 from __future__ import annotations
 
 import hashlib
+from concurrent.futures import ThreadPoolExecutor, as_completed
 import json
+import logging
 import sqlite3
+import time
 from datetime import date, datetime
 from pathlib import Path
 from typing import Any
@@ -20,6 +23,8 @@ from pdf_parse import parse_pdf_to_markdown
 from quarter_column import extract_facts_from_quarter_column
 from values_config import settings
 from values_db import bootstrap_schema
+
+logger = logging.getLogger("uvicorn.error")
 
 
 def company_id_for_symbol(symbol: str) -> str:
@@ -147,17 +152,28 @@ def extract_facts_from_chunk(
     model: str,
     chunk: str,
     period_label: str,
+    period_end: str,
     fact_catalog_text: str,
 ) -> list[dict[str, Any]]:
+    period_end_dmy = ""
+    try:
+        parsed_period_end = date.fromisoformat(period_end)
+        period_end_dmy = parsed_period_end.strftime("%d.%m.%Y")
+    except ValueError:
+        period_end_dmy = period_end
     prompt = f"""Extract financial facts from this Indian corporate filing markdown.
 
 Reporting period context: {period_label}
+Target quarter-end date: {period_end} ({period_end_dmy})
 
 Allowed fact_key values (use canonical keys from catalog):
 {fact_catalog_text}
 
 Rules:
 - Extract ONLY values explicitly present in the markdown for the current quarter column
+- First identify the table column for the current quarter (usually labelled "Quarter ended" or "3 Months ended")
+- The target column must contain the target quarter-end date above
+- Do NOT extract from "Twelve Months ended", "Year ended", "Nine Months ended", "Corresponding", or "Preceding" columns
 - Prefer consolidated over standalone when both appear
 - basis must be "consolidated" or "standalone"
 - numeric_value must be a number (strip commas)
@@ -278,7 +294,11 @@ def extract_and_persist_values(
     pdf_url: str,
     pdf_bytes: bytes,
     force_reparse: bool = False,
+    parse_max_workers: int | None = None,
+    extraction_max_workers: int | None = None,
 ) -> dict[str, Any]:
+    parse_workers = parse_max_workers or settings.parse_max_workers
+    extraction_workers = extraction_max_workers or settings.extraction_max_workers
     expected_company_id = company_id_for_symbol(symbol)
     if company_id != expected_company_id:
         raise ValueError("company_id does not match the NSE symbol-derived company id")
@@ -303,14 +323,26 @@ def extract_and_persist_values(
 
     from openai import OpenAI
 
-    client = OpenAI(api_key=openai_api_key)
+    client = OpenAI(
+        api_key=openai_api_key,
+        timeout=settings.openai_timeout_seconds,
+        max_retries=settings.openai_max_retries,
+    )
+    logger.info(
+        "Starting value extraction for %s event_id=%s force_reparse=%s",
+        symbol,
+        event_id,
+        force_reparse,
+    )
     markdown = parse_pdf_to_markdown(
         stored_doc["storage_path"],
         parsed_dir=settings.parsed_dir,
         client=client,
         model=openai_parse_model,
         force=force_reparse,
+        max_workers=parse_workers,
     )
+    logger.info("PDF markdown ready: %s chars", len(markdown))
 
     reporting_period = detect_period(markdown, title=title, event_row=event_row)
     period_end = reporting_period.quarter_end
@@ -326,15 +358,56 @@ def extract_and_persist_values(
     deterministic_by_key = {row["fact_key"]: row for row in deterministic_facts}
     raw_facts: list[dict[str, Any]] = list(deterministic_facts)
     missing_keys = set(facts_catalog.keys()) - set(deterministic_by_key)
+    logger.info(
+        "Deterministic extraction found %s facts; %s catalog keys still missing",
+        len(deterministic_facts),
+        len(missing_keys),
+    )
 
-    for chunk in _chunk(markdown):
-        for entry in extract_facts_from_chunk(
+    if missing_keys:
+        chunks = _chunk(markdown)
+        logger.info(
+            "Running LLM fallback over %s markdown chunks with %s worker(s) for missing facts",
+            len(chunks),
+            min(max(extraction_workers, 1), len(chunks)),
+        )
+    else:
+        chunks = []
+        logger.info("Skipping LLM fallback; deterministic extraction covered the catalog")
+
+    def extract_chunk(index: int, chunk: str) -> tuple[int, list[dict[str, Any]]]:
+        started = time.monotonic()
+        chunk_facts = extract_facts_from_chunk(
             client,
             model=openai_model,
             chunk=chunk,
             period_label=reporting_period.label,
+            period_end=period_end,
             fact_catalog_text=fact_catalog_text,
-        ):
+        )
+        logger.info(
+            "LLM fallback chunk %s/%s returned %s candidate facts in %.1fs",
+            index,
+            len(chunks),
+            len(chunk_facts),
+            time.monotonic() - started,
+        )
+        return index, chunk_facts
+
+    chunk_results: list[tuple[int, list[dict[str, Any]]]] = []
+    workers = min(max(extraction_workers, 1), len(chunks)) if chunks else 1
+    if chunks and workers == 1:
+        chunk_results = [extract_chunk(index, chunk) for index, chunk in enumerate(chunks, start=1)]
+    elif chunks:
+        with ThreadPoolExecutor(max_workers=workers) as executor:
+            futures = [
+                executor.submit(extract_chunk, index, chunk)
+                for index, chunk in enumerate(chunks, start=1)
+            ]
+            chunk_results = [future.result() for future in as_completed(futures)]
+
+    for _, chunk_facts in sorted(chunk_results, key=lambda item: item[0]):
+        for entry in chunk_facts:
             fact_key = entry.get("fact_key")
             canonical = storage_to_fact.get(str(fact_key), str(fact_key)) if fact_key else None
             if canonical and canonical in deterministic_by_key:

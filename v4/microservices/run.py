@@ -20,6 +20,7 @@ from __future__ import annotations
 import argparse
 import json
 import logging
+import socket
 import sys
 import time
 import urllib.error
@@ -110,6 +111,8 @@ def request_json(
             if not raw:
                 return {}
             return json.loads(raw)
+    except (TimeoutError, socket.timeout) as exc:
+        raise FlowError(f"{method} {url} timed out after {timeout:.0f}s") from exc
     except urllib.error.HTTPError as exc:
         detail = exc.read().decode("utf-8", errors="replace")
         raise FlowError(f"{method} {url} failed with HTTP {exc.code}: {detail}") from exc
@@ -320,6 +323,56 @@ def require_next_params(response: dict[str, Any], step: Step) -> dict[str, Any]:
     return next_params
 
 
+def wait_for_values_job(
+    *,
+    values_url: str,
+    params: dict[str, Any],
+    timeout: float,
+    poll_interval: float,
+) -> dict[str, Any]:
+    started = time.monotonic()
+    start_response = request_json(
+        "POST",
+        f"{values_url}/values/extract/jobs",
+        query=params,
+        timeout=min(timeout, 30.0),
+    )
+    job_id = start_response.get("job_id")
+    status_url = start_response.get("status_url")
+    if not job_id or not status_url:
+        raise FlowError("VALUES job start response did not include job_id and status_url")
+
+    job_url = status_url if str(status_url).startswith("http") else f"{values_url}{status_url}"
+    logging.info("VALUES job queued: job_id=%s", job_id)
+    last_status = ""
+
+    while True:
+        elapsed = time.monotonic() - started
+        remaining = timeout - elapsed
+        if remaining <= 0:
+            raise FlowError(f"VALUES job {job_id} timed out after {timeout:.0f}s")
+
+        status_response = request_json(
+            "GET",
+            job_url,
+            timeout=min(max(remaining, 1.0), 30.0),
+        )
+        status = str(status_response.get("status") or "")
+        if status != last_status:
+            logging.info("VALUES job %s status=%s elapsed=%.1fs", job_id, status, elapsed)
+            last_status = status
+
+        if status == "succeeded":
+            result = status_response.get("result")
+            if not isinstance(result, dict):
+                raise FlowError(f"VALUES job {job_id} succeeded without result")
+            return result
+        if status == "failed":
+            raise FlowError(f"VALUES job {job_id} failed: {status_response.get('error')}")
+
+        time.sleep(min(poll_interval, max(remaining, 0.1)))
+
+
 def run_flow(args: argparse.Namespace) -> dict[str, Any]:
     if args.event_type != "Financial Results":
         raise FlowError("Only EVENT_TYPE='Financial Results' is supported by this flow")
@@ -377,11 +430,42 @@ def run_flow(args: argparse.Namespace) -> dict[str, Any]:
             )
             next_params = require_next_params(response, step)
             next_params["event_type"] = params["event_type"]
+        elif step.name == "VALUES" and not args.values_sync:
+            response = wait_for_values_job(
+                values_url=service_urls[step.service],
+                params={
+                    **params,
+                    **{
+                        key: value
+                        for key, value in {
+                            "parse_max_workers": args.values_parse_workers,
+                            "extraction_max_workers": args.values_extraction_workers,
+                        }.items()
+                        if value is not None
+                    },
+                },
+                timeout=args.timeout,
+                poll_interval=args.poll_interval,
+            )
+            next_params = require_next_params(response, step)
+            next_params["event_type"] = params["event_type"]
         else:
             response = request_json(
                 step.method,
                 url,
-                query=params,
+                query={
+                    **params,
+                    **{
+                        key: value
+                        for key, value in {
+                            "parse_max_workers": args.values_parse_workers,
+                            "extraction_max_workers": args.values_extraction_workers,
+                        }.items()
+                        if value is not None
+                    },
+                }
+                if step.name == "VALUES"
+                else params,
                 timeout=args.timeout,
             )
             next_params = require_next_params(response, step)
@@ -413,7 +497,30 @@ def build_parser() -> argparse.ArgumentParser:
         required=True,
         help='Only "Financial Results" is supported by the current flow.',
     )
-    parser.add_argument("--timeout", type=float, default=300.0, help="HTTP timeout seconds")
+    parser.add_argument("--timeout", type=float, default=900.0, help="HTTP timeout seconds")
+    parser.add_argument(
+        "--poll-interval",
+        type=float,
+        default=5.0,
+        help="Seconds between VALUES job status polls",
+    )
+    parser.add_argument(
+        "--values-sync",
+        action="store_true",
+        help="Call /values/extract synchronously instead of using the background job endpoint",
+    )
+    parser.add_argument(
+        "--values-parse-workers",
+        type=int,
+        default=None,
+        help="Override Step 4 PDF parse worker count",
+    )
+    parser.add_argument(
+        "--values-extraction-workers",
+        type=int,
+        default=None,
+        help="Override Step 4 fallback extraction worker count",
+    )
     parser.add_argument(
         "--detail-limit",
         type=int,

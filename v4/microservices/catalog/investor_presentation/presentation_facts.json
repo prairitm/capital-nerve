@@ -1,0 +1,433 @@
+{
+  "sales_volume": {
+    "name": "Sales Volume",
+    "statement": "OPERATING_KPI",
+    "unit": "company_reported",
+    "documents": [
+      "INVESTOR_PRESENTATION"
+    ],
+    "dimensions": [
+      "segment",
+      "product",
+      "geography"
+    ],
+    "aliases": [
+      "dispatches",
+      "units_sold",
+      "volume_sold"
+    ]
+  },
+  "production_volume": {
+    "name": "Production Volume",
+    "statement": "OPERATING_KPI",
+    "unit": "company_reported",
+    "documents": [
+      "INVESTOR_PRESENTATION"
+    ],
+    "dimensions": [
+      "segment",
+      "product",
+      "plant"
+    ],
+    "aliases": [
+      "output",
+      "production"
+    ]
+  },
+  "average_realization": {
+    "name": "Average Realization",
+    "statement": "OPERATING_KPI",
+    "unit": "currency_per_unit",
+    "documents": [
+      "INVESTOR_PRESENTATION"
+    ],
+    "dimensions": [
+      "segment",
+      "product",
+      "geography"
+    ],
+    "aliases": [
+      "average_selling_price",
+      "asp",
+      "realisation"
+    ]
+  },
+  "installed_capacity": {
+    "name": "Installed Capacity",
+    "statement": "OPERATING_KPI",
+    "unit": "company_reported",
+    "documents": [
+      "INVESTOR_PRESENTATION"
+    ],
+    "dimensions": [
+      "segment",
+      "product",
+      "plant"
+    ]
+  },
+  "capacity_utilization": {
+    "name": "Capacity Utilization",
+    "statement": "OPERATING_KPI",
+    "unit": "%",
+    "documents": [
+      "INVESTOR_PRESENTATION"
+    ],
+    "dimensions": [
+      "segment",
+      "product",
+      "plant"
+    ],
+    "aliases": [
+      "utilisation"
+    ]
+  },
+  "segment_revenue": {
+    "name": "Segment Revenue",
+    "statement": "SEGMENT",
+    "unit": "crore",
+    "documents": [
+      "INVESTOR_PRESENTATION",
+      "FINANCIAL_RESULT"
+    ],
+    "dimensions": [
+      "segment"
+    ]
+  },
+  "segment_ebitda": {
+    "name": "Segment EBITDA",
+    "statement": "SEGMENT",
+    "unit": "crore",
+    "documents": [
+      "INVESTOR_PRESENTATION"
+    ],
+    "dimensions": [
+      "segment"
+    ],
+    "aliases": [
+      "segment_operating_profit"
+    ]
+  },
+  "product_revenue": {
+    "name": "Product Revenue",
+    "statement": "REVENUE_MIX",
+    "unit": "crore",
+    "documents": [
+      "INVESTOR_PRESENTATION"
+    ],
+    "dimensions": [
+      "product"
+    ]
+  },
+  "geography_revenue": {
+    "name": "Geography Revenue",
+    "statement": "REVENUE_MIX",
+    "unit": "crore",
+    "documents": [
+      "INVESTOR_PRESENTATION"
+    ],
+    "dimensions": [
+      "geography"
+    ]
+  },
+  "export_revenue": {
+    "name": "Export Revenue",
+    "statement": "REVENUE_MIX",
+    "unit": "crore",
+    "documents": [
+      "INVESTOR_PRESENTATION"
+    ],
+    "dimensions": [
+      "segment",
+      "product"
+    ]
+  },
+  "order_book": {
+    "name": "Closing Order Book",
+    "statement": "DEMAND",
+    "unit": "crore",
+    "documents": [
+      "INVESTOR_PRESENTATION"
+    ],
+    "dimensions": [
+      "segment",
+      "geography"
+    ],
+    "aliases": [
+      "backlog",
+      "unexecuted_order_book"
+    ]
+  },
+  "order_inflow": {
+    "name": "Order Inflow",
+    "statement": "DEMAND",
+    "unit": "crore",
+    "documents": [
+      "INVESTOR_PRESENTATION"
+    ],
+    "dimensions": [
+      "segment",
+      "geography"
+    ],
+    "aliases": [
+      "orders_won",
+      "new_orders"
+    ]
+  },
+  "customer_count": {
+    "name": "Customer Count",
+    "statement": "CUSTOMER_KPI",
+    "unit": "count",
+    "documents": [
+      "INVESTOR_PRESENTATION"
+    ],
+    "dimensions": [
+      "segment",
+      "geography"
+    ],
+    "aliases": [
+      "subscribers",
+      "active_customers",
+      "clients"
+    ]
+  },
+  "customer_additions": {
+    "name": "Customer Additions",
+    "statement": "CUSTOMER_KPI",
+    "unit": "count",
+    "documents": [
+      "INVESTOR_PRESENTATION"
+    ],
+    "dimensions": [
+      "segment",
+      "geography"
+    ],
+    "aliases": [
+      "net_additions",
+      "subscriber_additions"
+    ]
+  },
+  "customer_churn": {
+    "name": "Customer Churn",
+    "statement": "CUSTOMER_KPI",
+    "unit": "%",
+    "documents": [
+      "INVESTOR_PRESENTATION"
+    ],
+    "dimensions": [
+      "segment",
+      "geography"
+    ]
+  },
+  "market_share": {
+    "name": "Market Share",
+    "statement": "MARKET_POSITION",
+    "unit": "%",
+    "documents": [
+      "INVESTOR_PRESENTATION"
+    ],
+    "dimensions": [
+      "segment",
+      "product",
+      "geography"
+    ]
+  },
+  "capex_incurred": {
+    "name": "Capital Expenditure Incurred",
+    "statement": "CAPITAL_ALLOCATION",
+    "unit": "crore",
+    "documents": [
+      "INVESTOR_PRESENTATION",
+      "FINANCIAL_RESULT"
+    ],
+    "dimensions": [
+      "project",
+      "segment"
+    ]
+  },
+  "capex_plan": {
+    "name": "Approved Project Capex",
+    "statement": "CAPITAL_ALLOCATION",
+    "unit": "crore",
+    "documents": [
+      "INVESTOR_PRESENTATION"
+    ],
+    "dimensions": [
+      "project",
+      "segment"
+    ],
+    "aliases": [
+      "project_cost",
+      "planned_capex"
+    ]
+  },
+  "capex_guidance": {
+    "name": "Capex Guidance",
+    "statement": "GUIDANCE",
+    "unit": "crore",
+    "documents": [
+      "INVESTOR_PRESENTATION"
+    ],
+    "dimensions": [
+      "fiscal_year",
+      "segment"
+    ]
+  },
+  "project_completion_pct": {
+    "name": "Project Completion",
+    "statement": "PROJECT_TRACKING",
+    "unit": "%",
+    "documents": [
+      "INVESTOR_PRESENTATION"
+    ],
+    "dimensions": [
+      "project"
+    ]
+  },
+  "expected_commissioning_date": {
+    "name": "Expected Commissioning Date",
+    "statement": "PROJECT_TRACKING",
+    "unit": "date",
+    "fact_type": "DATE",
+    "documents": [
+      "INVESTOR_PRESENTATION"
+    ],
+    "dimensions": [
+      "project"
+    ]
+  },
+  "capacity_addition_planned": {
+    "name": "Planned Capacity Addition",
+    "statement": "PROJECT_TRACKING",
+    "unit": "company_reported",
+    "documents": [
+      "INVESTOR_PRESENTATION"
+    ],
+    "dimensions": [
+      "project",
+      "segment",
+      "product",
+      "plant"
+    ]
+  },
+  "gross_debt": {
+    "name": "Gross Debt",
+    "statement": "CAPITAL_STRUCTURE",
+    "unit": "crore",
+    "documents": [
+      "INVESTOR_PRESENTATION",
+      "FINANCIAL_RESULT"
+    ]
+  },
+  "net_debt": {
+    "name": "Net Debt",
+    "statement": "CAPITAL_STRUCTURE",
+    "unit": "crore",
+    "documents": [
+      "INVESTOR_PRESENTATION"
+    ],
+    "aliases": [
+      "net_borrowings"
+    ]
+  },
+  "cash_and_equivalents": {
+    "name": "Cash and Cash Equivalents",
+    "statement": "CAPITAL_STRUCTURE",
+    "unit": "crore",
+    "documents": [
+      "INVESTOR_PRESENTATION",
+      "FINANCIAL_RESULT"
+    ]
+  },
+  "revenue_guidance_low": {
+    "name": "Revenue Guidance Lower Bound",
+    "statement": "GUIDANCE",
+    "unit": "crore",
+    "documents": [
+      "INVESTOR_PRESENTATION"
+    ],
+    "dimensions": [
+      "fiscal_year",
+      "segment"
+    ]
+  },
+  "revenue_guidance_high": {
+    "name": "Revenue Guidance Upper Bound",
+    "statement": "GUIDANCE",
+    "unit": "crore",
+    "documents": [
+      "INVESTOR_PRESENTATION"
+    ],
+    "dimensions": [
+      "fiscal_year",
+      "segment"
+    ]
+  },
+  "revenue_growth_guidance_low": {
+    "name": "Revenue Growth Guidance Lower Bound",
+    "statement": "GUIDANCE",
+    "unit": "%",
+    "documents": [
+      "INVESTOR_PRESENTATION"
+    ],
+    "dimensions": [
+      "fiscal_year",
+      "segment"
+    ]
+  },
+  "revenue_growth_guidance_high": {
+    "name": "Revenue Growth Guidance Upper Bound",
+    "statement": "GUIDANCE",
+    "unit": "%",
+    "documents": [
+      "INVESTOR_PRESENTATION"
+    ],
+    "dimensions": [
+      "fiscal_year",
+      "segment"
+    ]
+  },
+  "ebitda_margin_guidance_low": {
+    "name": "EBITDA Margin Guidance Lower Bound",
+    "statement": "GUIDANCE",
+    "unit": "%",
+    "documents": [
+      "INVESTOR_PRESENTATION"
+    ],
+    "dimensions": [
+      "fiscal_year",
+      "segment"
+    ]
+  },
+  "ebitda_margin_guidance_high": {
+    "name": "EBITDA Margin Guidance Upper Bound",
+    "statement": "GUIDANCE",
+    "unit": "%",
+    "documents": [
+      "INVESTOR_PRESENTATION"
+    ],
+    "dimensions": [
+      "fiscal_year",
+      "segment"
+    ]
+  },
+  "management_outlook": {
+    "name": "Management Outlook",
+    "statement": "GUIDANCE",
+    "unit": "enum",
+    "fact_type": "CATEGORICAL",
+    "allowed_values": [
+      "STRONG_POSITIVE",
+      "POSITIVE",
+      "STABLE",
+      "CAUTIOUS",
+      "NEGATIVE"
+    ],
+    "documents": [
+      "INVESTOR_PRESENTATION"
+    ],
+    "dimensions": [
+      "segment",
+      "fiscal_year"
+    ]
+  }
+}

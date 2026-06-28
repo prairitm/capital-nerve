@@ -26,10 +26,13 @@ _DATE_MDY_RE = re.compile(
     re.IGNORECASE,
 )
 _CUMULATIVE_HEADER = re.compile(
-    r"nine\s+months?\s+ended|year\s+ended|half[\s-]year|ytd|annual",
+    r"nine\s+months?\s+ended|twelve\s+months?\s+ended|year\s+ended|half[\s-]year|ytd|annual",
     re.IGNORECASE,
 )
-_QUARTER_HEADER = re.compile(r"quarter\s+ended", re.IGNORECASE)
+_QUARTER_HEADER = re.compile(
+    r"(?:quarter|3\s+months?|three\s+months?)\s+ended",
+    re.IGNORECASE,
+)
 _SEGMENT_CONTEXT = re.compile(
     r"segment[\s-]wise|segment\s+revenue|segment\s+results|segment\s+assets",
     re.IGNORECASE,

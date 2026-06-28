@@ -16,6 +16,8 @@ class ExtractValuesRequest(BaseModel):
     event_id: str
     pdf_url: str
     force_reparse: bool = False
+    parse_max_workers: int | None = None
+    extraction_max_workers: int | None = None
 
     @validator("symbol")
     @classmethod
@@ -84,3 +86,16 @@ class ExtractValuesResponse(BaseModel):
     extracted_count: int
     values: list[ExtractedValueResponse]
     next_service_params: dict[str, Any]
+
+
+class ExtractValuesJobStartResponse(BaseModel):
+    job_id: str
+    status: str
+    status_url: str
+
+
+class ExtractValuesJobStatusResponse(BaseModel):
+    job_id: str
+    status: str
+    result: ExtractValuesResponse | None = None
+    error: str | None = None

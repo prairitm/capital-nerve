@@ -7,9 +7,14 @@ can share one parse path without an external package.
 from __future__ import annotations
 
 import base64
+from concurrent.futures import ThreadPoolExecutor, as_completed
 import json
+import logging
+import time
 from pathlib import Path
 from typing import Any
+
+logger = logging.getLogger("uvicorn.error")
 
 _PAGE_DPI = 200
 _PARSE_PROMPT = """Convert this Indian corporate filing page to clean markdown.
@@ -99,17 +104,44 @@ def pdf_to_markdown_page_by_page(
     *,
     client: Any,
     model: str,
+    max_workers: int = 1,
 ) -> str:
     import fitz
 
     with fitz.open(pdf_path) as doc:
         page_count = doc.page_count
 
-    parts: list[str] = []
-    for i in range(page_count):
+    workers = max(1, min(max_workers, page_count))
+    parts = [""] * page_count
+    logger.info(
+        "Parsing PDF %s page-by-page: %s pages with %s worker(s)",
+        pdf_path.name,
+        page_count,
+        workers,
+    )
+
+    def parse_page(i: int) -> tuple[int, str]:
+        started = time.monotonic()
         png_b64 = _page_png_b64(pdf_path, i)
         page_md = _parse_page_image(client, model=model, png_b64=png_b64, page_no=i + 1)
-        parts.append(f"# Page {i + 1}\n\n{page_md}")
+        logger.info(
+            "Parsed PDF page %s/%s in %.1fs",
+            i + 1,
+            page_count,
+            time.monotonic() - started,
+        )
+        return i, f"# Page {i + 1}\n\n{page_md}"
+
+    if workers == 1:
+        for i in range(page_count):
+            index, page_text = parse_page(i)
+            parts[index] = page_text
+    else:
+        with ThreadPoolExecutor(max_workers=workers) as executor:
+            futures = [executor.submit(parse_page, i) for i in range(page_count)]
+            for future in as_completed(futures):
+                index, page_text = future.result()
+                parts[index] = page_text
 
     return "\n\n---\n\n".join(parts)
 
@@ -121,6 +153,7 @@ def parse_pdf_to_markdown(
     client: Any,
     model: str,
     force: bool = False,
+    max_workers: int = 1,
 ) -> str:
     """Parse PDF to markdown with disk cache under ``parsed_dir``."""
     import hashlib
@@ -130,13 +163,21 @@ def parse_pdf_to_markdown(
     digest = hashlib.sha256(pdf_path.read_bytes()).hexdigest()
 
     if not should_reparse(md_path, pdf_path, source_sha256=digest, force=force):
+        logger.info("Using cached PDF markdown: %s", md_path)
         return md_path.read_text(encoding="utf-8")
 
-    markdown = pdf_to_markdown_page_by_page(pdf_path, client=client, model=model)
+    started = time.monotonic()
+    markdown = pdf_to_markdown_page_by_page(
+        pdf_path,
+        client=client,
+        model=model,
+        max_workers=max_workers,
+    )
     md_path.write_text(markdown, encoding="utf-8")
     write_parse_meta(
         md_path.with_suffix(".meta.json"),
         source_sha256=digest,
-        page_count=markdown.count("\n# Page"),
+        page_count=sum(1 for line in markdown.splitlines() if line.startswith("# Page ")),
     )
+    logger.info("Wrote PDF markdown cache %s in %.1fs", md_path, time.monotonic() - started)
     return markdown
