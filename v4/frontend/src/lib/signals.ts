@@ -116,6 +116,7 @@ export interface TriggerMetricRow {
   name: string;
   value: number | null;
   unit: string | null;
+  calculationData?: MetricValue["calculation_data"] | null;
 }
 
 /** Unified metric rows for signal detail — referenced metrics plus orphan trigger values. */
@@ -129,6 +130,7 @@ export function buildTriggerMetricRows(
     name: m.metric_name,
     value: m.metric_value,
     unit: m.unit,
+    calculationData: m.calculation_data,
   }));
 
   for (const [code, value] of Object.entries(triggerValues)) {
@@ -138,6 +140,7 @@ export function buildTriggerMetricRows(
       name: metricCodeLabel(code, metrics),
       value,
       unit: null,
+      calculationData: null,
     });
   }
 

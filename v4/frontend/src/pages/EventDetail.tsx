@@ -10,6 +10,7 @@ import { BackButton } from "@/components/common/BackButton";
 import { basisLabel, eventTypeLabel, formatDate, formatMetricValue } from "@/lib/format";
 import { FactSourceLink } from "@/components/common/FactSourceLink";
 import { Pagination, usePagination } from "@/components/common/Pagination";
+import { MetricFormulaInfo } from "@/components/metrics/MetricFormulaInfo";
 
 function FactLineItem({ fact }: { fact: ExtractedValue }) {
   return (
@@ -82,7 +83,10 @@ export function EventDetail() {
                 key={m.metric_code}
                 className="px-5 py-3 flex items-center justify-between gap-4"
               >
-                <span className="text-ink-mute min-w-0">{m.metric_name}</span>
+                <span className="flex min-w-0 items-center gap-2">
+                  <span className="text-ink-mute min-w-0">{m.metric_name}</span>
+                  <MetricFormulaInfo calculationData={m.calculation_data} metricName={m.metric_name} />
+                </span>
                 <span className="num text-ink font-medium whitespace-nowrap shrink-0">
                   {formatMetricValue(m.metric_value, m.unit)}
                 </span>
@@ -93,7 +97,12 @@ export function EventDetail() {
             <tbody>
               {visibleMetrics.map((m) => (
                 <tr key={m.metric_code} className="border-t border-line/40 first:border-t-0">
-                  <td className="px-5 py-2.5 text-ink-mute">{m.metric_name}</td>
+                  <td className="px-5 py-2.5 text-ink-mute">
+                    <span className="flex items-center gap-2">
+                      <span>{m.metric_name}</span>
+                      <MetricFormulaInfo calculationData={m.calculation_data} metricName={m.metric_name} />
+                    </span>
+                  </td>
                   <td className="px-5 py-2.5 text-right num text-ink font-medium">
                     {formatMetricValue(m.metric_value, m.unit)}
                   </td>

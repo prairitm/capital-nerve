@@ -9,6 +9,7 @@ import { FactSourceLink } from "@/components/common/FactSourceLink";
 import { Pagination, usePagination } from "@/components/common/Pagination";
 import { SignalBadge } from "@/components/common/SignalBadge";
 import { SeverityBadge } from "@/components/common/SeverityBadge";
+import { MetricFormulaInfo } from "@/components/metrics/MetricFormulaInfo";
 import {
   buildTriggerMetricRows,
   buildTriggerNarrative,
@@ -113,7 +114,10 @@ export function SignalDetail() {
                       key={row.code}
                       className="px-5 py-2.5 flex items-center justify-between gap-4"
                     >
-                      <span className="text-ink-mute min-w-0">{row.name}</span>
+                      <span className="flex min-w-0 items-center gap-2">
+                        <span className="text-ink-mute min-w-0">{row.name}</span>
+                        <MetricFormulaInfo calculationData={row.calculationData} metricName={row.name} />
+                      </span>
                       <span className="num text-ink font-medium whitespace-nowrap shrink-0">
                         {formatMetricValue(row.value, row.unit)}
                       </span>
@@ -130,7 +134,12 @@ export function SignalDetail() {
                   <tbody>
                     {visibleMetricRows.map((row) => (
                       <tr key={row.code} className="border-t border-line/40">
-                        <td className="py-2.5 text-ink-mute">{row.name}</td>
+                        <td className="py-2.5 text-ink-mute">
+                          <span className="flex items-center gap-2">
+                            <span>{row.name}</span>
+                            <MetricFormulaInfo calculationData={row.calculationData} metricName={row.name} />
+                          </span>
+                        </td>
                         <td className="py-2.5 text-right num text-ink font-medium">
                           {formatMetricValue(row.value, row.unit)}
                         </td>
