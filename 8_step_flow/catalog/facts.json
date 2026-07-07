@@ -1,0 +1,1170 @@
+{
+  "revenue_from_operations": {
+    "name": "Revenue From Operations",
+    "statement": "PROFIT_AND_LOSS",
+    "unit": "crore",
+    "documents": [
+      "FINANCIAL_RESULT"
+    ],
+    "applicability": [
+      "NON_FINANCIAL_CORPORATE"
+    ],
+    "aliases": [
+      "revenue",
+      "sales",
+      "income_from_operations"
+    ]
+  },
+  "other_income": {
+    "name": "Other Income",
+    "statement": "PROFIT_AND_LOSS",
+    "unit": "crore",
+    "documents": [
+      "FINANCIAL_RESULT"
+    ],
+    "applicability": [
+      "NON_FINANCIAL_CORPORATE"
+    ]
+  },
+  "total_income": {
+    "name": "Total Income",
+    "statement": "PROFIT_AND_LOSS",
+    "unit": "crore",
+    "documents": [
+      "FINANCIAL_RESULT"
+    ],
+    "applicability": [
+      "NON_FINANCIAL_CORPORATE"
+    ]
+  },
+  "cost_of_materials_consumed": {
+    "name": "Cost Of Materials Consumed",
+    "statement": "PROFIT_AND_LOSS",
+    "unit": "crore",
+    "documents": [
+      "FINANCIAL_RESULT"
+    ],
+    "applicability": [
+      "NON_FINANCIAL_CORPORATE"
+    ]
+  },
+  "purchase_of_stock_in_trade": {
+    "name": "Purchase Of Stock In Trade",
+    "statement": "PROFIT_AND_LOSS",
+    "unit": "crore",
+    "documents": [
+      "FINANCIAL_RESULT"
+    ],
+    "applicability": [
+      "NON_FINANCIAL_CORPORATE"
+    ]
+  },
+  "changes_in_inventories": {
+    "name": "Changes In Inventories",
+    "statement": "PROFIT_AND_LOSS",
+    "unit": "crore",
+    "documents": [
+      "FINANCIAL_RESULT"
+    ],
+    "applicability": [
+      "NON_FINANCIAL_CORPORATE"
+    ],
+    "notes": "Preserve the reported sign."
+  },
+  "employee_benefit_expense": {
+    "name": "Employee Benefit Expense",
+    "statement": "PROFIT_AND_LOSS",
+    "unit": "crore",
+    "documents": [
+      "FINANCIAL_RESULT"
+    ],
+    "applicability": [
+      "NON_FINANCIAL_CORPORATE"
+    ]
+  },
+  "finance_cost": {
+    "name": "Finance Cost",
+    "statement": "PROFIT_AND_LOSS",
+    "unit": "crore",
+    "documents": [
+      "FINANCIAL_RESULT"
+    ],
+    "applicability": [
+      "NON_FINANCIAL_CORPORATE"
+    ],
+    "aliases": [
+      "interest_expense"
+    ]
+  },
+  "depreciation_and_amortization": {
+    "name": "Depreciation And Amortization",
+    "statement": "PROFIT_AND_LOSS",
+    "unit": "crore",
+    "documents": [
+      "FINANCIAL_RESULT"
+    ],
+    "applicability": [
+      "NON_FINANCIAL_CORPORATE"
+    ]
+  },
+  "other_expenses": {
+    "name": "Other Expenses",
+    "statement": "PROFIT_AND_LOSS",
+    "unit": "crore",
+    "documents": [
+      "FINANCIAL_RESULT"
+    ],
+    "applicability": [
+      "NON_FINANCIAL_CORPORATE"
+    ]
+  },
+  "total_expenses": {
+    "name": "Total Expenses",
+    "statement": "PROFIT_AND_LOSS",
+    "unit": "crore",
+    "documents": [
+      "FINANCIAL_RESULT"
+    ],
+    "applicability": [
+      "NON_FINANCIAL_CORPORATE"
+    ]
+  },
+  "ebitda": {
+    "name": "EBITDA",
+    "statement": "PROFIT_AND_LOSS",
+    "unit": "crore",
+    "documents": [
+      "FINANCIAL_RESULT"
+    ],
+    "applicability": [
+      "NON_FINANCIAL_CORPORATE"
+    ],
+    "value_origin": "REPORTED_OR_DERIVED",
+    "derivation_policy": "Prefer reported EBITDA; otherwise derive as total_income - total_expenses + finance_cost + depreciation_and_amortization - other_income."
+  },
+  "ebit": {
+    "name": "EBIT",
+    "statement": "PROFIT_AND_LOSS",
+    "unit": "crore",
+    "documents": [
+      "FINANCIAL_RESULT"
+    ],
+    "applicability": [
+      "NON_FINANCIAL_CORPORATE"
+    ],
+    "aliases": [
+      "operating_profit"
+    ],
+    "value_origin": "REPORTED_OR_DERIVED",
+    "derivation_policy": "Prefer reported EBIT; otherwise EBITDA - depreciation_and_amortization."
+  },
+  "profit_before_exceptional_items_and_tax": {
+    "name": "Profit Before Exceptional Items And Tax",
+    "statement": "PROFIT_AND_LOSS",
+    "unit": "crore",
+    "documents": [
+      "FINANCIAL_RESULT"
+    ],
+    "applicability": [
+      "NON_FINANCIAL_CORPORATE"
+    ]
+  },
+  "exceptional_items": {
+    "name": "Exceptional Items",
+    "statement": "PROFIT_AND_LOSS",
+    "unit": "crore",
+    "documents": [
+      "FINANCIAL_RESULT"
+    ],
+    "applicability": [
+      "NON_FINANCIAL_CORPORATE"
+    ],
+    "notes": "Preserve the reported sign and gain/loss classification."
+  },
+  "pbt": {
+    "name": "PBT",
+    "statement": "PROFIT_AND_LOSS",
+    "unit": "crore",
+    "documents": [
+      "FINANCIAL_RESULT"
+    ],
+    "applicability": [
+      "NON_FINANCIAL_CORPORATE"
+    ]
+  },
+  "current_tax_expense": {
+    "name": "Current Tax Expense",
+    "statement": "PROFIT_AND_LOSS",
+    "unit": "crore",
+    "documents": [
+      "FINANCIAL_RESULT"
+    ],
+    "applicability": [
+      "NON_FINANCIAL_CORPORATE"
+    ]
+  },
+  "deferred_tax_expense": {
+    "name": "Deferred Tax Expense",
+    "statement": "PROFIT_AND_LOSS",
+    "unit": "crore",
+    "documents": [
+      "FINANCIAL_RESULT"
+    ],
+    "applicability": [
+      "NON_FINANCIAL_CORPORATE"
+    ]
+  },
+  "tax_expense": {
+    "name": "Tax Expense",
+    "statement": "PROFIT_AND_LOSS",
+    "unit": "crore",
+    "documents": [
+      "FINANCIAL_RESULT"
+    ],
+    "applicability": [
+      "NON_FINANCIAL_CORPORATE"
+    ]
+  },
+  "profit_from_continuing_operations": {
+    "name": "Profit From Continuing Operations",
+    "statement": "PROFIT_AND_LOSS",
+    "unit": "crore",
+    "documents": [
+      "FINANCIAL_RESULT"
+    ],
+    "applicability": [
+      "NON_FINANCIAL_CORPORATE"
+    ]
+  },
+  "profit_from_discontinued_operations": {
+    "name": "Profit From Discontinued Operations",
+    "statement": "PROFIT_AND_LOSS",
+    "unit": "crore",
+    "documents": [
+      "FINANCIAL_RESULT"
+    ],
+    "applicability": [
+      "NON_FINANCIAL_CORPORATE"
+    ]
+  },
+  "pat": {
+    "name": "PAT",
+    "statement": "PROFIT_AND_LOSS",
+    "unit": "crore",
+    "documents": [
+      "FINANCIAL_RESULT"
+    ],
+    "applicability": [
+      "NON_FINANCIAL_CORPORATE"
+    ],
+    "aliases": [
+      "net_profit"
+    ]
+  },
+  "pat_attributable_to_parent": {
+    "name": "PAT Attributable To Parent",
+    "statement": "PROFIT_AND_LOSS",
+    "unit": "crore",
+    "documents": [
+      "FINANCIAL_RESULT"
+    ],
+    "applicability": [
+      "NON_FINANCIAL_CORPORATE"
+    ]
+  },
+  "pat_attributable_to_nci": {
+    "name": "PAT Attributable To NCI",
+    "statement": "PROFIT_AND_LOSS",
+    "unit": "crore",
+    "documents": [
+      "FINANCIAL_RESULT"
+    ],
+    "applicability": [
+      "NON_FINANCIAL_CORPORATE"
+    ]
+  },
+  "other_comprehensive_income": {
+    "name": "Other Comprehensive Income",
+    "statement": "PROFIT_AND_LOSS",
+    "unit": "crore",
+    "documents": [
+      "FINANCIAL_RESULT"
+    ],
+    "applicability": [
+      "NON_FINANCIAL_CORPORATE"
+    ]
+  },
+  "total_comprehensive_income": {
+    "name": "Total Comprehensive Income",
+    "statement": "PROFIT_AND_LOSS",
+    "unit": "crore",
+    "documents": [
+      "FINANCIAL_RESULT"
+    ],
+    "applicability": [
+      "NON_FINANCIAL_CORPORATE"
+    ]
+  },
+  "eps_basic": {
+    "name": "EPS Basic",
+    "statement": "PROFIT_AND_LOSS",
+    "unit": "Rs",
+    "documents": [
+      "FINANCIAL_RESULT"
+    ],
+    "applicability": [
+      "NON_FINANCIAL_CORPORATE"
+    ]
+  },
+  "eps_diluted": {
+    "name": "EPS Diluted",
+    "statement": "PROFIT_AND_LOSS",
+    "unit": "Rs",
+    "documents": [
+      "FINANCIAL_RESULT"
+    ],
+    "applicability": [
+      "NON_FINANCIAL_CORPORATE"
+    ]
+  },
+  "face_value_per_share": {
+    "name": "Face Value Per Share",
+    "statement": "PROFIT_AND_LOSS",
+    "unit": "Rs",
+    "documents": [
+      "FINANCIAL_RESULT"
+    ],
+    "applicability": [
+      "NON_FINANCIAL_CORPORATE"
+    ]
+  },
+  "weighted_average_shares_basic": {
+    "name": "Weighted Average Shares Basic",
+    "statement": "EQUITY",
+    "unit": "count",
+    "documents": [
+      "FINANCIAL_RESULT"
+    ],
+    "applicability": [
+      "NON_FINANCIAL_CORPORATE"
+    ]
+  },
+  "weighted_average_shares_diluted": {
+    "name": "Weighted Average Shares Diluted",
+    "statement": "EQUITY",
+    "unit": "count",
+    "documents": [
+      "FINANCIAL_RESULT"
+    ],
+    "applicability": [
+      "NON_FINANCIAL_CORPORATE"
+    ]
+  },
+  "shares_outstanding": {
+    "name": "Shares Outstanding",
+    "statement": "EQUITY",
+    "unit": "count",
+    "documents": [
+      "FINANCIAL_RESULT"
+    ],
+    "applicability": [
+      "NON_FINANCIAL_CORPORATE"
+    ]
+  },
+  "equity_share_capital": {
+    "name": "Equity Share Capital",
+    "statement": "EQUITY",
+    "unit": "crore",
+    "documents": [
+      "FINANCIAL_RESULT"
+    ],
+    "applicability": [
+      "NON_FINANCIAL_CORPORATE"
+    ]
+  },
+  "property_plant_equipment": {
+    "name": "Property Plant Equipment",
+    "statement": "BALANCE_SHEET",
+    "unit": "crore",
+    "documents": [
+      "FINANCIAL_RESULT"
+    ],
+    "applicability": [
+      "NON_FINANCIAL_CORPORATE"
+    ],
+    "aliases": [
+      "ppe",
+      "fixed_assets"
+    ]
+  },
+  "capital_work_in_progress": {
+    "name": "Capital Work In Progress",
+    "statement": "BALANCE_SHEET",
+    "unit": "crore",
+    "documents": [
+      "FINANCIAL_RESULT"
+    ],
+    "applicability": [
+      "NON_FINANCIAL_CORPORATE"
+    ],
+    "aliases": [
+      "cwip"
+    ]
+  },
+  "right_of_use_assets": {
+    "name": "Right Of Use Assets",
+    "statement": "BALANCE_SHEET",
+    "unit": "crore",
+    "documents": [
+      "FINANCIAL_RESULT"
+    ],
+    "applicability": [
+      "NON_FINANCIAL_CORPORATE"
+    ]
+  },
+  "goodwill": {
+    "name": "Goodwill",
+    "statement": "BALANCE_SHEET",
+    "unit": "crore",
+    "documents": [
+      "FINANCIAL_RESULT"
+    ],
+    "applicability": [
+      "NON_FINANCIAL_CORPORATE"
+    ]
+  },
+  "intangible_assets": {
+    "name": "Intangible Assets",
+    "statement": "BALANCE_SHEET",
+    "unit": "crore",
+    "documents": [
+      "FINANCIAL_RESULT"
+    ],
+    "applicability": [
+      "NON_FINANCIAL_CORPORATE"
+    ]
+  },
+  "non_current_investments": {
+    "name": "Non Current Investments",
+    "statement": "BALANCE_SHEET",
+    "unit": "crore",
+    "documents": [
+      "FINANCIAL_RESULT"
+    ],
+    "applicability": [
+      "NON_FINANCIAL_CORPORATE"
+    ]
+  },
+  "deferred_tax_assets": {
+    "name": "Deferred Tax Assets",
+    "statement": "BALANCE_SHEET",
+    "unit": "crore",
+    "documents": [
+      "FINANCIAL_RESULT"
+    ],
+    "applicability": [
+      "NON_FINANCIAL_CORPORATE"
+    ]
+  },
+  "other_non_current_assets": {
+    "name": "Other Non Current Assets",
+    "statement": "BALANCE_SHEET",
+    "unit": "crore",
+    "documents": [
+      "FINANCIAL_RESULT"
+    ],
+    "applicability": [
+      "NON_FINANCIAL_CORPORATE"
+    ]
+  },
+  "inventories": {
+    "name": "Inventories",
+    "statement": "BALANCE_SHEET",
+    "unit": "crore",
+    "documents": [
+      "FINANCIAL_RESULT"
+    ],
+    "applicability": [
+      "NON_FINANCIAL_CORPORATE"
+    ]
+  },
+  "trade_receivables": {
+    "name": "Trade Receivables",
+    "statement": "BALANCE_SHEET",
+    "unit": "crore",
+    "documents": [
+      "FINANCIAL_RESULT"
+    ],
+    "applicability": [
+      "NON_FINANCIAL_CORPORATE"
+    ]
+  },
+  "cash_and_cash_equivalents": {
+    "name": "Cash And Cash Equivalents",
+    "statement": "BALANCE_SHEET",
+    "unit": "crore",
+    "documents": [
+      "FINANCIAL_RESULT"
+    ],
+    "applicability": [
+      "NON_FINANCIAL_CORPORATE"
+    ]
+  },
+  "other_bank_balances": {
+    "name": "Other Bank Balances",
+    "statement": "BALANCE_SHEET",
+    "unit": "crore",
+    "documents": [
+      "FINANCIAL_RESULT"
+    ],
+    "applicability": [
+      "NON_FINANCIAL_CORPORATE"
+    ]
+  },
+  "current_investments": {
+    "name": "Current Investments",
+    "statement": "BALANCE_SHEET",
+    "unit": "crore",
+    "documents": [
+      "FINANCIAL_RESULT"
+    ],
+    "applicability": [
+      "NON_FINANCIAL_CORPORATE"
+    ],
+    "notes": "Only treat as cash-like when demonstrably liquid."
+  },
+  "other_current_assets": {
+    "name": "Other Current Assets",
+    "statement": "BALANCE_SHEET",
+    "unit": "crore",
+    "documents": [
+      "FINANCIAL_RESULT"
+    ],
+    "applicability": [
+      "NON_FINANCIAL_CORPORATE"
+    ]
+  },
+  "total_current_assets": {
+    "name": "Total Current Assets",
+    "statement": "BALANCE_SHEET",
+    "unit": "crore",
+    "documents": [
+      "FINANCIAL_RESULT"
+    ],
+    "applicability": [
+      "NON_FINANCIAL_CORPORATE"
+    ]
+  },
+  "total_non_current_assets": {
+    "name": "Total Non Current Assets",
+    "statement": "BALANCE_SHEET",
+    "unit": "crore",
+    "documents": [
+      "FINANCIAL_RESULT"
+    ],
+    "applicability": [
+      "NON_FINANCIAL_CORPORATE"
+    ]
+  },
+  "total_assets": {
+    "name": "Total Assets",
+    "statement": "BALANCE_SHEET",
+    "unit": "crore",
+    "documents": [
+      "FINANCIAL_RESULT"
+    ],
+    "applicability": [
+      "NON_FINANCIAL_CORPORATE"
+    ]
+  },
+  "other_equity": {
+    "name": "Other Equity",
+    "statement": "BALANCE_SHEET",
+    "unit": "crore",
+    "documents": [
+      "FINANCIAL_RESULT"
+    ],
+    "applicability": [
+      "NON_FINANCIAL_CORPORATE"
+    ]
+  },
+  "equity_attributable_to_parent": {
+    "name": "Equity Attributable To Parent",
+    "statement": "BALANCE_SHEET",
+    "unit": "crore",
+    "documents": [
+      "FINANCIAL_RESULT"
+    ],
+    "applicability": [
+      "NON_FINANCIAL_CORPORATE"
+    ]
+  },
+  "non_controlling_interest": {
+    "name": "Non Controlling Interest",
+    "statement": "BALANCE_SHEET",
+    "unit": "crore",
+    "documents": [
+      "FINANCIAL_RESULT"
+    ],
+    "applicability": [
+      "NON_FINANCIAL_CORPORATE"
+    ],
+    "aliases": [
+      "nci",
+      "minority_interest"
+    ]
+  },
+  "total_equity": {
+    "name": "Total Equity",
+    "statement": "BALANCE_SHEET",
+    "unit": "crore",
+    "documents": [
+      "FINANCIAL_RESULT"
+    ],
+    "applicability": [
+      "NON_FINANCIAL_CORPORATE"
+    ]
+  },
+  "non_current_borrowings": {
+    "name": "Non Current Borrowings",
+    "statement": "BALANCE_SHEET",
+    "unit": "crore",
+    "documents": [
+      "FINANCIAL_RESULT"
+    ],
+    "applicability": [
+      "NON_FINANCIAL_CORPORATE"
+    ]
+  },
+  "current_borrowings": {
+    "name": "Current Borrowings",
+    "statement": "BALANCE_SHEET",
+    "unit": "crore",
+    "documents": [
+      "FINANCIAL_RESULT"
+    ],
+    "applicability": [
+      "NON_FINANCIAL_CORPORATE"
+    ]
+  },
+  "non_current_lease_liabilities": {
+    "name": "Non Current Lease Liabilities",
+    "statement": "BALANCE_SHEET",
+    "unit": "crore",
+    "documents": [
+      "FINANCIAL_RESULT"
+    ],
+    "applicability": [
+      "NON_FINANCIAL_CORPORATE"
+    ]
+  },
+  "current_lease_liabilities": {
+    "name": "Current Lease Liabilities",
+    "statement": "BALANCE_SHEET",
+    "unit": "crore",
+    "documents": [
+      "FINANCIAL_RESULT"
+    ],
+    "applicability": [
+      "NON_FINANCIAL_CORPORATE"
+    ]
+  },
+  "trade_payables_msme": {
+    "name": "Trade Payables MSME",
+    "statement": "BALANCE_SHEET",
+    "unit": "crore",
+    "documents": [
+      "FINANCIAL_RESULT"
+    ],
+    "applicability": [
+      "NON_FINANCIAL_CORPORATE"
+    ]
+  },
+  "trade_payables_other": {
+    "name": "Trade Payables Other",
+    "statement": "BALANCE_SHEET",
+    "unit": "crore",
+    "documents": [
+      "FINANCIAL_RESULT"
+    ],
+    "applicability": [
+      "NON_FINANCIAL_CORPORATE"
+    ]
+  },
+  "other_current_financial_liabilities": {
+    "name": "Other Current Financial Liabilities",
+    "statement": "BALANCE_SHEET",
+    "unit": "crore",
+    "documents": [
+      "FINANCIAL_RESULT"
+    ],
+    "applicability": [
+      "NON_FINANCIAL_CORPORATE"
+    ]
+  },
+  "other_non_current_financial_liabilities": {
+    "name": "Other Non Current Financial Liabilities",
+    "statement": "BALANCE_SHEET",
+    "unit": "crore",
+    "documents": [
+      "FINANCIAL_RESULT"
+    ],
+    "applicability": [
+      "NON_FINANCIAL_CORPORATE"
+    ]
+  },
+  "current_provisions": {
+    "name": "Current Provisions",
+    "statement": "BALANCE_SHEET",
+    "unit": "crore",
+    "documents": [
+      "FINANCIAL_RESULT"
+    ],
+    "applicability": [
+      "NON_FINANCIAL_CORPORATE"
+    ]
+  },
+  "non_current_provisions": {
+    "name": "Non Current Provisions",
+    "statement": "BALANCE_SHEET",
+    "unit": "crore",
+    "documents": [
+      "FINANCIAL_RESULT"
+    ],
+    "applicability": [
+      "NON_FINANCIAL_CORPORATE"
+    ]
+  },
+  "contract_liabilities": {
+    "name": "Contract Liabilities",
+    "statement": "BALANCE_SHEET",
+    "unit": "crore",
+    "documents": [
+      "FINANCIAL_RESULT"
+    ],
+    "applicability": [
+      "NON_FINANCIAL_CORPORATE"
+    ],
+    "aliases": [
+      "deferred_revenue",
+      "customer_advances"
+    ]
+  },
+  "current_tax_liabilities": {
+    "name": "Current Tax Liabilities",
+    "statement": "BALANCE_SHEET",
+    "unit": "crore",
+    "documents": [
+      "FINANCIAL_RESULT"
+    ],
+    "applicability": [
+      "NON_FINANCIAL_CORPORATE"
+    ]
+  },
+  "deferred_tax_liabilities": {
+    "name": "Deferred Tax Liabilities",
+    "statement": "BALANCE_SHEET",
+    "unit": "crore",
+    "documents": [
+      "FINANCIAL_RESULT"
+    ],
+    "applicability": [
+      "NON_FINANCIAL_CORPORATE"
+    ]
+  },
+  "other_current_liabilities": {
+    "name": "Other Current Liabilities",
+    "statement": "BALANCE_SHEET",
+    "unit": "crore",
+    "documents": [
+      "FINANCIAL_RESULT"
+    ],
+    "applicability": [
+      "NON_FINANCIAL_CORPORATE"
+    ]
+  },
+  "other_non_current_liabilities": {
+    "name": "Other Non Current Liabilities",
+    "statement": "BALANCE_SHEET",
+    "unit": "crore",
+    "documents": [
+      "FINANCIAL_RESULT"
+    ],
+    "applicability": [
+      "NON_FINANCIAL_CORPORATE"
+    ]
+  },
+  "total_current_liabilities": {
+    "name": "Total Current Liabilities",
+    "statement": "BALANCE_SHEET",
+    "unit": "crore",
+    "documents": [
+      "FINANCIAL_RESULT"
+    ],
+    "applicability": [
+      "NON_FINANCIAL_CORPORATE"
+    ]
+  },
+  "total_non_current_liabilities": {
+    "name": "Total Non Current Liabilities",
+    "statement": "BALANCE_SHEET",
+    "unit": "crore",
+    "documents": [
+      "FINANCIAL_RESULT"
+    ],
+    "applicability": [
+      "NON_FINANCIAL_CORPORATE"
+    ]
+  },
+  "total_liabilities": {
+    "name": "Total Liabilities",
+    "statement": "BALANCE_SHEET",
+    "unit": "crore",
+    "documents": [
+      "FINANCIAL_RESULT"
+    ],
+    "applicability": [
+      "NON_FINANCIAL_CORPORATE"
+    ]
+  },
+  "cash_profit_before_working_capital_changes": {
+    "name": "Cash Profit Before Working Capital Changes",
+    "statement": "CASH_FLOW",
+    "unit": "crore",
+    "documents": [
+      "FINANCIAL_RESULT"
+    ],
+    "applicability": [
+      "NON_FINANCIAL_CORPORATE"
+    ]
+  },
+  "working_capital_change": {
+    "name": "Working Capital Change",
+    "statement": "CASH_FLOW",
+    "unit": "crore",
+    "documents": [
+      "FINANCIAL_RESULT"
+    ],
+    "applicability": [
+      "NON_FINANCIAL_CORPORATE"
+    ],
+    "notes": "Normalize positive as cash released and negative as cash absorbed."
+  },
+  "taxes_paid": {
+    "name": "Taxes Paid",
+    "statement": "CASH_FLOW",
+    "unit": "crore",
+    "documents": [
+      "FINANCIAL_RESULT"
+    ],
+    "applicability": [
+      "NON_FINANCIAL_CORPORATE"
+    ],
+    "normalization": "positive_outflow"
+  },
+  "cfo": {
+    "name": "CFO",
+    "statement": "CASH_FLOW",
+    "unit": "crore",
+    "documents": [
+      "FINANCIAL_RESULT"
+    ],
+    "applicability": [
+      "NON_FINANCIAL_CORPORATE"
+    ],
+    "aliases": [
+      "net_cash_from_operating_activities"
+    ]
+  },
+  "purchase_of_ppe_and_intangibles": {
+    "name": "Purchase Of PPE And Intangibles",
+    "statement": "CASH_FLOW",
+    "unit": "crore",
+    "documents": [
+      "FINANCIAL_RESULT"
+    ],
+    "applicability": [
+      "NON_FINANCIAL_CORPORATE"
+    ],
+    "aliases": [
+      "capex",
+      "capital_expenditure"
+    ],
+    "normalization": "positive_outflow"
+  },
+  "proceeds_from_sale_of_ppe": {
+    "name": "Proceeds From Sale Of PPE",
+    "statement": "CASH_FLOW",
+    "unit": "crore",
+    "documents": [
+      "FINANCIAL_RESULT"
+    ],
+    "applicability": [
+      "NON_FINANCIAL_CORPORATE"
+    ],
+    "normalization": "positive_inflow"
+  },
+  "interest_received": {
+    "name": "Interest Received",
+    "statement": "CASH_FLOW",
+    "unit": "crore",
+    "documents": [
+      "FINANCIAL_RESULT"
+    ],
+    "applicability": [
+      "NON_FINANCIAL_CORPORATE"
+    ],
+    "normalization": "positive_inflow"
+  },
+  "dividends_received": {
+    "name": "Dividends Received",
+    "statement": "CASH_FLOW",
+    "unit": "crore",
+    "documents": [
+      "FINANCIAL_RESULT"
+    ],
+    "applicability": [
+      "NON_FINANCIAL_CORPORATE"
+    ],
+    "normalization": "positive_inflow"
+  },
+  "acquisition_and_investment_outflow": {
+    "name": "Acquisition And Investment Outflow",
+    "statement": "CASH_FLOW",
+    "unit": "crore",
+    "documents": [
+      "FINANCIAL_RESULT"
+    ],
+    "applicability": [
+      "NON_FINANCIAL_CORPORATE"
+    ],
+    "normalization": "positive_outflow"
+  },
+  "cfi": {
+    "name": "CFI",
+    "statement": "CASH_FLOW",
+    "unit": "crore",
+    "documents": [
+      "FINANCIAL_RESULT"
+    ],
+    "applicability": [
+      "NON_FINANCIAL_CORPORATE"
+    ]
+  },
+  "borrowings_raised": {
+    "name": "Borrowings Raised",
+    "statement": "CASH_FLOW",
+    "unit": "crore",
+    "documents": [
+      "FINANCIAL_RESULT"
+    ],
+    "applicability": [
+      "NON_FINANCIAL_CORPORATE"
+    ],
+    "normalization": "positive_inflow"
+  },
+  "borrowings_repaid": {
+    "name": "Borrowings Repaid",
+    "statement": "CASH_FLOW",
+    "unit": "crore",
+    "documents": [
+      "FINANCIAL_RESULT"
+    ],
+    "applicability": [
+      "NON_FINANCIAL_CORPORATE"
+    ],
+    "normalization": "positive_outflow"
+  },
+  "interest_paid": {
+    "name": "Interest Paid",
+    "statement": "CASH_FLOW",
+    "unit": "crore",
+    "documents": [
+      "FINANCIAL_RESULT"
+    ],
+    "applicability": [
+      "NON_FINANCIAL_CORPORATE"
+    ],
+    "normalization": "positive_outflow"
+  },
+  "lease_payments": {
+    "name": "Lease Payments",
+    "statement": "CASH_FLOW",
+    "unit": "crore",
+    "documents": [
+      "FINANCIAL_RESULT"
+    ],
+    "applicability": [
+      "NON_FINANCIAL_CORPORATE"
+    ],
+    "normalization": "positive_outflow"
+  },
+  "dividends_paid": {
+    "name": "Dividends Paid",
+    "statement": "CASH_FLOW",
+    "unit": "crore",
+    "documents": [
+      "FINANCIAL_RESULT"
+    ],
+    "applicability": [
+      "NON_FINANCIAL_CORPORATE"
+    ],
+    "normalization": "positive_outflow"
+  },
+  "cff": {
+    "name": "CFF",
+    "statement": "CASH_FLOW",
+    "unit": "crore",
+    "documents": [
+      "FINANCIAL_RESULT"
+    ],
+    "applicability": [
+      "NON_FINANCIAL_CORPORATE"
+    ]
+  },
+  "net_change_in_cash": {
+    "name": "Net Change In Cash",
+    "statement": "CASH_FLOW",
+    "unit": "crore",
+    "documents": [
+      "FINANCIAL_RESULT"
+    ],
+    "applicability": [
+      "NON_FINANCIAL_CORPORATE"
+    ]
+  },
+  "cash_opening": {
+    "name": "Cash Opening",
+    "statement": "CASH_FLOW",
+    "unit": "crore",
+    "documents": [
+      "FINANCIAL_RESULT"
+    ],
+    "applicability": [
+      "NON_FINANCIAL_CORPORATE"
+    ]
+  },
+  "cash_closing": {
+    "name": "Cash Closing",
+    "statement": "CASH_FLOW",
+    "unit": "crore",
+    "documents": [
+      "FINANCIAL_RESULT"
+    ],
+    "applicability": [
+      "NON_FINANCIAL_CORPORATE"
+    ]
+  },
+  "segment_revenue": {
+    "name": "Segment Revenue",
+    "statement": "SEGMENT",
+    "unit": "crore",
+    "documents": [
+      "FINANCIAL_RESULT"
+    ],
+    "applicability": [
+      "NON_FINANCIAL_CORPORATE"
+    ],
+    "dimensions": [
+      "segment"
+    ]
+  },
+  "segment_result": {
+    "name": "Segment Result",
+    "statement": "SEGMENT",
+    "unit": "crore",
+    "documents": [
+      "FINANCIAL_RESULT"
+    ],
+    "applicability": [
+      "NON_FINANCIAL_CORPORATE"
+    ],
+    "dimensions": [
+      "segment"
+    ],
+    "notes": "Retain the company's disclosed definition."
+  },
+  "segment_assets": {
+    "name": "Segment Assets",
+    "statement": "SEGMENT",
+    "unit": "crore",
+    "documents": [
+      "FINANCIAL_RESULT"
+    ],
+    "applicability": [
+      "NON_FINANCIAL_CORPORATE"
+    ],
+    "dimensions": [
+      "segment"
+    ]
+  },
+  "segment_liabilities": {
+    "name": "Segment Liabilities",
+    "statement": "SEGMENT",
+    "unit": "crore",
+    "documents": [
+      "FINANCIAL_RESULT"
+    ],
+    "applicability": [
+      "NON_FINANCIAL_CORPORATE"
+    ],
+    "dimensions": [
+      "segment"
+    ]
+  },
+  "audit_conclusion": {
+    "name": "Auditor or Limited Review Conclusion",
+    "statement": "AUDITOR_REVIEW",
+    "unit": "enum",
+    "fact_type": "CATEGORICAL",
+    "allowed_values": [
+      "UNMODIFIED",
+      "QUALIFIED",
+      "ADVERSE",
+      "DISCLAIMER",
+      "NOT_AVAILABLE"
+    ],
+    "documents": [
+      "FINANCIAL_RESULT"
+    ],
+    "applicability": [
+      "ALL"
+    ]
+  },
+  "emphasis_of_matter_flag": {
+    "name": "Emphasis of Matter Present",
+    "statement": "AUDITOR_REVIEW",
+    "unit": "boolean",
+    "fact_type": "BOOLEAN",
+    "documents": [
+      "FINANCIAL_RESULT"
+    ],
+    "applicability": [
+      "ALL"
+    ]
+  },
+  "going_concern_uncertainty_flag": {
+    "name": "Going Concern Material Uncertainty Present",
+    "statement": "AUDITOR_REVIEW",
+    "unit": "boolean",
+    "fact_type": "BOOLEAN",
+    "documents": [
+      "FINANCIAL_RESULT"
+    ],
+    "applicability": [
+      "ALL"
+    ]
+  },
+  "restatement_flag": {
+    "name": "Prior Period Restated or Regrouped",
+    "statement": "ACCOUNTING_DISCLOSURE",
+    "unit": "boolean",
+    "fact_type": "BOOLEAN",
+    "documents": [
+      "FINANCIAL_RESULT"
+    ],
+    "applicability": [
+      "ALL"
+    ]
+  }
+}
