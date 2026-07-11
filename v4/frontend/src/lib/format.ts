@@ -122,6 +122,10 @@ export function inputScopeLabel(scope: string | null | undefined): string {
 /** Title-case an event type token e.g. "QUARTERLY_RESULT" -> "Quarterly Result". */
 export function eventTypeLabel(type: string | null | undefined): string {
   if (!type) return "Event";
+  if (type === "EARNINGS_CALL_TRANSCRIPT" || type === "CONCALL_TRANSCRIPT") {
+    return "Earnings Call";
+  }
+  if (type === "FINANCIAL_RESULT") return "Financial Result";
   return type
     .replace(/_/g, " ")
     .toLowerCase()
@@ -130,6 +134,8 @@ export function eventTypeLabel(type: string | null | undefined): string {
 
 const EVENT_TITLE_TYPE_SUFFIXES = [
   "Investor Presentation",
+  "Earnings Call Transcript",
+  "Earnings Call",
   "Concall Transcript",
   "Financial Results",
   "Quarterly Result",

@@ -16,8 +16,10 @@ from event_type_config import settings
 from event_type_db import get_conn
 from event_type_models import (
     CandidateResponse,
+    DocumentRequest,
     ResolveEventTypeRequest,
     ResolveEventTypeResponse,
+    ResolvedDocumentResponse,
 )
 from event_type_service import resolve_event_type
 
@@ -44,6 +46,7 @@ def resolve_financial_result_event_type(
     to_date: str = Query(...),
     company_id: str = Query(...),
     event_type: str = Query(default="Financial Results"),
+    documents_json: str | None = Query(default=None),
 ) -> ResolveEventTypeResponse:
     payload = ResolveEventTypeRequest(
         symbol=symbol,
@@ -51,6 +54,7 @@ def resolve_financial_result_event_type(
         to_date=to_date,
         company_id=company_id,
         event_type=event_type,
+        documents=documents_json,
     )
 
     try:
@@ -71,6 +75,10 @@ def resolve_financial_result_event_type(
                 company_id=payload.company_id,
                 announcements=announcements,
                 event_type=payload.event_type,
+                documents=[
+                    document.dict(exclude_none=True)
+                    for document in (payload.documents or [])
+                ] or None,
             )
     except requests.RequestException as exc:
         raise HTTPException(status_code=502, detail=f"NSE request failed: {exc}") from exc
@@ -85,7 +93,9 @@ def resolve_financial_result_event_type(
         "to_date": payload.to_date,
         "company_id": payload.company_id,
         "event_id": result["event_id"],
+        "event_type": payload.event_type,
         "pdf_url": result["chosen_source_url"],
+        "resolved_documents": result.get("resolved_documents") or [],
     }
 
     return ResolveEventTypeResponse(
@@ -106,6 +116,10 @@ def resolve_financial_result_event_type(
         recovery_needed=result["recovery_needed"],
         rejected_url=result["rejected_url"],
         candidates=[CandidateResponse(**item) for item in result["candidates"]],
+        resolved_documents=[
+            ResolvedDocumentResponse(**item)
+            for item in (result.get("resolved_documents") or [])
+        ],
         next_service_params=next_service_params,
     )
 

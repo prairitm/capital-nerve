@@ -8,6 +8,7 @@ const EVENT_TYPE_ORDER: Record<string, number> = {
   ANNUAL_REPORT: 1,
   INVESTOR_PRESENTATION: 2,
   CONCALL_TRANSCRIPT: 3,
+  EARNINGS_CALL_TRANSCRIPT: 3,
   PRESS_RELEASE: 4,
   EXCHANGE_FILING: 5,
   SHAREHOLDING_PATTERN: 6,
@@ -270,11 +271,64 @@ export function buildCompanyFeedGroupFromHub(
   timeline: CompanyEvent[],
   signals: Signal[],
 ): CompanyFeedGroup | null {
-  const eventsById = new Map(timeline.map((e) => [e.id, e]));
-  const enriched = signals.map((s) => ({
-    ...s,
+  const byEvent = new Map<string, FeedTimelineEvent>();
+
+  for (const event of timeline) {
+    if (!isQuarterGroupedEvent(event)) continue;
+    byEvent.set(event.id, { ...event, signals: [] });
+  }
+
+  for (const signal of signals) {
+    const event = signal.event ?? (signal.event_id ? byEvent.get(signal.event_id) : null);
+    const eventId = event?.id ?? signal.event_id;
+    if (!eventId) continue;
+    let entry = byEvent.get(eventId);
+    if (!entry) {
+      entry = event
+        ? { ...event, signals: [] }
+        : {
+            id: eventId,
+            company_id: signal.company_id,
+            event_type: "QUARTERLY_RESULT",
+            event_type_raw: null,
+            event_date: signal.detected_at,
+            fiscal_year: null,
+            fiscal_quarter: null,
+            period_label: null,
+            title: null,
+            source_url: null,
+            document_id: null,
+            status: null,
+            signals: [],
+          };
+      byEvent.set(eventId, entry);
+    }
+    entry.signals.push({ ...signal, company, event: entry });
+  }
+
+  for (const entry of byEvent.values()) {
+    entry.signals.sort(
+      (a, b) => new Date(b.detected_at ?? 0).getTime() - new Date(a.detected_at ?? 0).getTime(),
+    );
+    const lead = entry.signals[0];
+    if (!lead) continue;
+    entry.overall_signal = lead.direction;
+    entry.overall_severity = lead.severity;
+    entry.summary_text = lead.title ?? lead.description;
+  }
+
+  const events = [...byEvent.values()];
+  if (events.length === 0) return null;
+  const latestDetectedAt =
+    signals.reduce((latest, s) => {
+      const at = s.detected_at ?? "";
+      return at > latest ? at : latest;
+    }, "") || events[0]?.event_date || "";
+
+  return {
     company,
-    event: (s.event ?? (s.event_id ? eventsById.get(s.event_id) : null)) || null,
-  }));
-  return buildCompanyFeedGroups(enriched).find((g) => g.company.id === company.id) ?? null;
+    signals,
+    quarterGroups: groupEventsByQuarter(events),
+    latestDetectedAt,
+  };
 }

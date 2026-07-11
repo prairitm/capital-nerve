@@ -13,7 +13,7 @@ import { PageLoader } from "@/components/common/Spinner";
 import { Empty } from "@/components/common/Empty";
 import { Pagination, usePagination } from "@/components/common/Pagination";
 import { buildCompanyFeedGroupFromHub } from "@/lib/events";
-import { formatMetricValue, formatPct } from "@/lib/format";
+import { formatMetricValue, formatPct, resolveEventDisplayTitle } from "@/lib/format";
 
 const TREND_CODES = ["revenue_yoy_growth", "ebitda_margin", "pat_margin"];
 
@@ -177,6 +177,7 @@ export function Company() {
   const latestEventHref = data.latest_event_id
     ? `/company/${ticker}/event/${data.latest_event_id}`
     : null;
+  const latestPeriodEvents = (data.latest_period_events ?? []).filter((event) => event.document_id);
 
   return (
     <div className="max-w-5xl mx-auto space-y-5">
@@ -197,14 +198,26 @@ export function Company() {
               {data.latest_period_label}
             </Link>
           )}
-          {latestEventHref && (
-            <Link
-              to={latestEventHref}
-              className="text-sm text-ink-mute hover:text-ink inline-flex items-center gap-1"
-            >
-              View results <ChevronRight size={14} />
-            </Link>
-          )}
+          {latestPeriodEvents.length > 0
+            ? latestPeriodEvents.map((event) => (
+                <Link
+                  key={event.id}
+                  to={`/company/${ticker}/event/${event.id}`}
+                  className="text-sm text-ink-mute hover:text-ink inline-flex items-center gap-1"
+                >
+                  <FileText size={14} />
+                  {resolveEventDisplayTitle(event.event_type, event.title)}
+                  <ChevronRight size={14} />
+                </Link>
+              ))
+            : latestEventHref && (
+                <Link
+                  to={latestEventHref}
+                  className="text-sm text-ink-mute hover:text-ink inline-flex items-center gap-1"
+                >
+                  View results <ChevronRight size={14} />
+                </Link>
+              )}
         </div>
       </header>
 
@@ -222,7 +235,6 @@ export function Company() {
           <QuarterSignalsTimeline
             quarterGroups={feedGroup.quarterGroups}
             ticker={ticker}
-            metrics={data.latest_metrics}
             collapsible={feedGroup.quarterGroups.length > 1}
           />
         </section>

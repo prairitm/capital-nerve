@@ -1,4 +1,4 @@
-"""Read-only SQLite access to the v3 7-step database."""
+"""Read-only SQLite access to the v4 unified quarterly database."""
 
 from __future__ import annotations
 

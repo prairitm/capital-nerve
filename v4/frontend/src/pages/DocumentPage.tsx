@@ -30,6 +30,7 @@ function PdfPageWithHighlights({
   pageNumber,
   pageWidth,
   highlightText,
+  highlightValue,
   referenceText,
   bbox,
   onHighlightStatus,
@@ -37,6 +38,7 @@ function PdfPageWithHighlights({
   pageNumber: number;
   pageWidth: number;
   highlightText: string | null;
+  highlightValue: string | null;
   referenceText: string | null;
   bbox: SourceBbox | null;
   onHighlightStatus?: (matched: boolean) => void;
@@ -44,16 +46,26 @@ function PdfPageWithHighlights({
   const pageWrapRef = useRef<HTMLDivElement>(null);
   const [pdfPageWidth, setPdfPageWidth] = useState(0);
   const highlights = useMemo(
-    () => (highlightText ? buildEvidenceHighlights([highlightText]) : { patterns: [], quoteTexts: [] }),
-    [highlightText],
+    () =>
+      highlightText
+        ? buildEvidenceHighlights([highlightText], highlightValue)
+        : { patterns: [], quoteTexts: [], targetValues: [] },
+    [highlightText, highlightValue],
   );
   const scale = pdfPageWidth > 0 ? pageWidth / pdfPageWidth : 0;
 
   const paintHighlights = useCallback(() => {
     const layer = pageWrapRef.current?.querySelector(".react-pdf__Page__textContent");
     if (layer instanceof HTMLElement) {
+      if (bbox) {
+        const spans = [...layer.querySelectorAll('[role="presentation"]')] as HTMLElement[];
+        spans.forEach((el) => el.classList.remove("evidence-highlight"));
+        layer.querySelectorAll(".evidence-value-highlight").forEach((el) => el.remove());
+        onHighlightStatus?.(true);
+        return;
+      }
       const matched = applyPdfPageHighlights(layer, highlights, referenceText);
-      onHighlightStatus?.(matched || bbox != null);
+      onHighlightStatus?.(matched);
       return;
     }
     onHighlightStatus?.(bbox != null);
@@ -113,6 +125,8 @@ export function DocumentPage() {
   const [searchParams] = useSearchParams();
   const pageFromUrl = parsePageParam(searchParams.get("page"));
   const highlightText = searchParams.get("highlight");
+  const highlightValue = searchParams.get("value");
+  const highlightContext = searchParams.get("context");
   const [numPages, setNumPages] = useState(0);
   const [page, setPage] = useState(() => pageFromUrl ?? 1);
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
@@ -125,11 +139,20 @@ export function DocumentPage() {
   const locateQuery = useMemo(() => {
     const query: Record<string, string> = { text: highlightText! };
     if (pageFromUrl != null) query.page = String(pageFromUrl);
+    if (highlightValue?.trim()) query.value = highlightValue.trim();
+    if (highlightContext?.trim()) query.context = highlightContext.trim();
     return query;
-  }, [highlightText, pageFromUrl]);
+  }, [highlightText, highlightValue, highlightContext, pageFromUrl]);
 
   const { data: locate, isLoading: locating } = useQuery({
-    queryKey: ["document-locate", documentId, highlightText, pageFromUrl],
+    queryKey: [
+      "document-locate",
+      documentId,
+      highlightText,
+      highlightValue,
+      highlightContext,
+      pageFromUrl,
+    ],
     queryFn: () =>
       api<SourceLocateResult>(`/documents/${documentId}/locate`, {
         query: locateQuery,
@@ -140,8 +163,11 @@ export function DocumentPage() {
   const targetPage = pageFromUrl ?? locate?.page ?? null;
   const sourceBbox = useMemo(() => parseSourceBbox(locate?.bbox), [locate?.bbox]);
   const highlights = useMemo(
-    () => (highlightText ? buildEvidenceHighlights([highlightText]) : { patterns: [], quoteTexts: [] }),
-    [highlightText],
+    () =>
+      highlightText
+        ? buildEvidenceHighlights([highlightText], highlightValue)
+        : { patterns: [], quoteTexts: [], targetValues: [] },
+    [highlightText, highlightValue],
   );
 
   useEffect(() => {
@@ -276,6 +302,7 @@ export function DocumentPage() {
                   pageNumber={page}
                   pageWidth={pageWidth}
                   highlightText={highlightText}
+                  highlightValue={highlightValue}
                   referenceText={locate?.reference_text ?? null}
                   bbox={sourceBbox}
                   onHighlightStatus={setPdfHighlightMatched}

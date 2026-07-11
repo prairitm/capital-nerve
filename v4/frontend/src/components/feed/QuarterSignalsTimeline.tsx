@@ -2,7 +2,6 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ChevronDown } from "lucide-react";
 import clsx from "clsx";
-import type { MetricValue } from "@/api/types";
 import type { FeedTimelineEvent, QuarterEventGroup } from "@/lib/events";
 import { CompactSignalRow } from "@/components/signals/CompactSignalRow";
 import { eventTypeLabel, formatDate, resolveEventDisplayTitle } from "@/lib/format";
@@ -10,16 +9,12 @@ import { eventTypeLabel, formatDate, resolveEventDisplayTitle } from "@/lib/form
 function FeedEventBlock({
   event,
   ticker,
-  metrics,
 }: {
   event: FeedTimelineEvent;
   ticker: string;
-  metrics?: MetricValue[];
 }) {
   const navigate = useNavigate();
   const displayTitle = resolveEventDisplayTitle(event.event_type, event.title);
-
-  if (event.signals.length === 0) return null;
 
   return (
     <div className="border-t border-line/40 first:border-t-0">
@@ -35,11 +30,17 @@ function FeedEventBlock({
         </div>
         <div className="text-sm font-medium text-ink mt-0.5">{displayTitle}</div>
       </button>
-      <div className="divide-y divide-line/30 border-t border-line/30">
-        {event.signals.map((signal) => (
-          <CompactSignalRow key={signal.id} signal={signal} metrics={metrics} />
-        ))}
-      </div>
+      {event.signals.length > 0 ? (
+        <div className="divide-y divide-line/30 border-t border-line/30">
+          {event.signals.map((signal) => (
+            <CompactSignalRow key={signal.id} signal={signal} />
+          ))}
+        </div>
+      ) : (
+        <div className="border-t border-line/30 px-5 py-2 text-xs text-ink-soft">
+          No signals fired
+        </div>
+      )}
     </div>
   );
 }
@@ -47,14 +48,12 @@ function FeedEventBlock({
 interface Props {
   quarterGroups: QuarterEventGroup<FeedTimelineEvent>[];
   ticker: string;
-  metrics?: MetricValue[];
   collapsible?: boolean;
 }
 
 export function QuarterSignalsTimeline({
   quarterGroups,
   ticker,
-  metrics = [],
   collapsible = true,
 }: Props) {
   const [collapsedQuarters, setCollapsedQuarters] = useState<Set<string>>(() => new Set());
@@ -126,7 +125,6 @@ export function QuarterSignalsTimeline({
                   key={event.id}
                   event={event}
                   ticker={ticker}
-                  metrics={metrics}
                 />
               ))}
           </div>

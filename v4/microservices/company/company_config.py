@@ -19,7 +19,7 @@ class Settings:
         self.catalog_dir = Path(
             os.getenv(
                 "COMPANY_SERVICE_CATALOG_DIR",
-                str(REPO_ROOT / "v4" / "microservices" / "catalog"),
+                str(REPO_ROOT / "8_step_flow" / "catalog_mvp"),
             )
         ).resolve()
         self.documents_dir = Path(
@@ -29,7 +29,7 @@ class Settings:
             )
         ).resolve()
         self.env_path = Path(
-            os.getenv("COMPANY_SERVICE_ENV_PATH", str(REPO_ROOT / "v3" / ".env"))
+            os.getenv("COMPANY_SERVICE_ENV_PATH", str(REPO_ROOT / "8_step_flow" / ".env"))
         ).resolve()
         self.cors_origins = [
             origin.strip()

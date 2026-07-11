@@ -6,11 +6,12 @@ import hashlib
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import json
 import logging
+import re
 import sqlite3
 import time
 from datetime import date, datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 
 from periods import (
     detect_reporting_period,
@@ -62,6 +63,7 @@ def store_document(
     pdf_url: str,
     pdf_bytes: bytes,
     title: str,
+    document_kind: str = "FINANCIAL_RESULT",
 ) -> dict[str, Any]:
     document_id = hashlib.sha256(pdf_bytes).hexdigest()
     storage_path = settings.documents_dir / f"{document_id}.pdf"
@@ -73,7 +75,7 @@ def store_document(
         INSERT OR IGNORE INTO documents (
             id, company_id, source_url, storage_path, sha256, title,
             document_kind, file_size, status
-        ) VALUES (?, ?, ?, ?, ?, ?, 'FINANCIAL_RESULT', ?, 'ingested')
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'ingested')
         """,
         (
             document_id,
@@ -82,6 +84,7 @@ def store_document(
             str(storage_path),
             document_id,
             title,
+            document_kind,
             len(pdf_bytes),
         ),
     )
@@ -108,6 +111,290 @@ def load_facts_catalog() -> dict[str, Any]:
     return json.loads((settings.catalog_dir / "facts.json").read_text(encoding="utf-8"))
 
 
+def load_presentation_facts_catalog() -> dict[str, Any]:
+    path = settings.catalog_dir / "investor_presentation_facts.json"
+    if not path.exists():
+        path = settings.catalog_dir / "investor_presentation" / "presentation_facts.json"
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
+def load_earnings_call_facts_catalog() -> dict[str, Any]:
+    return json.loads(
+        (settings.catalog_dir / "earnings-call" / "earnings_call_facts.json").read_text(
+            encoding="utf-8"
+        )
+    )
+
+
+def _fact_value_type(spec: dict[str, Any]) -> str:
+    fact_type = str(spec.get("fact_type") or "").lower()
+    unit = str(spec.get("unit") or "").lower()
+    if fact_type in {"text", "categorical", "date"} or unit in {"text", "date", "enum"}:
+        return "text"
+    return "numeric"
+
+
+def _preferred_source(spec: dict[str, Any], fallback: str) -> str:
+    docs = spec.get("documents") or []
+    return str(docs[0] if docs else fallback).lower()
+
+
+def seed_fact_definitions(
+    conn: sqlite3.Connection,
+    *,
+    facts_catalog: dict[str, Any],
+    preferred_source: str,
+) -> None:
+    for code, spec in facts_catalog.items():
+        unit = spec.get("unit")
+        standard_unit = "INR crore" if unit == "crore" else unit
+        conn.execute(
+            """
+            INSERT INTO fact_definitions (
+                fact_code, fact_name, fact_category, value_type,
+                standard_unit, preferred_source
+            ) VALUES (?, ?, ?, ?, ?, ?)
+            ON CONFLICT(fact_code) DO UPDATE SET
+                fact_name = excluded.fact_name,
+                fact_category = excluded.fact_category,
+                value_type = excluded.value_type,
+                standard_unit = excluded.standard_unit,
+                preferred_source = excluded.preferred_source
+            """,
+            (
+                code,
+                spec.get("name", code),
+                str(spec.get("statement") or "financial").lower(),
+                _fact_value_type(spec),
+                standard_unit,
+                _preferred_source(spec, preferred_source),
+            ),
+        )
+
+
+def _observation_id(
+    company_id: str,
+    event_id: str,
+    document_id: str,
+    row: dict[str, Any],
+    period_end: str,
+) -> str:
+    parts = [
+        company_id,
+        event_id,
+        document_id,
+        row["fact_key"],
+        period_end,
+        row.get("basis") or "",
+        row.get("segment") or "",
+        row.get("geography") or "",
+        row.get("product") or "",
+        row.get("channel") or "",
+        row.get("project") or "",
+        row.get("customer_type") or "",
+        row.get("metric_context") or "",
+        row.get("scope_level") or "",
+        row.get("scope_name") or "",
+        row.get("value_text") or "",
+        row.get("evidence") or "",
+    ]
+    return hashlib.sha256(":".join(parts).encode()).hexdigest()
+
+
+def _resolved_fact_id(company_id: str, event_id: str, fact_key: str) -> str:
+    return hashlib.sha256(f"{company_id}:{event_id}:{fact_key}".encode()).hexdigest()
+
+
+def _resolved_fact_id_for_row(company_id: str, event_id: str, row: dict[str, Any]) -> str:
+    dims = ":".join(
+        str(row.get(key) or "")
+        for key in (
+            "segment",
+            "geography",
+            "product",
+            "channel",
+            "project",
+            "customer_type",
+            "metric_context",
+            "scope_level",
+            "scope_name",
+        )
+    )
+    return hashlib.sha256(f"{company_id}:{event_id}:{row['fact_key']}:{dims}".encode()).hexdigest()
+
+
+def _best_key(row: dict[str, Any], period_end: str) -> tuple[Any, ...]:
+    return (
+        row["fact_key"],
+        row.get("period_end") or period_end,
+        row.get("segment"),
+        row.get("geography"),
+        row.get("product"),
+        row.get("channel"),
+        row.get("project"),
+        row.get("customer_type"),
+        row.get("metric_context"),
+        row.get("scope_level"),
+        row.get("scope_name"),
+    )
+
+
+def persist_fact_observations_and_resolutions(
+    conn: sqlite3.Connection,
+    *,
+    company_id: str,
+    event_id: str,
+    document_id: str,
+    period_end: str,
+    rows: list[dict[str, Any]],
+) -> None:
+    best_by_fact: dict[tuple[Any, ...], dict[str, Any]] = {}
+    for row in rows:
+        numeric_value = row.get("numeric_value")
+        value_text = row.get("value_text")
+        if numeric_value is None and value_text is None:
+            continue
+        oid = _observation_id(company_id, event_id, document_id, row, period_end)
+        source_text = row.get("source_text") or row.get("evidence") or ""
+        conn.execute(
+            """
+            INSERT INTO fact_observations (
+                observation_id, company_id, event_id, document_id, fact_code,
+                value, value_text, unit, period, source_page, source_text,
+                segment, geography, product, channel, project, customer_type,
+                metric_context, scope_level, scope_name, fact_type,
+                extraction_method, value_lower, value_upper, sentiment,
+                is_explicit_guidance, confidence
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT(observation_id) DO UPDATE SET
+                value = excluded.value,
+                value_text = excluded.value_text,
+                unit = excluded.unit,
+                period = excluded.period,
+                source_page = excluded.source_page,
+                source_text = excluded.source_text,
+                segment = excluded.segment,
+                geography = excluded.geography,
+                product = excluded.product,
+                channel = excluded.channel,
+                project = excluded.project,
+                customer_type = excluded.customer_type,
+                metric_context = excluded.metric_context,
+                scope_level = excluded.scope_level,
+                scope_name = excluded.scope_name,
+                fact_type = excluded.fact_type,
+                extraction_method = excluded.extraction_method,
+                value_lower = excluded.value_lower,
+                value_upper = excluded.value_upper,
+                sentiment = excluded.sentiment,
+                is_explicit_guidance = excluded.is_explicit_guidance,
+                confidence = excluded.confidence
+            """,
+            (
+                oid,
+                company_id,
+                event_id,
+                document_id,
+                row["fact_key"],
+                numeric_value,
+                value_text,
+                row.get("unit"),
+                row.get("period_end") or period_end,
+                row.get("source_page"),
+                source_text,
+                row.get("segment"),
+                row.get("geography"),
+                row.get("product"),
+                row.get("channel"),
+                row.get("project"),
+                row.get("customer_type"),
+                row.get("metric_context"),
+                row.get("scope_level"),
+                row.get("scope_name"),
+                row.get("fact_type"),
+                row.get("extraction_method"),
+                row.get("value_lower"),
+                row.get("value_upper"),
+                row.get("sentiment"),
+                row.get("is_explicit_guidance"),
+                row.get("confidence"),
+            ),
+        )
+        candidate = {**row, "observation_id": oid}
+        best_key = _best_key(row, period_end)
+        current = best_by_fact.get(best_key)
+        if current is None:
+            best_by_fact[best_key] = candidate
+            continue
+        current_basis = current.get("basis")
+        row_basis = row.get("basis")
+        if row_basis == "consolidated" and current_basis != "consolidated":
+            best_by_fact[best_key] = candidate
+            continue
+        if (row.get("confidence") or 0) > (current.get("confidence") or 0):
+            best_by_fact[best_key] = candidate
+
+    for _, row in best_by_fact.items():
+        conn.execute(
+            """
+            INSERT INTO resolved_facts (
+                resolved_fact_id, company_id, event_id, fact_code,
+                resolved_value, resolved_value_text, unit,
+                segment, geography, product, channel, project, customer_type,
+                metric_context, scope_level, scope_name, fact_type,
+                value_lower, value_upper, sentiment, is_explicit_guidance,
+                selected_observation_id, resolution_status, confidence
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'resolved', ?)
+            ON CONFLICT(resolved_fact_id) DO UPDATE SET
+                resolved_value = excluded.resolved_value,
+                resolved_value_text = excluded.resolved_value_text,
+                unit = excluded.unit,
+                segment = excluded.segment,
+                geography = excluded.geography,
+                product = excluded.product,
+                channel = excluded.channel,
+                project = excluded.project,
+                customer_type = excluded.customer_type,
+                metric_context = excluded.metric_context,
+                scope_level = excluded.scope_level,
+                scope_name = excluded.scope_name,
+                fact_type = excluded.fact_type,
+                value_lower = excluded.value_lower,
+                value_upper = excluded.value_upper,
+                sentiment = excluded.sentiment,
+                is_explicit_guidance = excluded.is_explicit_guidance,
+                selected_observation_id = excluded.selected_observation_id,
+                resolution_status = excluded.resolution_status,
+                confidence = excluded.confidence
+            """,
+            (
+                _resolved_fact_id_for_row(company_id, event_id, row),
+                company_id,
+                event_id,
+                row["fact_key"],
+                row.get("numeric_value"),
+                row.get("value_text"),
+                row.get("unit"),
+                row.get("segment"),
+                row.get("geography"),
+                row.get("product"),
+                row.get("channel"),
+                row.get("project"),
+                row.get("customer_type"),
+                row.get("metric_context"),
+                row.get("scope_level"),
+                row.get("scope_name"),
+                row.get("fact_type"),
+                row.get("value_lower"),
+                row.get("value_upper"),
+                row.get("sentiment"),
+                row.get("is_explicit_guidance"),
+                row["observation_id"],
+                row.get("confidence"),
+            ),
+        )
+
+
 def _chunk(text: str, max_chars: int = 12000) -> list[str]:
     if len(text) <= max_chars:
         return [text]
@@ -131,6 +418,58 @@ def _canon_unit(unit: Any) -> Any:
         normalized,
         unit,
     )
+
+
+def _canon_presentation_unit(unit: Any) -> Any:
+    if not unit:
+        return None
+    normalized = str(unit).strip().lower()
+    return {
+        "crores": "crore",
+        "cr": "crore",
+        "rs.": "Rs",
+        "rs": "Rs",
+        "percent": "%",
+        "pct": "%",
+        "percentage": "%",
+    }.get(normalized, unit)
+
+
+def _clean_str(value: Any) -> str | None:
+    if value is None:
+        return None
+    text = str(value).strip()
+    return text or None
+
+
+def _optional_float(value: Any) -> float | None:
+    if value in (None, ""):
+        return None
+    try:
+        return float(str(value).replace(",", ""))
+    except (TypeError, ValueError):
+        return None
+
+
+def _optional_bool(value: Any) -> int | None:
+    if value in (None, ""):
+        return None
+    if isinstance(value, bool):
+        return 1 if value else 0
+    text = str(value).strip().lower()
+    if text in {"true", "yes", "1"}:
+        return 1
+    if text in {"false", "no", "0"}:
+        return 0
+    return None
+
+
+def _slug(value: Any) -> str | None:
+    text = _clean_str(value)
+    if not text:
+        return None
+    slug = re.sub(r"[^a-z0-9]+", "_", text.lower()).strip("_")
+    return slug or text.lower()
 
 
 def _catalog_aliases(facts_catalog: dict[str, Any]) -> tuple[dict[str, str], str]:
@@ -198,6 +537,130 @@ Markdown:
     return [fact for fact in facts if isinstance(fact, dict)]
 
 
+def _presentation_catalog_aliases(facts_catalog: dict[str, Any]) -> tuple[dict[str, str], str]:
+    storage_to_fact: dict[str, str] = {}
+    fact_lines: list[str] = []
+    for key, spec in facts_catalog.items():
+        storage_to_fact[key] = key
+        for alias in spec.get("aliases") or []:
+            storage_to_fact[str(alias)] = key
+        aliases = ", ".join(spec.get("aliases") or [])
+        dimensions = ", ".join(spec.get("dimensions") or [])
+        allowed = ", ".join(spec.get("allowed_values") or [])
+        fact_type = spec.get("fact_type") or "NUMERIC"
+        notes = []
+        if aliases:
+            notes.append(f"aliases: {aliases}")
+        if dimensions:
+            notes.append(f"dimensions: {dimensions}")
+        if allowed:
+            notes.append(f"allowed_values: {allowed}")
+        note = f" ({'; '.join(notes)})" if notes else ""
+        fact_lines.append(
+            f"- {key}: {spec.get('name')} [{spec.get('unit')}; {fact_type}; {spec.get('statement')}]{note}"
+        )
+    return storage_to_fact, "\n".join(fact_lines)
+
+
+def extract_presentation_facts_from_chunk(
+    client: Any,
+    *,
+    model: str,
+    chunk: str,
+    symbol: str,
+    period_label: str,
+    period_end: str,
+    fact_catalog_text: str,
+) -> list[dict[str, Any]]:
+    prompt = f"""Extract investor-presentation facts from this Indian company presentation markdown.
+
+Document type: INVESTOR_PRESENTATION
+Company: {symbol}
+Reporting period context: {period_label} (quarter_end={period_end})
+
+Allowed fact_key values (use only canonical keys from this catalog):
+{fact_catalog_text}
+
+Extraction rules:
+- Extract ONLY values explicitly stated in the markdown. Do not calculate, infer, annualize, or fill missing values.
+- This is a presentation, not a statutory financial-results table. Look for slide KPIs, charts, segment/product/geography tables, order book/inflow, capacity, utilization, capex, projects, debt/cash, guidance, and management outlook.
+- Prefer values for the current/latest reported period. Also extract forward-looking guidance, planned capacity additions, and expected commissioning dates when the slide explicitly labels them.
+- Preserve business dimensions when present: segment, product, geography, project, plant, fiscal_year, and period_label.
+- For NUMERIC facts, set numeric_value to a number with commas stripped and text_value to null.
+- For DATE facts, set text_value to the exact date/quarter/month label and numeric_value to null.
+- For CATEGORICAL facts, set text_value to one allowed catalog value exactly and numeric_value to null.
+- unit should be the exact reported unit when possible; use catalog units like crore, %, count, date, enum, company_reported, or currency_per_unit when the slide unit is generic.
+- basis should be "presentation" unless the slide explicitly says consolidated or standalone.
+- evidence must be a short snippet containing the value and its label.
+- confidence must be between 0.0 and 1.0.
+
+Return JSON object only:
+{{"facts": [{{"fact_key": "...", "numeric_value": 0.0, "text_value": null, "unit": "...", "basis": "presentation", "segment": null, "product": null, "geography": null, "project": null, "plant": null, "fiscal_year": null, "period_label": "...", "evidence": "...", "confidence": 0.9}}]}}
+If no catalog facts are present, return {{"facts": []}}.
+
+Markdown:
+{chunk}
+"""
+    response = client.responses.create(
+        model=model,
+        input=[{"role": "user", "content": prompt}],
+        text={"format": {"type": "json_object"}},
+        temperature=0,
+    )
+    payload = json.loads((response.output_text or "{}").strip())
+    facts = payload.get("facts") or []
+    return [fact for fact in facts if isinstance(fact, dict)]
+
+
+def extract_unified_document_facts_from_chunk(
+    client: Any,
+    *,
+    model: str,
+    chunk: str,
+    symbol: str,
+    document_type: str,
+    period_label: str,
+    period_end: str,
+    fact_catalog_text: str,
+) -> list[dict[str, Any]]:
+    prompt = f"""Extract facts from this Indian company document markdown/text.
+
+Document type: {document_type}
+Company: {symbol}
+Reporting period context: {period_label} (quarter_end={period_end})
+
+Allowed fact_key values (use only canonical keys from this catalog):
+{fact_catalog_text}
+
+Rules:
+- Extract ONLY values explicitly stated in the text. Do not infer missing values.
+- Preserve dimensions when present: segment, product, geography, channel, project, customer_type, metric_context.
+- Every fact should include scope_level = company|segment|geography|product|channel|project|customer_type|unknown and scope_name when applicable.
+- For numeric facts, set numeric_value to a number with commas stripped.
+- For dates/categorical/text facts, set value_text to the exact concise value and numeric_value to null.
+- Use value_lower/value_upper for guidance ranges and numeric_value as midpoint when both bounds exist.
+- Include sentiment only when clear: positive|neutral|mixed|negative.
+- evidence must be a short snippet containing the value and label.
+- confidence must be between 0.0 and 1.0.
+
+Return JSON object only:
+{{"facts": [{{"fact_key": "...", "fact_type": "financial_metric|operational_metric|guidance|strategic_update|market_claim|risk_or_caveat", "numeric_value": 0.0, "value_lower": null, "value_upper": null, "value_text": null, "unit": "...", "period_label": "...", "period_end": "YYYY-MM-DD", "basis": "consolidated|standalone|presentation|not_applicable", "scope": {{"level": "segment", "name": "..."}}, "segment": null, "geography": null, "product": null, "channel": null, "project": null, "customer_type": null, "metric_context": null, "sentiment": null, "is_explicit_guidance": false, "source_page": 1, "evidence": "...", "confidence": 0.9}}]}}
+If no catalog facts are present, return {{"facts": []}}.
+
+Document text:
+{chunk}
+"""
+    response = client.responses.create(
+        model=model,
+        input=[{"role": "user", "content": prompt}],
+        text={"format": {"type": "json_object"}},
+        temperature=0,
+    )
+    payload = json.loads((response.output_text or "{}").strip())
+    facts = payload.get("facts") or []
+    return [fact for fact in facts if isinstance(fact, dict)]
+
+
 def canonicalize_facts(
     raw_facts: list[dict[str, Any]],
     *,
@@ -238,6 +701,163 @@ def canonicalize_facts(
     return list(preferred.values())
 
 
+def _dimension_payload(entry: dict[str, Any]) -> dict[str, str]:
+    dims: dict[str, str] = {}
+    for key in (
+        "segment",
+        "product",
+        "geography",
+        "channel",
+        "project",
+        "customer_type",
+        "metric_context",
+        "plant",
+        "fiscal_year",
+        "period_label",
+    ):
+        value = _clean_str(entry.get(key))
+        if value:
+            dims[key] = _slug(value) if key != "period_label" else value
+    return dims
+
+
+def _primary_segment(dims: dict[str, str]) -> str | None:
+    return (
+        dims.get("segment")
+        or dims.get("product")
+        or dims.get("project")
+        or dims.get("plant")
+        or dims.get("fiscal_year")
+    )
+
+
+def _scope_payload(entry: dict[str, Any], dims: dict[str, str]) -> tuple[str | None, str | None]:
+    scope = entry.get("scope")
+    if isinstance(scope, dict):
+        level = _slug(scope.get("level")) or "unknown"
+        name = _slug(scope.get("name"))
+    else:
+        level = _slug(entry.get("scope_level")) or None
+        name = _slug(entry.get("scope_name")) or None
+    if not level:
+        for key in ("segment", "geography", "product", "channel", "project", "customer_type"):
+            if dims.get(key):
+                return key, dims[key]
+        return "company", None
+    if level in {"segment", "geography", "product", "channel", "project", "customer_type"} and not name:
+        name = dims.get(level)
+    return level, name
+
+
+def _source_text(evidence: str, dims: dict[str, str]) -> str:
+    if not dims:
+        return evidence
+    dim_text = ", ".join(f"{key}={value}" for key, value in dims.items())
+    return f"{evidence} | dimensions: {dim_text}" if evidence else f"dimensions: {dim_text}"
+
+
+def canonicalize_presentation_facts(
+    raw_facts: list[dict[str, Any]],
+    *,
+    facts_catalog: dict[str, Any],
+    storage_to_fact: dict[str, str],
+) -> list[dict[str, Any]]:
+    cleaned: dict[tuple[Any, ...], dict[str, Any]] = {}
+    for entry in raw_facts:
+        fact_key = entry.get("fact_key")
+        if not fact_key:
+            continue
+        canonical = storage_to_fact.get(str(fact_key), str(fact_key))
+        spec = facts_catalog.get(canonical)
+        if spec is None:
+            continue
+
+        fact_type = str(spec.get("fact_type") or "NUMERIC").upper()
+        raw_value = entry.get("numeric_value", entry.get("value"))
+        value_text = _clean_str(entry.get("text_value") or entry.get("value_text") or entry.get("value"))
+        numeric_value = None
+        if fact_type == "NUMERIC":
+            try:
+                numeric_value = float(str(raw_value).replace(",", ""))
+            except (TypeError, ValueError):
+                lower = _optional_float(entry.get("value_lower") or entry.get("lower_value"))
+                upper = _optional_float(entry.get("value_upper") or entry.get("upper_value"))
+                if lower is not None and upper is not None:
+                    numeric_value = (lower + upper) / 2.0
+                else:
+                    continue
+        elif fact_type == "DATE":
+            if not value_text:
+                value_text = _clean_str(entry.get("numeric_value"))
+            if not value_text:
+                continue
+        elif fact_type == "CATEGORICAL":
+            if not value_text:
+                continue
+            allowed = {str(value).upper() for value in spec.get("allowed_values") or []}
+            value_text = value_text.strip().upper()
+            if allowed and value_text not in allowed:
+                continue
+        else:
+            if value_text is None and entry.get("numeric_value") is not None:
+                value_text = _clean_str(entry.get("numeric_value"))
+            if value_text is None:
+                continue
+
+        basis = (entry.get("basis") or "presentation").strip().lower()
+        confidence = float(entry.get("confidence") or 0.7)
+        dims = _dimension_payload(entry)
+        scope_level, scope_name = _scope_payload(entry, dims)
+        evidence = _clean_str(entry.get("evidence")) or ""
+        row = {
+            "fact_key": canonical,
+            "numeric_value": numeric_value,
+            "value_text": value_text,
+            "unit": _canon_presentation_unit(entry.get("unit")) or spec.get("unit"),
+            "basis": basis,
+            "segment": _primary_segment(dims),
+            "geography": dims.get("geography"),
+            "product": dims.get("product"),
+            "channel": dims.get("channel"),
+            "project": dims.get("project"),
+            "customer_type": dims.get("customer_type"),
+            "metric_context": dims.get("metric_context"),
+            "scope_level": scope_level,
+            "scope_name": scope_name,
+            "fact_type": str(entry.get("fact_type") or spec.get("fact_type") or fact_type).lower(),
+            "value_lower": _optional_float(entry.get("value_lower") or entry.get("lower_value")),
+            "value_upper": _optional_float(entry.get("value_upper") or entry.get("upper_value")),
+            "sentiment": _slug(entry.get("sentiment")),
+            "is_explicit_guidance": _optional_bool(entry.get("is_explicit_guidance")),
+            "source_page": entry.get("source_page"),
+            "dimensions": dims,
+            "period_label": dims.get("period_label"),
+            "period_end": entry.get("period_end"),
+            "evidence": evidence,
+            "source_text": _source_text(evidence, dims),
+            "confidence": confidence,
+            "extraction_method": "llm",
+        }
+        key = (
+            canonical,
+            basis,
+            row["segment"],
+            row["geography"],
+            row["product"],
+            row["channel"],
+            row["project"],
+            row["customer_type"],
+            row["metric_context"],
+            row["scope_level"],
+            row["scope_name"],
+            row["period_label"],
+            value_text if fact_type != "NUMERIC" else None,
+        )
+        if key not in cleaned or confidence > cleaned[key]["confidence"]:
+            cleaned[key] = row
+    return list(cleaned.values())
+
+
 def persist_extracted_values(
     conn: sqlite3.Connection,
     *,
@@ -248,7 +868,13 @@ def persist_extracted_values(
     period_fy_start: int,
     period_end: str,
     rows: list[dict[str, Any]],
+    facts_catalog: dict[str, Any],
 ) -> None:
+    seed_fact_definitions(
+        conn,
+        facts_catalog=facts_catalog,
+        preferred_source="financial_result",
+    )
     for row in rows:
         vid = value_id(company_id, row["fact_key"], period_end, row["basis"])
         conn.execute(
@@ -277,6 +903,231 @@ def persist_extracted_values(
                 row["confidence"],
             ),
         )
+    persist_fact_observations_and_resolutions(
+        conn,
+        company_id=company_id,
+        event_id=event_id,
+        document_id=document_id,
+        period_end=period_end,
+        rows=rows,
+    )
+    conn.execute(
+        "UPDATE events SET status = 'processed', fiscal_year = ?, fiscal_quarter = ? WHERE id = ?",
+        (period_fy_start, period_quarter, event_id),
+    )
+    conn.execute("UPDATE documents SET status = 'processed' WHERE id = ?", (document_id,))
+    conn.commit()
+
+
+def presentation_value_id(
+    company_id: str,
+    row: dict[str, Any],
+    period_end: str,
+) -> str:
+    parts = [
+        company_id,
+        row["fact_key"],
+        period_end,
+        row["basis"],
+        row.get("segment") or "",
+        row.get("geography") or "",
+        row.get("product") or "",
+        row.get("channel") or "",
+        row.get("project") or "",
+        row.get("customer_type") or "",
+        row.get("metric_context") or "",
+        row.get("scope_level") or "",
+        row.get("scope_name") or "",
+        row.get("period_label") or "",
+        row.get("value_text") or "",
+    ]
+    return hashlib.sha256(":".join(parts).encode()).hexdigest()
+
+
+def persist_presentation_inventory(
+    conn: sqlite3.Connection,
+    *,
+    company_id: str,
+    event_id: str,
+    document_id: str,
+    period_label: str,
+    rows: list[dict[str, Any]],
+) -> None:
+    segments: dict[str, dict[str, Any]] = {}
+    slide_plan: list[dict[str, Any]] = []
+    for row in rows:
+        scope_level = row.get("scope_level") or "unknown"
+        scope_name = row.get("scope_name") or row.get("segment")
+        source_page = row.get("source_page")
+        if scope_name:
+            segment = segments.setdefault(
+                scope_name,
+                {
+                    "segment_name": scope_name,
+                    "aliases": sorted({scope_name}),
+                    "slides": set(),
+                    "confidence": 0.0,
+                },
+            )
+            if source_page:
+                segment["slides"].add(source_page)
+            segment["confidence"] = max(segment["confidence"], float(row.get("confidence") or 0.0))
+        slide_plan.append(
+            {
+                "slide_no": source_page,
+                "primary_scope_level": scope_level,
+                "scope_names": [scope_name] if scope_name else [],
+                "fact_type": row.get("fact_type"),
+                "fact_key": row.get("fact_key"),
+            }
+        )
+    inventory = {
+        "fact_count": len(rows),
+        "scope_counts": {},
+        "segment_count": len(segments),
+    }
+    for row in rows:
+        key = row.get("scope_level") or "unknown"
+        inventory["scope_counts"][key] = inventory["scope_counts"].get(key, 0) + 1
+
+    inventory_id = hashlib.sha256(f"{company_id}:{event_id}:{document_id}:inventory".encode()).hexdigest()
+    conn.execute(
+        """
+        INSERT INTO presentation_document_inventory (
+            id, company_id, event_id, document_id, period_label,
+            inventory_json, extraction_plan_json
+        ) VALUES (?, ?, ?, ?, ?, ?, ?)
+        ON CONFLICT(id) DO UPDATE SET
+            period_label = excluded.period_label,
+            inventory_json = excluded.inventory_json,
+            extraction_plan_json = excluded.extraction_plan_json
+        """,
+        (
+            inventory_id,
+            company_id,
+            event_id,
+            document_id,
+            period_label,
+            json.dumps(inventory, sort_keys=True),
+            json.dumps({"slide_plan": slide_plan}, sort_keys=True),
+        ),
+    )
+    conn.execute(
+        "DELETE FROM presentation_segments WHERE company_id = ? AND event_id = ? AND document_id = ?",
+        (company_id, event_id, document_id),
+    )
+    for name, segment in segments.items():
+        segment_id = hashlib.sha256(f"{company_id}:{event_id}:{document_id}:{name}".encode()).hexdigest()
+        conn.execute(
+            """
+            INSERT INTO presentation_segments (
+                id, company_id, event_id, document_id, segment_name,
+                segment_slug, aliases_json, slides_json, confidence
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                segment_id,
+                company_id,
+                event_id,
+                document_id,
+                name,
+                _slug(name),
+                json.dumps(segment["aliases"]),
+                json.dumps(sorted(segment["slides"])),
+                segment["confidence"],
+            ),
+        )
+
+
+def persist_presentation_values(
+    conn: sqlite3.Connection,
+    *,
+    company_id: str,
+    event_id: str,
+    document_id: str,
+    period_quarter: int,
+    period_fy_start: int,
+    period_end: str,
+    rows: list[dict[str, Any]],
+    facts_catalog: dict[str, Any],
+    preferred_source: str = "investor_presentation",
+) -> None:
+    seed_fact_definitions(
+        conn,
+        facts_catalog=facts_catalog,
+        preferred_source=preferred_source,
+    )
+    for row in rows:
+        conn.execute(
+            """
+            INSERT INTO extracted_values (
+                id, company_id, event_id, value_code, value_numeric, value_text, unit,
+                period_type, period_start, period_end, basis, segment, geography,
+                product, channel, project, customer_type, metric_context,
+                scope_level, scope_name, fact_type, value_lower, value_upper,
+                sentiment, is_explicit_guidance, source_text, source_page, confidence
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, 'quarter', NULL, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT(id) DO UPDATE SET
+                event_id = excluded.event_id,
+                value_numeric = excluded.value_numeric,
+                value_text = excluded.value_text,
+                unit = excluded.unit,
+                basis = excluded.basis,
+                segment = excluded.segment,
+                geography = excluded.geography,
+                product = excluded.product,
+                channel = excluded.channel,
+                project = excluded.project,
+                customer_type = excluded.customer_type,
+                metric_context = excluded.metric_context,
+                scope_level = excluded.scope_level,
+                scope_name = excluded.scope_name,
+                fact_type = excluded.fact_type,
+                value_lower = excluded.value_lower,
+                value_upper = excluded.value_upper,
+                sentiment = excluded.sentiment,
+                is_explicit_guidance = excluded.is_explicit_guidance,
+                source_text = excluded.source_text,
+                source_page = excluded.source_page,
+                confidence = excluded.confidence
+            """,
+            (
+                presentation_value_id(company_id, row, period_end),
+                company_id,
+                event_id,
+                row["fact_key"],
+                row["numeric_value"],
+                row["value_text"],
+                row["unit"],
+                period_end,
+                row["basis"],
+                row["segment"],
+                row["geography"],
+                row.get("product"),
+                row.get("channel"),
+                row.get("project"),
+                row.get("customer_type"),
+                row.get("metric_context"),
+                row.get("scope_level"),
+                row.get("scope_name"),
+                row.get("fact_type"),
+                row.get("value_lower"),
+                row.get("value_upper"),
+                row.get("sentiment"),
+                row.get("is_explicit_guidance"),
+                row["source_text"],
+                row.get("source_page"),
+                row["confidence"],
+            ),
+        )
+    persist_fact_observations_and_resolutions(
+        conn,
+        company_id=company_id,
+        event_id=event_id,
+        document_id=document_id,
+        period_end=period_end,
+        rows=rows,
+    )
     conn.execute(
         "UPDATE events SET status = 'processed', fiscal_year = ?, fiscal_quarter = ? WHERE id = ?",
         (period_fy_start, period_quarter, event_id),
@@ -291,28 +1142,82 @@ def extract_and_persist_values(
     symbol: str,
     company_id: str,
     event_id: str,
-    pdf_url: str,
+    pdf_url: str | None,
     pdf_bytes: bytes,
+    event_type: str = "Financial Results",
+    document_type: str | None = None,
+    local_path: str | None = None,
     force_reparse: bool = False,
     parse_max_workers: int | None = None,
     extraction_max_workers: int | None = None,
+    progress_callback: Callable[[dict[str, Any]], None] | None = None,
 ) -> dict[str, Any]:
+    overall_started = time.monotonic()
+
+    def progress(phase: str, message: str, **extra: Any) -> None:
+        payload = {
+            "phase": phase,
+            "message": message,
+            "elapsed_seconds": round(time.monotonic() - overall_started, 1),
+            **extra,
+        }
+        logger.info(
+            "VALUES progress phase=%s elapsed=%.1fs %s",
+            phase,
+            payload["elapsed_seconds"],
+            message,
+        )
+        if progress_callback is not None:
+            progress_callback(payload)
+
     parse_workers = parse_max_workers or settings.parse_max_workers
     extraction_workers = extraction_max_workers or settings.extraction_max_workers
+    progress(
+        "init",
+        "Validating request and preparing document",
+        symbol=symbol,
+        event_id=event_id,
+        event_type=event_type,
+        parse_workers=parse_workers,
+        extraction_workers=extraction_workers,
+        force_reparse=force_reparse,
+    )
     expected_company_id = company_id_for_symbol(symbol)
     if company_id != expected_company_id:
         raise ValueError("company_id does not match the NSE symbol-derived company id")
 
     bootstrap_schema(conn)
     event_row = _event_context(conn, event_id)
-    title = _document_title(event_row, pdf_url)
+    event_type = event_type or str(event_row.get("event_type") or "Financial Results")
+    if document_type is None:
+        document_type = {
+            "Financial Results": "financial_result",
+            "Investor Presentation": "investor_presentation",
+            "Earnings Call Transcript": "earnings_call_transcript",
+        }.get(event_type, "financial_result")
+    source_ref = pdf_url or local_path or ""
+    title = _document_title(event_row, source_ref)
+    document_kind = {
+        "financial_result": "FINANCIAL_RESULT",
+        "investor_presentation": "INVESTOR_PRESENTATION",
+        "earnings_call_transcript": "EARNINGS_CALL_TRANSCRIPT",
+    }.get(document_type, "FINANCIAL_RESULT")
     stored_doc = store_document(
         conn,
         company_id=company_id,
         event_id=event_id,
-        pdf_url=pdf_url,
+        pdf_url=source_ref,
         pdf_bytes=pdf_bytes,
         title=title,
+        document_kind=document_kind,
+    )
+    progress(
+        "stored_document",
+        "Stored source document and linked it to the event",
+        document_id=stored_doc["document_id"],
+        storage_path=str(stored_doc["storage_path"]),
+        bytes=len(pdf_bytes),
+        source=source_ref,
     )
 
     openai_api_key = load_env_value("OPENAI_API_KEY")
@@ -329,26 +1234,213 @@ def extract_and_persist_values(
         max_retries=settings.openai_max_retries,
     )
     logger.info(
-        "Starting value extraction for %s event_id=%s force_reparse=%s",
+        "Starting value extraction for %s event_id=%s event_type=%s document_type=%s parse_model=%s extraction_model=%s force_reparse=%s",
         symbol,
         event_id,
+        event_type,
+        document_type,
+        openai_parse_model,
+        openai_model,
         force_reparse,
     )
-    markdown = parse_pdf_to_markdown(
-        stored_doc["storage_path"],
-        parsed_dir=settings.parsed_dir,
-        client=client,
-        model=openai_parse_model,
-        force=force_reparse,
-        max_workers=parse_workers,
-    )
-    logger.info("PDF markdown ready: %s chars", len(markdown))
+    if pdf_bytes[:4] == b"%PDF":
+        progress(
+            "parse_pdf",
+            "Parsing PDF to markdown",
+            document_id=stored_doc["document_id"],
+            parse_model=openai_parse_model,
+        )
 
+        def parse_progress(update: dict[str, Any]) -> None:
+            phase = str(update.get("phase") or "parse_pdf")
+            message = str(update.get("message") or "PDF parse progress")
+            extra = {
+                key: value
+                for key, value in update.items()
+                if key not in {"phase", "message", "elapsed_seconds"}
+            }
+            progress(phase, message, **extra)
+
+        markdown = parse_pdf_to_markdown(
+            stored_doc["storage_path"],
+            parsed_dir=settings.parsed_dir,
+            client=client,
+            model=openai_parse_model,
+            force=force_reparse,
+            max_workers=parse_workers,
+            progress_callback=parse_progress,
+        )
+        logger.info("PDF markdown ready: %s chars", len(markdown))
+        progress(
+            "markdown_ready",
+            "PDF markdown is ready",
+            markdown_chars=len(markdown),
+        )
+    else:
+        markdown = pdf_bytes.decode("utf-8", errors="replace")
+        logger.info("Text document ready: %s chars", len(markdown))
+        progress("markdown_ready", "Text document is ready", markdown_chars=len(markdown))
+
+    progress("detect_period", "Detecting reporting period", title=title)
     reporting_period = detect_period(markdown, title=title, event_row=event_row)
     period_end = reporting_period.quarter_end
+    progress(
+        "period_detected",
+        "Reporting period detected",
+        period_label=reporting_period.label,
+        period_end=period_end,
+        quarter=reporting_period.quarter,
+        fy_start_year=reporting_period.fy_start_year,
+    )
 
+    if event_type in {"Investor Presentation", "Earnings Call Transcript"}:
+        progress("load_catalog", "Loading unified document facts catalog", event_type=event_type)
+        facts_catalog = (
+            load_presentation_facts_catalog()
+            if event_type == "Investor Presentation"
+            else load_earnings_call_facts_catalog()
+        )
+        storage_to_fact, fact_catalog_text = _presentation_catalog_aliases(facts_catalog)
+        chunks = _chunk(markdown, max_chars=14000)
+        workers = min(max(extraction_workers, 1), len(chunks)) if chunks else 1
+        logger.info(
+            "Running %s extraction over %s markdown chunks with %s worker(s)",
+            event_type,
+            len(chunks),
+            workers,
+        )
+        progress(
+            "llm_extract",
+            f"Running {event_type} extraction",
+            chunks=len(chunks),
+            workers=workers,
+            model=openai_model,
+        )
+
+        def extract_unified_chunk(index: int, chunk: str) -> tuple[int, list[dict[str, Any]]]:
+            started = time.monotonic()
+            progress(
+                "llm_extract_chunk",
+                f"Started {event_type} chunk {index}/{len(chunks)}",
+                chunk=index,
+                chunks=len(chunks),
+                chunk_chars=len(chunk),
+            )
+            if event_type == "Investor Presentation":
+                chunk_facts = extract_presentation_facts_from_chunk(
+                    client,
+                    model=openai_model,
+                    chunk=chunk,
+                    symbol=symbol,
+                    period_label=reporting_period.label,
+                    period_end=period_end,
+                    fact_catalog_text=fact_catalog_text,
+                )
+            else:
+                chunk_facts = extract_unified_document_facts_from_chunk(
+                    client,
+                    model=openai_model,
+                    chunk=chunk,
+                    symbol=symbol,
+                    document_type=document_type,
+                    period_label=reporting_period.label,
+                    period_end=period_end,
+                    fact_catalog_text=fact_catalog_text,
+                )
+            logger.info(
+                "%s extraction chunk %s/%s returned %s candidate facts in %.1fs",
+                event_type,
+                index,
+                len(chunks),
+                len(chunk_facts),
+                time.monotonic() - started,
+            )
+            progress(
+                "llm_extract_chunk",
+                f"Finished {event_type} chunk {index}/{len(chunks)}",
+                chunk=index,
+                chunks=len(chunks),
+                candidate_facts=len(chunk_facts),
+                chunk_elapsed_seconds=round(time.monotonic() - started, 1),
+            )
+            return index, chunk_facts
+
+        if workers == 1:
+            chunk_results = [
+                extract_unified_chunk(index, chunk)
+                for index, chunk in enumerate(chunks, start=1)
+            ]
+        else:
+            with ThreadPoolExecutor(max_workers=workers) as executor:
+                futures = [
+                    executor.submit(extract_unified_chunk, index, chunk)
+                    for index, chunk in enumerate(chunks, start=1)
+                ]
+                chunk_results = [future.result() for future in as_completed(futures)]
+
+        raw_facts: list[dict[str, Any]] = []
+        for _, chunk_facts in sorted(chunk_results, key=lambda item: item[0]):
+            raw_facts.extend(chunk_facts)
+        accepted_rows = canonicalize_presentation_facts(
+            raw_facts,
+            facts_catalog=facts_catalog,
+            storage_to_fact=storage_to_fact,
+        )
+        progress(
+            "validate_facts",
+            "Validated unified document facts",
+            raw_facts=len(raw_facts),
+            accepted_rows=len(accepted_rows),
+        )
+        if not accepted_rows:
+            raise RuntimeError("No presentation facts passed validation after extraction")
+
+        progress("persist_values", "Persisting extracted values", rows=len(accepted_rows))
+        persist_presentation_values(
+            conn,
+            company_id=company_id,
+            event_id=event_id,
+            document_id=stored_doc["document_id"],
+            period_quarter=reporting_period.quarter,
+            period_fy_start=reporting_period.fy_start_year,
+            period_end=period_end,
+            rows=accepted_rows,
+            facts_catalog=facts_catalog,
+            preferred_source=document_type,
+        )
+        if event_type == "Investor Presentation":
+            persist_presentation_inventory(
+                conn,
+                company_id=company_id,
+                event_id=event_id,
+                document_id=stored_doc["document_id"],
+                period_label=reporting_period.label,
+                rows=accepted_rows,
+            )
+            conn.commit()
+        progress(
+            "complete",
+            "Step 4 completed",
+            rows=len(accepted_rows),
+            document_id=stored_doc["document_id"],
+        )
+
+        return {
+            "document_id": stored_doc["document_id"],
+            "storage_path": str(stored_doc["storage_path"]),
+            "markdown_length": len(markdown),
+            "reporting_period": reporting_period.to_dict(),
+            "values": accepted_rows,
+        }
+
+    progress("load_catalog", "Loading financial results facts catalog")
     facts_catalog = load_facts_catalog()
     storage_to_fact, fact_catalog_text = _catalog_aliases(facts_catalog)
+    progress(
+        "deterministic_extract",
+        "Running deterministic quarter-column extraction",
+        catalog_keys=len(facts_catalog),
+    )
     deterministic_facts = extract_facts_from_quarter_column(
         markdown,
         target=reporting_period,
@@ -363,20 +1455,44 @@ def extract_and_persist_values(
         len(deterministic_facts),
         len(missing_keys),
     )
+    progress(
+        "deterministic_extract",
+        "Deterministic extraction completed",
+        found_facts=len(deterministic_facts),
+        missing_keys=len(missing_keys),
+    )
 
     if missing_keys:
         chunks = _chunk(markdown)
+        workers = min(max(extraction_workers, 1), len(chunks)) if chunks else 1
         logger.info(
             "Running LLM fallback over %s markdown chunks with %s worker(s) for missing facts",
             len(chunks),
-            min(max(extraction_workers, 1), len(chunks)),
+            workers,
+        )
+        progress(
+            "llm_fallback",
+            "Running LLM fallback for missing facts",
+            chunks=len(chunks),
+            workers=workers,
+            missing_keys=len(missing_keys),
+            model=openai_model,
         )
     else:
         chunks = []
+        workers = 1
         logger.info("Skipping LLM fallback; deterministic extraction covered the catalog")
+        progress("llm_fallback_skipped", "Deterministic extraction covered the catalog")
 
     def extract_chunk(index: int, chunk: str) -> tuple[int, list[dict[str, Any]]]:
         started = time.monotonic()
+        progress(
+            "llm_fallback_chunk",
+            f"Started LLM fallback chunk {index}/{len(chunks)}",
+            chunk=index,
+            chunks=len(chunks),
+            chunk_chars=len(chunk),
+        )
         chunk_facts = extract_facts_from_chunk(
             client,
             model=openai_model,
@@ -392,10 +1508,17 @@ def extract_and_persist_values(
             len(chunk_facts),
             time.monotonic() - started,
         )
+        progress(
+            "llm_fallback_chunk",
+            f"Finished LLM fallback chunk {index}/{len(chunks)}",
+            chunk=index,
+            chunks=len(chunks),
+            candidate_facts=len(chunk_facts),
+            chunk_elapsed_seconds=round(time.monotonic() - started, 1),
+        )
         return index, chunk_facts
 
     chunk_results: list[tuple[int, list[dict[str, Any]]]] = []
-    workers = min(max(extraction_workers, 1), len(chunks)) if chunks else 1
     if chunks and workers == 1:
         chunk_results = [extract_chunk(index, chunk) for index, chunk in enumerate(chunks, start=1)]
     elif chunks:
@@ -421,9 +1544,16 @@ def extract_and_persist_values(
         facts_catalog=facts_catalog,
         storage_to_fact=storage_to_fact,
     )
+    progress(
+        "validate_facts",
+        "Validated financial result facts",
+        raw_facts=len(raw_facts),
+        accepted_rows=len(accepted_rows),
+    )
     if not accepted_rows:
         raise RuntimeError("No facts passed validation after extraction")
 
+    progress("persist_values", "Persisting extracted values", rows=len(accepted_rows))
     persist_extracted_values(
         conn,
         company_id=company_id,
@@ -433,6 +1563,13 @@ def extract_and_persist_values(
         period_fy_start=reporting_period.fy_start_year,
         period_end=period_end,
         rows=accepted_rows,
+        facts_catalog=facts_catalog,
+    )
+    progress(
+        "complete",
+        "Step 4 completed",
+        rows=len(accepted_rows),
+        document_id=stored_doc["document_id"],
     )
 
     return {

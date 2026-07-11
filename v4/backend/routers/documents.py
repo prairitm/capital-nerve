@@ -7,24 +7,38 @@ from pathlib import Path
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import FileResponse
 
-from config import settings
+from config import REPO_ROOT, settings
 from db import get_conn
+from queries import uses_eight_step_metrics
 from serializers import company_dict, document_dict, event_dict
 from source_locate import locate_source
 
 router = APIRouter(tags=["documents"])
 
 
+def _parsed_md_path(document_id: str) -> Path:
+    primary = settings.parsed_dir / f"{document_id}.md"
+    if primary.exists():
+        return primary
+    legacy_v4 = REPO_ROOT / "v4" / "data" / "parsed" / f"{document_id}.md"
+    if legacy_v4.exists():
+        return legacy_v4
+    return primary
+
+
 def _counts(conn, event_id: str | None) -> dict[str, int]:
     if not event_id:
         return {"extracted_values": 0, "metric_values": 0, "signals": 0}
+    metric_count_sql = (
+        "SELECT COUNT(*) AS c FROM metrics WHERE event_id = ?"
+        if uses_eight_step_metrics(conn)
+        else "SELECT COUNT(*) AS c FROM metric_values WHERE event_id = ?"
+    )
     return {
         "extracted_values": conn.execute(
             "SELECT COUNT(*) AS c FROM extracted_values WHERE event_id = ?", (event_id,)
         ).fetchone()["c"],
-        "metric_values": conn.execute(
-            "SELECT COUNT(*) AS c FROM metric_values WHERE event_id = ?", (event_id,)
-        ).fetchone()["c"],
+        "metric_values": conn.execute(metric_count_sql, (event_id,)).fetchone()["c"],
         "signals": conn.execute(
             "SELECT COUNT(*) AS c FROM signals WHERE event_id = ?", (event_id,)
         ).fetchone()["c"],
@@ -57,7 +71,13 @@ def document_detail(document_id: str):
 
 
 @router.get("/documents/{document_id}/locate")
-def document_locate(document_id: str, text: str, page: int | None = None):
+def document_locate(
+    document_id: str,
+    text: str,
+    page: int | None = None,
+    value: str | None = None,
+    context: str | None = None,
+):
     if not text.strip():
         raise HTTPException(status_code=400, detail="text query parameter is required")
     preferred_page = page if page is not None and page > 0 else None
@@ -68,11 +88,13 @@ def document_locate(document_id: str, text: str, page: int | None = None):
         if not doc:
             raise HTTPException(status_code=404, detail="Document not found")
         pdf_path = Path(doc["storage_path"])
-        parsed_md_path = settings.parsed_dir / f"{document_id}.md"
+        parsed_md_path = _parsed_md_path(document_id)
         return locate_source(
             parsed_md_path=parsed_md_path,
             pdf_path=pdf_path,
             source_text=text,
+            target_value=value,
+            context=context,
             preferred_page=preferred_page,
         )
 

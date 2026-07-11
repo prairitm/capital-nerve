@@ -43,6 +43,7 @@ def present_alerts_endpoint(
     to_date: str = Query(...),
     company_id: str = Query(...),
     event_id: str = Query(...),
+    event_type: str = Query(default="Financial Results"),
     pdf_url: str | None = Query(default=None),
     document_id: str | None = Query(default=None),
     period_quarter: int = Query(..., ge=1, le=4),
@@ -58,6 +59,7 @@ def present_alerts_endpoint(
         to_date=to_date,
         company_id=company_id,
         event_id=event_id,
+        event_type=event_type,
         pdf_url=pdf_url,
         document_id=document_id,
         period_quarter=period_quarter,
@@ -75,6 +77,7 @@ def present_alerts_endpoint(
                 symbol=payload.symbol,
                 company_id=payload.company_id,
                 event_id=payload.event_id,
+                event_type=payload.event_type,
             )
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
@@ -85,6 +88,7 @@ def present_alerts_endpoint(
         "to_date": payload.to_date,
         "company_id": payload.company_id,
         "event_id": payload.event_id,
+        "event_type": payload.event_type,
         "pdf_url": payload.pdf_url,
         "document_id": payload.document_id,
         "period_quarter": payload.period_quarter,
@@ -103,6 +107,7 @@ def present_alerts_endpoint(
         to_date=payload.to_date,
         company_id=payload.company_id,
         event_id=payload.event_id,
+        event_type=payload.event_type,
         pdf_url=payload.pdf_url,
         document_id=payload.document_id,
         period_quarter=payload.period_quarter,

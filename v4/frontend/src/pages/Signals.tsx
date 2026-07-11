@@ -44,6 +44,7 @@ export function Signals() {
           signals={data ?? []}
           showCompany
           showSeverity
+          groupByDocumentType
           filters={{
             category,
             severity,

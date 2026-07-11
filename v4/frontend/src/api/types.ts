@@ -32,6 +32,9 @@ export interface CompanyEvent {
 export interface ExtractedValue {
   value_code: string;
   value_name: string;
+  statement: string | null;
+  category: string | null;
+  group: string | null;
   value_numeric: number | null;
   value_text: string | null;
   unit: string | null;
@@ -39,9 +42,28 @@ export interface ExtractedValue {
   period_start: string | null;
   period_end: string | null;
   basis: string | null;
+  scope?: string | null;
+  scope_level?: string | null;
+  scope_name?: string | null;
+  segment?: string | null;
+  geography?: string | null;
+  product?: string | null;
+  channel?: string | null;
+  project?: string | null;
+  customer_type?: string | null;
+  metric_context?: string | null;
+  fact_type?: string | null;
+  value_lower?: number | null;
+  value_upper?: number | null;
+  sentiment?: "positive" | "neutral" | "mixed" | "negative" | string | null;
+  is_explicit_guidance?: boolean | number | null;
+  resolution_status?: string | null;
+  resolved_fact_id?: string | null;
   source_text: string | null;
   source_page: number | null;
   confidence: number | null;
+  document_id?: string | null;
+  observation_id?: string | null;
 }
 
 export interface SignalInputFact extends ExtractedValue {
@@ -62,6 +84,8 @@ export interface MetricValue {
 }
 
 export interface SignalEvidence {
+  metric_ids?: string[];
+  fact_ids?: string[];
   metric_keys?: string[];
   trigger_values?: Record<string, number>;
   rule_text?: string | null;
@@ -95,6 +119,14 @@ export interface SnapshotRow {
   unit: string | null;
 }
 
+export interface FactPeriod {
+  period_end: string;
+  period_label: string | null;
+  scope: string;
+  facts_count: number;
+  is_current_event_period: boolean;
+}
+
 export interface DocumentInfo {
   id: string;
   company_id: string | null;
@@ -111,6 +143,7 @@ export interface CompanyHub {
   company: Company;
   latest_event_id: string | null;
   latest_period_label: string | null;
+  latest_period_events: CompanyEvent[];
   financial_snapshot: SnapshotRow[];
   latest_metrics: MetricValue[];
   signals: Signal[];
@@ -122,9 +155,48 @@ export interface EventDetail {
   event: CompanyEvent;
   company: Company | null;
   facts: ExtractedValue[];
+  fact_periods: FactPeriod[];
+  selected_fact_period_end: string | null;
   metrics: MetricValue[];
   signals: Signal[];
   financial_snapshot: SnapshotRow[];
+  related_events: CompanyEvent[];
+  document_sections?: QuarterDocumentSection[];
+}
+
+export interface QuarterDocumentSection {
+  key: string;
+  document_type: string;
+  label: string;
+  event: CompanyEvent | null;
+  document: DocumentInfo | null;
+  facts: ExtractedValue[];
+  fact_periods: FactPeriod[];
+  selected_fact_period_end: string | null;
+  metrics: MetricValue[];
+  signals: Signal[];
+  presentation_summary?: PresentationSummary | null;
+  counts: {
+    facts: number;
+    metrics: number;
+    signals: number;
+  };
+}
+
+export interface PresentationSegment {
+  name: string;
+  slug: string | null;
+  aliases: string | null;
+  slides: string | null;
+  confidence: number | null;
+}
+
+export interface PresentationSummary {
+  segments: PresentationSegment[];
+  scope_counts: Record<string, number>;
+  fact_type_counts: Record<string, number>;
+  guidance_count: number;
+  average_confidence: number | null;
 }
 
 export interface SignalDetail extends Signal {

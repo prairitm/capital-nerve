@@ -16,6 +16,12 @@ class Settings:
         self.db_path = Path(
             os.getenv("ALERTS_SERVICE_DB_PATH", str(default_db_path))
         ).resolve()
+        self.catalog_dir = Path(
+            os.getenv(
+                "ALERTS_SERVICE_CATALOG_DIR",
+                str(REPO_ROOT / "8_step_flow" / "catalog_mvp"),
+            )
+        ).resolve()
         self.cors_origins = [
             origin.strip()
             for origin in os.getenv(

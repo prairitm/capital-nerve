@@ -1,0 +1,753 @@
+{
+  "revenue_guidance_upgrade": {
+    "name": "Revenue Guidance Upgrade",
+    "category": "guidance",
+    "direction": "POSITIVE",
+    "severity": "HIGH",
+    "description": "Revenue guidance midpoint was raised",
+    "rule": {
+      "metric_key": "revenue_guidance_revision_pct",
+      "op": ">",
+      "value": 3
+    }
+  },
+  "revenue_guidance_cut": {
+    "name": "Revenue Guidance Cut",
+    "category": "guidance",
+    "direction": "NEGATIVE",
+    "severity": "HIGH",
+    "description": "Revenue guidance midpoint was reduced",
+    "rule": {
+      "metric_key": "revenue_guidance_revision_pct",
+      "op": "<",
+      "value": -3
+    }
+  },
+  "growth_guidance_upgrade": {
+    "name": "Growth Guidance Upgrade",
+    "category": "guidance",
+    "direction": "POSITIVE",
+    "severity": "HIGH",
+    "description": "Revenue-growth guidance was raised",
+    "rule": {
+      "metric_key": "revenue_growth_guidance_revision_pp",
+      "op": ">",
+      "value": 2
+    }
+  },
+  "growth_guidance_cut": {
+    "name": "Growth Guidance Cut",
+    "category": "guidance",
+    "direction": "NEGATIVE",
+    "severity": "HIGH",
+    "description": "Revenue-growth guidance was lowered",
+    "rule": {
+      "metric_key": "revenue_growth_guidance_revision_pp",
+      "op": "<",
+      "value": -2
+    }
+  },
+  "margin_guidance_upgrade": {
+    "name": "Margin Guidance Upgrade",
+    "category": "guidance",
+    "direction": "POSITIVE",
+    "severity": "HIGH",
+    "description": "EBITDA-margin guidance was raised",
+    "rule": {
+      "metric_key": "ebitda_margin_guidance_revision_bps",
+      "op": ">",
+      "value": 50
+    }
+  },
+  "margin_guidance_cut": {
+    "name": "Margin Guidance Cut",
+    "category": "guidance",
+    "direction": "NEGATIVE",
+    "severity": "HIGH",
+    "description": "EBITDA-margin guidance was lowered",
+    "rule": {
+      "metric_key": "ebitda_margin_guidance_revision_bps",
+      "op": "<",
+      "value": -50
+    }
+  },
+  "capex_guidance_increase": {
+    "name": "Capex Guidance Increase",
+    "category": "capital_allocation",
+    "direction": "MIXED",
+    "severity": "MEDIUM",
+    "description": "Capex guidance increased materially",
+    "rule": {
+      "metric_key": "capex_guidance_revision_pct",
+      "op": ">",
+      "value": 15
+    }
+  },
+  "guidance_range_narrowed": {
+    "name": "Guidance Range Narrowed",
+    "category": "guidance",
+    "direction": "POSITIVE",
+    "severity": "MEDIUM",
+    "description": "Guidance range narrowed",
+    "rule": {
+      "metric_key": "guidance_range_change_pct",
+      "op": "<",
+      "value": -20
+    }
+  },
+  "guidance_range_widened": {
+    "name": "Guidance Range Widened",
+    "category": "guidance",
+    "direction": "NEGATIVE",
+    "severity": "MEDIUM",
+    "description": "Guidance range widened",
+    "rule": {
+      "metric_key": "guidance_range_change_pct",
+      "op": ">",
+      "value": 20
+    }
+  },
+  "back_end_loaded_guidance_risk": {
+    "name": "Back End Loaded Guidance Risk",
+    "category": "guidance_quality",
+    "direction": "NEGATIVE",
+    "severity": "HIGH",
+    "description": "Guidance requires a sharp run-rate acceleration",
+    "rule": {
+      "metric_key": "required_run_rate_premium",
+      "op": ">",
+      "value": 25
+    }
+  },
+  "margin_guidance_at_risk": {
+    "name": "Margin Guidance At Risk",
+    "category": "guidance_quality",
+    "direction": "NEGATIVE",
+    "severity": "HIGH",
+    "description": "Current margin is materially below guidance",
+    "rule": {
+      "metric_key": "margin_guidance_gap_bps",
+      "op": "<",
+      "value": -200
+    }
+  },
+  "frequent_guidance_changes": {
+    "name": "Frequent Guidance Changes",
+    "category": "guidance_quality",
+    "direction": "NEGATIVE",
+    "severity": "HIGH",
+    "description": "Guidance has changed repeatedly",
+    "rule": {
+      "metric_key": "guidance_change_frequency",
+      "op": ">",
+      "value": 2
+    }
+  },
+  "weak_historical_guidance_accuracy": {
+    "name": "Weak Historical Guidance Accuracy",
+    "category": "guidance_quality",
+    "direction": "NEGATIVE",
+    "severity": "HIGH",
+    "description": "Management has a weak guidance hit rate",
+    "rule": {
+      "metric_key": "historical_guidance_hit_rate",
+      "op": "<",
+      "value": 60
+    }
+  },
+  "large_historical_guidance_misses": {
+    "name": "Large Historical Guidance Misses",
+    "category": "guidance_quality",
+    "direction": "NEGATIVE",
+    "severity": "HIGH",
+    "description": "Historical misses are material",
+    "rule": {
+      "metric_key": "historical_guidance_miss_magnitude",
+      "op": ">",
+      "value": 10
+    }
+  },
+  "guidance_withdrawn": {
+    "name": "Guidance Withdrawn",
+    "category": "guidance",
+    "direction": "NEGATIVE",
+    "severity": "CRITICAL",
+    "description": "Previously issued guidance was withdrawn",
+    "rule": {
+      "fact_key": "guidance_status",
+      "op": "==",
+      "value": "WITHDRAWN"
+    }
+  },
+  "capex_execution_behind_guidance": {
+    "name": "Capex Execution Behind Guidance",
+    "category": "execution",
+    "direction": "NEGATIVE",
+    "severity": "MEDIUM",
+    "description": "Capex execution is behind elapsed-year pace",
+    "rule": {
+      "custom": "capex_guidance_attainment < elapsed_year_pct - 15"
+    }
+  },
+  "management_tone_improving": {
+    "name": "Management Tone Improving",
+    "category": "tone",
+    "direction": "POSITIVE",
+    "severity": "MEDIUM",
+    "description": "Management tone improved versus the prior call",
+    "rule": {
+      "metric_key": "management_tone_change_qoq",
+      "op": ">",
+      "value": 0.2
+    }
+  },
+  "management_tone_deteriorating": {
+    "name": "Management Tone Deteriorating",
+    "category": "tone",
+    "direction": "NEGATIVE",
+    "severity": "MEDIUM",
+    "description": "Management tone deteriorated versus the prior call",
+    "rule": {
+      "metric_key": "management_tone_change_qoq",
+      "op": "<",
+      "value": -0.2
+    }
+  },
+  "prepared_remarks_q_and_a_divergence": {
+    "name": "Prepared Remarks Q And A Divergence",
+    "category": "tone",
+    "direction": "NEGATIVE",
+    "severity": "HIGH",
+    "description": "Prepared remarks were materially more positive than Q&A",
+    "rule": {
+      "metric_key": "prepared_vs_q_and_a_tone_gap",
+      "op": ">",
+      "value": 0.3
+    }
+  },
+  "low_forward_visibility": {
+    "name": "Low Forward Visibility",
+    "category": "outlook",
+    "direction": "NEGATIVE",
+    "severity": "HIGH",
+    "description": "Many forward-looking statements carry low confidence",
+    "rule": {
+      "metric_key": "low_confidence_statement_ratio",
+      "op": ">",
+      "value": 40
+    }
+  },
+  "risk_discussion_expanding": {
+    "name": "Risk Discussion Expanding",
+    "category": "risk",
+    "direction": "NEGATIVE",
+    "severity": "MEDIUM",
+    "description": "Risk mentions rose sharply",
+    "rule": {
+      "metric_key": "risk_mention_change_qoq",
+      "op": ">",
+      "value": 50
+    }
+  },
+  "high_information_density_call": {
+    "name": "High Information Density Call",
+    "category": "disclosure_quality",
+    "direction": "POSITIVE",
+    "severity": "MEDIUM",
+    "description": "Call contained substantial quantified or new information",
+    "rule": {
+      "metric_key": "transcript_information_density",
+      "op": ">",
+      "value": 45
+    }
+  },
+  "low_information_density_call": {
+    "name": "Low Information Density Call",
+    "category": "disclosure_quality",
+    "direction": "NEGATIVE",
+    "severity": "MEDIUM",
+    "description": "Call contained little quantified or new information",
+    "rule": {
+      "metric_key": "transcript_information_density",
+      "op": "<",
+      "value": 15
+    }
+  },
+  "high_answer_completeness": {
+    "name": "High Answer Completeness",
+    "category": "qa_quality",
+    "direction": "POSITIVE",
+    "severity": "MEDIUM",
+    "description": "Most analyst questions were answered directly",
+    "rule": {
+      "metric_key": "answer_completeness_rate",
+      "op": ">",
+      "value": 80
+    }
+  },
+  "analyst_concern_concentration": {
+    "name": "Analyst Concern Concentration",
+    "category": "analyst_attention",
+    "direction": "NEGATIVE",
+    "severity": "MEDIUM",
+    "description": "Questions were concentrated on one concern",
+    "rule": {
+      "metric_key": "top_concern_concentration",
+      "op": ">",
+      "value": 35
+    }
+  },
+  "analyst_question_intensity_rising": {
+    "name": "Analyst Question Intensity Rising",
+    "category": "analyst_attention",
+    "direction": "NEGATIVE",
+    "severity": "MEDIUM",
+    "description": "Analyst questioning increased sharply",
+    "rule": {
+      "metric_key": "question_intensity_change_qoq",
+      "op": ">",
+      "value": 35
+    }
+  },
+  "outlook_not_quantified": {
+    "name": "Outlook Not Quantified",
+    "category": "guidance_quality",
+    "direction": "MIXED",
+    "severity": "MEDIUM",
+    "description": "Management discussed outlook without useful quantification",
+    "rule": {
+      "all": [
+        {
+          "metric_key": "forward_looking_statement_ratio",
+          "op": ">",
+          "value": 20
+        },
+        {
+          "metric_key": "quantified_statement_ratio",
+          "op": "<",
+          "value": 15
+        }
+      ]
+    }
+  },
+  "evasive_q_and_a": {
+    "name": "Evasive Q And A",
+    "category": "qa_quality",
+    "direction": "NEGATIVE",
+    "severity": "HIGH",
+    "description": "Many questions received non-responsive or vague answers",
+    "rule": {
+      "any": [
+        {
+          "metric_key": "non_responsive_answer_rate",
+          "op": ">",
+          "value": 20
+        },
+        {
+          "metric_key": "vague_answer_rate",
+          "op": ">",
+          "value": 35
+        },
+        {
+          "metric_key": "topic_avoidance_score",
+          "op": ">",
+          "value": 60
+        }
+      ]
+    }
+  },
+  "repeated_unanswered_concern": {
+    "name": "Repeated Unanswered Concern",
+    "category": "qa_quality",
+    "direction": "NEGATIVE",
+    "severity": "HIGH",
+    "description": "The same concern recurred without a complete answer",
+    "rule": {
+      "all": [
+        {
+          "metric_key": "repeated_concern_count",
+          "op": ">",
+          "value": 0
+        },
+        {
+          "metric_key": "unanswered_question_rate",
+          "op": ">",
+          "value": 10
+        }
+      ]
+    }
+  },
+  "strong_q_and_a_disclosure": {
+    "name": "Strong Q And A Disclosure",
+    "category": "qa_quality",
+    "direction": "POSITIVE",
+    "severity": "MEDIUM",
+    "description": "Q&A was quantified, direct and informative",
+    "rule": {
+      "all": [
+        {
+          "metric_key": "quantified_answer_rate",
+          "op": ">",
+          "value": 50
+        },
+        {
+          "metric_key": "new_information_answer_rate",
+          "op": ">",
+          "value": 30
+        },
+        {
+          "metric_key": "non_responsive_answer_rate",
+          "op": "<",
+          "value": 10
+        }
+      ]
+    }
+  },
+  "commitment_execution_strong": {
+    "name": "Commitment Execution Strong",
+    "category": "execution",
+    "direction": "POSITIVE",
+    "severity": "HIGH",
+    "description": "Most evaluable commitments were completed",
+    "rule": {
+      "metric_key": "commitment_completion_rate",
+      "op": ">",
+      "value": 80
+    }
+  },
+  "commitment_execution_weak": {
+    "name": "Commitment Execution Weak",
+    "category": "execution",
+    "direction": "NEGATIVE",
+    "severity": "HIGH",
+    "description": "Many commitments were missed, delayed or withdrawn",
+    "rule": {
+      "metric_key": "commitment_miss_rate",
+      "op": ">",
+      "value": 30
+    }
+  },
+  "project_commissioning_delay": {
+    "name": "Project Commissioning Delay",
+    "category": "execution",
+    "direction": "NEGATIVE",
+    "severity": "HIGH",
+    "description": "Commissioning date moved back materially",
+    "rule": {
+      "metric_key": "project_date_slippage_days",
+      "op": ">",
+      "value": 60
+    }
+  },
+  "project_cost_overrun_risk": {
+    "name": "Project Cost Overrun Risk",
+    "category": "execution",
+    "direction": "NEGATIVE",
+    "severity": "HIGH",
+    "description": "Expected project cost increased materially",
+    "rule": {
+      "metric_key": "project_cost_revision_pct",
+      "op": ">",
+      "value": 10
+    }
+  },
+  "management_claims_well_supported": {
+    "name": "Management Claims Well Supported",
+    "category": "credibility",
+    "direction": "POSITIVE",
+    "severity": "HIGH",
+    "description": "Most verifiable claims are supported by disclosures",
+    "rule": {
+      "metric_key": "claim_support_rate",
+      "op": ">",
+      "value": 85
+    }
+  },
+  "narrative_financial_mismatch": {
+    "name": "Narrative Financial Mismatch",
+    "category": "credibility",
+    "direction": "NEGATIVE",
+    "severity": "HIGH",
+    "description": "Current narrative conflicts with reported disclosures",
+    "rule": {
+      "metric_key": "current_disclosure_contradiction_count",
+      "op": ">",
+      "value": 0
+    }
+  },
+  "management_narrative_reversal": {
+    "name": "Management Narrative Reversal",
+    "category": "credibility",
+    "direction": "NEGATIVE",
+    "severity": "HIGH",
+    "description": "Current claims contradict prior calls",
+    "rule": {
+      "metric_key": "prior_call_contradiction_count",
+      "op": ">",
+      "value": 0
+    }
+  },
+  "poor_explanation_coverage": {
+    "name": "Poor Explanation Coverage",
+    "category": "disclosure_quality",
+    "direction": "NEGATIVE",
+    "severity": "MEDIUM",
+    "description": "Material financial movements were poorly explained",
+    "rule": {
+      "metric_key": "explanation_coverage_ratio",
+      "op": "<",
+      "value": 60
+    }
+  },
+  "risks_not_reflected_in_commentary": {
+    "name": "Risks Not Reflected In Commentary",
+    "category": "credibility",
+    "direction": "NEGATIVE",
+    "severity": "HIGH",
+    "description": "Commentary weakly aligns with financial deterioration",
+    "rule": {
+      "metric_key": "risk_to_financial_alignment_score",
+      "op": "<",
+      "value": 40
+    }
+  },
+  "weak_management_claim_accuracy": {
+    "name": "Weak Management Claim Accuracy",
+    "category": "credibility",
+    "direction": "NEGATIVE",
+    "severity": "HIGH",
+    "description": "Past forward claims were often not verified",
+    "rule": {
+      "metric_key": "management_claim_accuracy_rate",
+      "op": "<",
+      "value": 60
+    }
+  },
+  "guidance_miss": {
+    "name": "Guidance Miss",
+    "category": "guidance_quality",
+    "direction": "NEGATIVE",
+    "severity": "HIGH",
+    "description": "Actual performance missed original guidance materially",
+    "rule": {
+      "metric_key": "guidance_to_actual_gap_pct",
+      "op": "<",
+      "value": -5
+    }
+  },
+  "guidance_beat": {
+    "name": "Guidance Beat",
+    "category": "guidance_quality",
+    "direction": "POSITIVE",
+    "severity": "MEDIUM",
+    "description": "Actual performance exceeded original guidance materially",
+    "rule": {
+      "metric_key": "guidance_to_actual_gap_pct",
+      "op": ">",
+      "value": 5
+    }
+  },
+  "repeated_commitment_without_delivery": {
+    "name": "Repeated Commitment Without Delivery",
+    "category": "execution",
+    "direction": "NEGATIVE",
+    "severity": "HIGH",
+    "description": "The same commitment is reiterated without delivery",
+    "rule": {
+      "all": [
+        {
+          "metric_key": "commitment_reiteration_count",
+          "op": ">",
+          "value": 2
+        },
+        {
+          "metric_key": "commitment_completion_rate",
+          "op": "<",
+          "value": 50
+        }
+      ]
+    }
+  },
+  "demand_slowdown": {
+    "name": "Demand Slowdown",
+    "category": "demand",
+    "direction": "NEGATIVE",
+    "severity": "HIGH",
+    "description": "Demand is moderating or declining",
+    "rule": {
+      "fact_key": "demand_outlook",
+      "op": "IN",
+      "value": [
+        "MODERATING",
+        "DECLINING"
+      ]
+    },
+    "formula_type": "SEMANTIC"
+  },
+  "demand_reacceleration": {
+    "name": "Demand Reacceleration",
+    "category": "demand",
+    "direction": "POSITIVE",
+    "severity": "MEDIUM",
+    "description": "Demand is accelerating",
+    "rule": {
+      "fact_key": "demand_outlook",
+      "op": "==",
+      "value": "ACCELERATING"
+    },
+    "formula_type": "SEMANTIC"
+  },
+  "pricing_pressure": {
+    "name": "Pricing Pressure",
+    "category": "pricing",
+    "direction": "NEGATIVE",
+    "severity": "HIGH",
+    "description": "Pricing is pressured or declining",
+    "rule": {
+      "fact_key": "pricing_outlook",
+      "op": "IN",
+      "value": [
+        "PRESSURED",
+        "DECLINING"
+      ]
+    },
+    "formula_type": "SEMANTIC"
+  },
+  "margin_recovery_outlook": {
+    "name": "Margin Recovery Outlook",
+    "category": "margin",
+    "direction": "POSITIVE",
+    "severity": "MEDIUM",
+    "description": "Margins are expected to recover or expand",
+    "rule": {
+      "fact_key": "margin_outlook",
+      "op": "IN",
+      "value": [
+        "RECOVERING",
+        "EXPANDING"
+      ]
+    },
+    "formula_type": "SEMANTIC"
+  },
+  "margin_pressure_outlook": {
+    "name": "Margin Pressure Outlook",
+    "category": "margin",
+    "direction": "NEGATIVE",
+    "severity": "HIGH",
+    "description": "Margins are expected to compress",
+    "rule": {
+      "fact_key": "margin_outlook",
+      "op": "==",
+      "value": "COMPRESSING"
+    },
+    "formula_type": "SEMANTIC"
+  },
+  "working_capital_concern": {
+    "name": "Working Capital Concern",
+    "category": "working_capital",
+    "direction": "NEGATIVE",
+    "severity": "HIGH",
+    "description": "Call highlighted working-capital stress",
+    "rule": {
+      "semantic_match": [
+        "working capital stretch",
+        "receivable delay",
+        "inventory build",
+        "cash conversion pressure"
+      ]
+    },
+    "formula_type": "SEMANTIC"
+  },
+  "customer_concentration_concern": {
+    "name": "Customer Concentration Concern",
+    "category": "customer",
+    "direction": "NEGATIVE",
+    "severity": "HIGH",
+    "description": "Call highlighted customer concentration",
+    "rule": {
+      "semantic_match": [
+        "customer concentration",
+        "client concentration",
+        "top customer dependence"
+      ]
+    },
+    "formula_type": "SEMANTIC"
+  },
+  "order_delay_or_cancellation_risk": {
+    "name": "Order Delay Or Cancellation Risk",
+    "category": "order_book",
+    "direction": "NEGATIVE",
+    "severity": "HIGH",
+    "description": "Call discussed order delays or cancellations",
+    "rule": {
+      "semantic_match": [
+        "order cancellation",
+        "order deferment",
+        "project delayed",
+        "execution delayed"
+      ]
+    },
+    "formula_type": "SEMANTIC"
+  },
+  "regulatory_headwind": {
+    "name": "Regulatory Headwind",
+    "category": "regulation",
+    "direction": "NEGATIVE",
+    "severity": "HIGH",
+    "description": "Management identified a regulatory headwind",
+    "rule": {
+      "semantic_match": [
+        "regulatory impact",
+        "policy headwind",
+        "compliance cost increase"
+      ]
+    },
+    "formula_type": "SEMANTIC"
+  },
+  "competitive_intensity_rising": {
+    "name": "Competitive Intensity Rising",
+    "category": "competition",
+    "direction": "NEGATIVE",
+    "severity": "MEDIUM",
+    "description": "Competitive pressure is increasing",
+    "rule": {
+      "semantic_match": [
+        "competitive intensity",
+        "price competition",
+        "market share pressure"
+      ]
+    },
+    "formula_type": "SEMANTIC"
+  },
+  "deleveraging_commitment": {
+    "name": "Deleveraging Commitment",
+    "category": "leverage",
+    "direction": "POSITIVE",
+    "severity": "MEDIUM",
+    "description": "Management made a quantified debt-reduction commitment",
+    "rule": {
+      "semantic_match": [
+        "debt reduction target",
+        "deleveraging",
+        "net debt target"
+      ]
+    },
+    "formula_type": "SEMANTIC"
+  },
+  "liquidity_concern": {
+    "name": "Liquidity Concern",
+    "category": "liquidity",
+    "direction": "NEGATIVE",
+    "severity": "CRITICAL",
+    "description": "Call raised liquidity or refinancing concerns",
+    "rule": {
+      "semantic_match": [
+        "liquidity constraint",
+        "refinancing risk",
+        "covenant pressure",
+        "funding gap"
+      ]
+    },
+    "formula_type": "SEMANTIC"
+  }
+}

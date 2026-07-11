@@ -24,7 +24,14 @@ def _signal_rows(conn, limit: int | None = None):
         FROM signals s
         LEFT JOIN companies c ON c.id = s.company_id
         LEFT JOIN events e ON e.id = s.event_id
-        ORDER BY s.detected_at DESC
+        ORDER BY e.event_date DESC,
+            CASE UPPER(COALESCE(s.severity, ''))
+                WHEN 'CRITICAL' THEN 0
+                WHEN 'HIGH' THEN 1
+                WHEN 'MEDIUM' THEN 2
+                WHEN 'LOW' THEN 3
+                ELSE 9
+            END
     """
     if limit is not None:
         sql += " LIMIT ?"

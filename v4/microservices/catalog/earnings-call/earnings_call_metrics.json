@@ -1,0 +1,1087 @@
+{
+  "revenue_guidance_midpoint": {
+    "name": "Revenue Guidance Midpoint",
+    "unit": "crore",
+    "category": "guidance",
+    "formula": "(low+high)/2",
+    "formula_type": "ARITHMETIC",
+    "inputs": [
+      {
+        "var": "low",
+        "fact_key": "revenue_guidance_low",
+        "scope": "CURRENT_DISCLOSURE"
+      },
+      {
+        "var": "high",
+        "fact_key": "revenue_guidance_high",
+        "scope": "CURRENT_DISCLOSURE"
+      }
+    ],
+    "preserve_dimensions": true
+  },
+  "revenue_guidance_range_width": {
+    "name": "Revenue Guidance Range Width",
+    "unit": "crore",
+    "category": "guidance",
+    "formula": "high-low",
+    "formula_type": "ARITHMETIC",
+    "inputs": [
+      {
+        "var": "low",
+        "fact_key": "revenue_guidance_low",
+        "scope": "CURRENT_DISCLOSURE"
+      },
+      {
+        "var": "high",
+        "fact_key": "revenue_guidance_high",
+        "scope": "CURRENT_DISCLOSURE"
+      }
+    ],
+    "preserve_dimensions": true
+  },
+  "revenue_growth_guidance_midpoint": {
+    "name": "Revenue Growth Guidance Midpoint",
+    "unit": "%",
+    "category": "guidance",
+    "formula": "(low+high)/2",
+    "formula_type": "ARITHMETIC",
+    "inputs": [
+      {
+        "var": "low",
+        "fact_key": "revenue_growth_guidance_low",
+        "scope": "CURRENT_DISCLOSURE"
+      },
+      {
+        "var": "high",
+        "fact_key": "revenue_growth_guidance_high",
+        "scope": "CURRENT_DISCLOSURE"
+      }
+    ],
+    "preserve_dimensions": true
+  },
+  "revenue_growth_guidance_range_width": {
+    "name": "Revenue Growth Guidance Range Width",
+    "unit": "%",
+    "category": "guidance",
+    "formula": "high-low",
+    "formula_type": "ARITHMETIC",
+    "inputs": [
+      {
+        "var": "low",
+        "fact_key": "revenue_growth_guidance_low",
+        "scope": "CURRENT_DISCLOSURE"
+      },
+      {
+        "var": "high",
+        "fact_key": "revenue_growth_guidance_high",
+        "scope": "CURRENT_DISCLOSURE"
+      }
+    ],
+    "preserve_dimensions": true
+  },
+  "ebitda_guidance_midpoint": {
+    "name": "EBITDA Guidance Midpoint",
+    "unit": "crore",
+    "category": "guidance",
+    "formula": "(low+high)/2",
+    "formula_type": "ARITHMETIC",
+    "inputs": [
+      {
+        "var": "low",
+        "fact_key": "ebitda_guidance_low",
+        "scope": "CURRENT_DISCLOSURE"
+      },
+      {
+        "var": "high",
+        "fact_key": "ebitda_guidance_high",
+        "scope": "CURRENT_DISCLOSURE"
+      }
+    ],
+    "preserve_dimensions": true
+  },
+  "ebitda_guidance_range_width": {
+    "name": "EBITDA Guidance Range Width",
+    "unit": "crore",
+    "category": "guidance",
+    "formula": "high-low",
+    "formula_type": "ARITHMETIC",
+    "inputs": [
+      {
+        "var": "low",
+        "fact_key": "ebitda_guidance_low",
+        "scope": "CURRENT_DISCLOSURE"
+      },
+      {
+        "var": "high",
+        "fact_key": "ebitda_guidance_high",
+        "scope": "CURRENT_DISCLOSURE"
+      }
+    ],
+    "preserve_dimensions": true
+  },
+  "ebitda_margin_guidance_midpoint": {
+    "name": "EBITDA Margin Guidance Midpoint",
+    "unit": "%",
+    "category": "guidance",
+    "formula": "(low+high)/2",
+    "formula_type": "ARITHMETIC",
+    "inputs": [
+      {
+        "var": "low",
+        "fact_key": "ebitda_margin_guidance_low",
+        "scope": "CURRENT_DISCLOSURE"
+      },
+      {
+        "var": "high",
+        "fact_key": "ebitda_margin_guidance_high",
+        "scope": "CURRENT_DISCLOSURE"
+      }
+    ],
+    "preserve_dimensions": true
+  },
+  "ebitda_margin_guidance_range_width": {
+    "name": "EBITDA Margin Guidance Range Width",
+    "unit": "%",
+    "category": "guidance",
+    "formula": "high-low",
+    "formula_type": "ARITHMETIC",
+    "inputs": [
+      {
+        "var": "low",
+        "fact_key": "ebitda_margin_guidance_low",
+        "scope": "CURRENT_DISCLOSURE"
+      },
+      {
+        "var": "high",
+        "fact_key": "ebitda_margin_guidance_high",
+        "scope": "CURRENT_DISCLOSURE"
+      }
+    ],
+    "preserve_dimensions": true
+  },
+  "volume_growth_guidance_midpoint": {
+    "name": "Volume Growth Guidance Midpoint",
+    "unit": "%",
+    "category": "guidance",
+    "formula": "(low+high)/2",
+    "formula_type": "ARITHMETIC",
+    "inputs": [
+      {
+        "var": "low",
+        "fact_key": "volume_growth_guidance_low",
+        "scope": "CURRENT_DISCLOSURE"
+      },
+      {
+        "var": "high",
+        "fact_key": "volume_growth_guidance_high",
+        "scope": "CURRENT_DISCLOSURE"
+      }
+    ],
+    "preserve_dimensions": true
+  },
+  "volume_growth_guidance_range_width": {
+    "name": "Volume Growth Guidance Range Width",
+    "unit": "%",
+    "category": "guidance",
+    "formula": "high-low",
+    "formula_type": "ARITHMETIC",
+    "inputs": [
+      {
+        "var": "low",
+        "fact_key": "volume_growth_guidance_low",
+        "scope": "CURRENT_DISCLOSURE"
+      },
+      {
+        "var": "high",
+        "fact_key": "volume_growth_guidance_high",
+        "scope": "CURRENT_DISCLOSURE"
+      }
+    ],
+    "preserve_dimensions": true
+  },
+  "capex_guidance_midpoint": {
+    "name": "Capex Guidance Midpoint",
+    "unit": "crore",
+    "category": "guidance",
+    "formula": "(low+high)/2",
+    "formula_type": "ARITHMETIC",
+    "inputs": [
+      {
+        "var": "low",
+        "fact_key": "capex_guidance_low",
+        "scope": "CURRENT_DISCLOSURE"
+      },
+      {
+        "var": "high",
+        "fact_key": "capex_guidance_high",
+        "scope": "CURRENT_DISCLOSURE"
+      }
+    ],
+    "preserve_dimensions": true
+  },
+  "capex_guidance_range_width": {
+    "name": "Capex Guidance Range Width",
+    "unit": "crore",
+    "category": "guidance",
+    "formula": "high-low",
+    "formula_type": "ARITHMETIC",
+    "inputs": [
+      {
+        "var": "low",
+        "fact_key": "capex_guidance_low",
+        "scope": "CURRENT_DISCLOSURE"
+      },
+      {
+        "var": "high",
+        "fact_key": "capex_guidance_high",
+        "scope": "CURRENT_DISCLOSURE"
+      }
+    ],
+    "preserve_dimensions": true
+  },
+  "tax_rate_guidance_midpoint": {
+    "name": "Tax Rate Guidance Midpoint",
+    "unit": "%",
+    "category": "guidance",
+    "formula": "(low+high)/2",
+    "formula_type": "ARITHMETIC",
+    "inputs": [
+      {
+        "var": "low",
+        "fact_key": "tax_rate_guidance_low",
+        "scope": "CURRENT_DISCLOSURE"
+      },
+      {
+        "var": "high",
+        "fact_key": "tax_rate_guidance_high",
+        "scope": "CURRENT_DISCLOSURE"
+      }
+    ],
+    "preserve_dimensions": true
+  },
+  "tax_rate_guidance_range_width": {
+    "name": "Tax Rate Guidance Range Width",
+    "unit": "%",
+    "category": "guidance",
+    "formula": "high-low",
+    "formula_type": "ARITHMETIC",
+    "inputs": [
+      {
+        "var": "low",
+        "fact_key": "tax_rate_guidance_low",
+        "scope": "CURRENT_DISCLOSURE"
+      },
+      {
+        "var": "high",
+        "fact_key": "tax_rate_guidance_high",
+        "scope": "CURRENT_DISCLOSURE"
+      }
+    ],
+    "preserve_dimensions": true
+  },
+  "revenue_guidance_revision_pct": {
+    "name": "Revenue Guidance Revision Pct",
+    "unit": "%",
+    "category": "guidance",
+    "formula": "(current-previous)/abs(previous)*100",
+    "formula_type": "ARITHMETIC",
+    "inputs": [
+      {
+        "var": "current",
+        "metric_key": "revenue_guidance_midpoint"
+      },
+      {
+        "var": "previous",
+        "metric_key": "revenue_guidance_midpoint",
+        "scope": "PREVIOUS_DISCLOSURE"
+      }
+    ]
+  },
+  "revenue_growth_guidance_revision_pp": {
+    "name": "Revenue Growth Guidance Revision Pp",
+    "unit": "pp",
+    "category": "guidance",
+    "formula": "current-previous",
+    "formula_type": "ARITHMETIC",
+    "inputs": [
+      {
+        "var": "current",
+        "metric_key": "revenue_growth_guidance_midpoint"
+      },
+      {
+        "var": "previous",
+        "metric_key": "revenue_growth_guidance_midpoint",
+        "scope": "PREVIOUS_DISCLOSURE"
+      }
+    ]
+  },
+  "ebitda_margin_guidance_revision_bps": {
+    "name": "EBITDA Margin Guidance Revision Bps",
+    "unit": "bps",
+    "category": "guidance",
+    "formula": "(current-previous)*100",
+    "formula_type": "ARITHMETIC",
+    "inputs": [
+      {
+        "var": "current",
+        "metric_key": "ebitda_margin_guidance_midpoint"
+      },
+      {
+        "var": "previous",
+        "metric_key": "ebitda_margin_guidance_midpoint",
+        "scope": "PREVIOUS_DISCLOSURE"
+      }
+    ]
+  },
+  "capex_guidance_revision_pct": {
+    "name": "Capex Guidance Revision Pct",
+    "unit": "%",
+    "category": "guidance",
+    "formula": "(current-previous)/abs(previous)*100",
+    "formula_type": "ARITHMETIC",
+    "inputs": [
+      {
+        "var": "current",
+        "metric_key": "capex_guidance_midpoint"
+      },
+      {
+        "var": "previous",
+        "metric_key": "capex_guidance_midpoint",
+        "scope": "PREVIOUS_DISCLOSURE"
+      }
+    ]
+  },
+  "guidance_range_change_pct": {
+    "name": "Guidance Range Change Pct",
+    "unit": "%",
+    "category": "guidance",
+    "formula": "(current_width-previous_width)/abs(previous_width)*100",
+    "formula_type": "ARITHMETIC",
+    "inputs": [
+      {
+        "var": "current_width",
+        "metric_key": "revenue_growth_guidance_range_width"
+      },
+      {
+        "var": "previous_width",
+        "metric_key": "revenue_growth_guidance_range_width",
+        "scope": "PREVIOUS_DISCLOSURE"
+      }
+    ]
+  },
+  "revenue_guidance_attainment": {
+    "name": "Revenue Guidance Attainment",
+    "unit": "%",
+    "category": "guidance_execution",
+    "formula": "reported_revenue_ytd/revenue_guidance_midpoint*100",
+    "formula_type": "ARITHMETIC",
+    "inputs": [
+      {
+        "var": "reported_revenue_ytd",
+        "fact_key": "revenue_from_operations",
+        "scope": "YTD_CURRENT"
+      },
+      {
+        "var": "revenue_guidance_midpoint",
+        "metric_key": "revenue_guidance_midpoint"
+      }
+    ]
+  },
+  "revenue_required_run_rate": {
+    "name": "Revenue Required Run Rate",
+    "unit": "crore_per_quarter",
+    "category": "guidance_execution",
+    "formula": "(guidance-revenue_ytd)/remaining_quarters",
+    "formula_type": "ARITHMETIC",
+    "inputs": [
+      {
+        "var": "guidance",
+        "metric_key": "revenue_guidance_midpoint"
+      },
+      {
+        "var": "revenue_ytd",
+        "fact_key": "revenue_from_operations",
+        "scope": "YTD_CURRENT"
+      },
+      {
+        "var": "remaining_quarters",
+        "runtime_parameter": "remaining_quarters"
+      }
+    ]
+  },
+  "required_run_rate_premium": {
+    "name": "Required Run Rate Premium",
+    "unit": "%",
+    "category": "guidance_execution",
+    "formula": "(required-latest)/abs(latest)*100",
+    "formula_type": "ARITHMETIC",
+    "inputs": [
+      {
+        "var": "required",
+        "metric_key": "revenue_required_run_rate"
+      },
+      {
+        "var": "latest",
+        "fact_key": "revenue_from_operations",
+        "scope": "CURRENT"
+      }
+    ]
+  },
+  "margin_guidance_gap_bps": {
+    "name": "Margin Guidance Gap Bps",
+    "unit": "bps",
+    "category": "guidance_execution",
+    "formula": "(current_margin-guidance_midpoint)*100",
+    "formula_type": "ARITHMETIC",
+    "inputs": [
+      {
+        "var": "current_margin",
+        "metric_key": "ebitda_margin"
+      },
+      {
+        "var": "guidance_midpoint",
+        "metric_key": "ebitda_margin_guidance_midpoint"
+      }
+    ]
+  },
+  "capex_guidance_attainment": {
+    "name": "Capex Guidance Attainment",
+    "unit": "%",
+    "category": "guidance_execution",
+    "formula": "capex_ytd/guidance_midpoint*100",
+    "formula_type": "ARITHMETIC",
+    "inputs": [
+      {
+        "var": "capex_ytd",
+        "fact_key": "purchase_of_ppe_and_intangibles",
+        "scope": "YTD_CURRENT"
+      },
+      {
+        "var": "guidance_midpoint",
+        "metric_key": "capex_guidance_midpoint"
+      }
+    ]
+  },
+  "guidance_change_frequency": {
+    "name": "Guidance Change Frequency",
+    "unit": "count",
+    "category": "guidance_quality",
+    "formula": "count_guidance_revisions(last_n_calls)",
+    "formula_type": "AGGREGATION",
+    "inputs": [
+      {
+        "var": "status",
+        "fact_key": "guidance_status",
+        "scope": "ROLLING_CALL_WINDOW"
+      }
+    ]
+  },
+  "guidance_withdrawal_count": {
+    "name": "Guidance Withdrawal Count",
+    "unit": "count",
+    "category": "guidance_quality",
+    "formula": "count(status==WITHDRAWN)",
+    "formula_type": "AGGREGATION",
+    "inputs": [
+      {
+        "var": "status",
+        "fact_key": "guidance_status",
+        "scope": "ROLLING_CALL_WINDOW"
+      }
+    ]
+  },
+  "historical_guidance_hit_rate": {
+    "name": "Historical Guidance Hit Rate",
+    "unit": "%",
+    "category": "guidance_quality",
+    "formula": "fulfilled/evaluable*100",
+    "formula_type": "AGGREGATION",
+    "inputs": [
+      {
+        "var": "guidance_history",
+        "source": "GUIDANCE_TRACKING_TABLE"
+      }
+    ]
+  },
+  "historical_guidance_miss_magnitude": {
+    "name": "Historical Guidance Miss Magnitude",
+    "unit": "%",
+    "category": "guidance_quality",
+    "formula": "mean(abs(actual-midpoint)/abs(midpoint)*100)",
+    "formula_type": "AGGREGATION",
+    "inputs": [
+      {
+        "var": "guidance_history",
+        "source": "GUIDANCE_TRACKING_TABLE"
+      }
+    ]
+  },
+  "forward_looking_statement_ratio": {
+    "name": "Forward Looking Statement Ratio",
+    "unit": "%",
+    "category": "narrative",
+    "formula": "forward_looking/management_statements*100",
+    "formula_type": "AGGREGATION",
+    "inputs": [
+      {
+        "var": "forward",
+        "fact_key": "statement_is_forward_looking",
+        "scope": "CALL"
+      },
+      {
+        "var": "statements",
+        "fact_key": "utterance_text",
+        "scope": "CALL"
+      }
+    ]
+  },
+  "quantified_statement_ratio": {
+    "name": "Quantified Statement Ratio",
+    "unit": "%",
+    "category": "narrative",
+    "formula": "quantified/management_statements*100",
+    "formula_type": "AGGREGATION",
+    "inputs": [
+      {
+        "var": "quantified",
+        "fact_key": "statement_is_quantified",
+        "scope": "CALL"
+      },
+      {
+        "var": "statements",
+        "fact_key": "utterance_text",
+        "scope": "CALL"
+      }
+    ]
+  },
+  "risk_statement_ratio": {
+    "name": "Risk Statement Ratio",
+    "unit": "%",
+    "category": "risk",
+    "formula": "risk_statements/management_statements*100",
+    "formula_type": "AGGREGATION",
+    "inputs": [
+      {
+        "var": "risks",
+        "fact_key": "risk_factor",
+        "scope": "CALL"
+      },
+      {
+        "var": "statements",
+        "fact_key": "utterance_text",
+        "scope": "CALL"
+      }
+    ]
+  },
+  "risk_mention_change_qoq": {
+    "name": "Risk Mention Change QoQ",
+    "unit": "%",
+    "category": "risk",
+    "formula": "(current-previous)/max(previous,1)*100",
+    "formula_type": "AGGREGATION",
+    "inputs": [
+      {
+        "var": "current",
+        "fact_key": "risk_factor",
+        "scope": "CALL"
+      },
+      {
+        "var": "previous",
+        "fact_key": "risk_factor",
+        "scope": "PREVIOUS_CALL"
+      }
+    ]
+  },
+  "management_tone_score": {
+    "name": "Management Tone Score",
+    "unit": "score_-1_to_1",
+    "category": "tone",
+    "formula": "weighted_mean(statement_polarity)",
+    "formula_type": "SEMANTIC",
+    "inputs": [
+      {
+        "var": "polarity",
+        "fact_key": "statement_polarity",
+        "scope": "CALL"
+      }
+    ],
+    "notes": "Directional feature, not a standalone fact."
+  },
+  "management_tone_change_qoq": {
+    "name": "Management Tone Change QoQ",
+    "unit": "score",
+    "category": "tone",
+    "formula": "current-previous",
+    "formula_type": "ARITHMETIC",
+    "inputs": [
+      {
+        "var": "current",
+        "metric_key": "management_tone_score"
+      },
+      {
+        "var": "previous",
+        "metric_key": "management_tone_score",
+        "scope": "PREVIOUS_CALL"
+      }
+    ]
+  },
+  "prepared_remarks_tone_score": {
+    "name": "Prepared Remarks Tone Score",
+    "unit": "score_-1_to_1",
+    "category": "tone",
+    "formula": "weighted_mean(polarity where PREPARED_REMARKS)",
+    "formula_type": "SEMANTIC",
+    "inputs": [
+      {
+        "var": "polarity",
+        "fact_key": "statement_polarity",
+        "scope": "PREPARED_REMARKS"
+      }
+    ]
+  },
+  "q_and_a_tone_score": {
+    "name": "Q And A Tone Score",
+    "unit": "score_-1_to_1",
+    "category": "tone",
+    "formula": "weighted_mean(polarity where Q_AND_A)",
+    "formula_type": "SEMANTIC",
+    "inputs": [
+      {
+        "var": "polarity",
+        "fact_key": "statement_polarity",
+        "scope": "Q_AND_A"
+      }
+    ]
+  },
+  "prepared_vs_q_and_a_tone_gap": {
+    "name": "Prepared Vs Q And A Tone Gap",
+    "unit": "score",
+    "category": "tone",
+    "formula": "prepared-qa",
+    "formula_type": "ARITHMETIC",
+    "inputs": [
+      {
+        "var": "prepared",
+        "metric_key": "prepared_remarks_tone_score"
+      },
+      {
+        "var": "qa",
+        "metric_key": "q_and_a_tone_score"
+      }
+    ]
+  },
+  "low_confidence_statement_ratio": {
+    "name": "Low Confidence Statement Ratio",
+    "unit": "%",
+    "category": "tone",
+    "formula": "low_confidence/forward_looking*100",
+    "formula_type": "AGGREGATION",
+    "inputs": [
+      {
+        "var": "confidence",
+        "fact_key": "statement_confidence",
+        "scope": "CALL"
+      },
+      {
+        "var": "forward",
+        "fact_key": "statement_is_forward_looking",
+        "scope": "CALL"
+      }
+    ]
+  },
+  "answer_completeness_rate": {
+    "name": "Answer Completeness Rate",
+    "unit": "%",
+    "category": "qa_quality",
+    "formula": "complete_answers/total_answers*100",
+    "formula_type": "AGGREGATION",
+    "inputs": [
+      {
+        "var": "source",
+        "fact_key": "answer_completeness",
+        "scope": "Q_AND_A"
+      }
+    ]
+  },
+  "non_responsive_answer_rate": {
+    "name": "Non Responsive Answer Rate",
+    "unit": "%",
+    "category": "qa_quality",
+    "formula": "(non_responsive+no_answer)/total_answers*100",
+    "formula_type": "AGGREGATION",
+    "inputs": [
+      {
+        "var": "source",
+        "fact_key": "answer_completeness",
+        "scope": "Q_AND_A"
+      }
+    ]
+  },
+  "quantified_answer_rate": {
+    "name": "Quantified Answer Rate",
+    "unit": "%",
+    "category": "qa_quality",
+    "formula": "quantified_answers/total_answers*100",
+    "formula_type": "AGGREGATION",
+    "inputs": [
+      {
+        "var": "source",
+        "fact_key": "answer_specificity",
+        "scope": "Q_AND_A"
+      }
+    ]
+  },
+  "vague_answer_rate": {
+    "name": "Vague Answer Rate",
+    "unit": "%",
+    "category": "qa_quality",
+    "formula": "vague_answers/total_answers*100",
+    "formula_type": "AGGREGATION",
+    "inputs": [
+      {
+        "var": "source",
+        "fact_key": "answer_specificity",
+        "scope": "Q_AND_A"
+      }
+    ]
+  },
+  "follow_up_question_rate": {
+    "name": "Follow Up Question Rate",
+    "unit": "%",
+    "category": "qa_quality",
+    "formula": "follow_ups/total_questions*100",
+    "formula_type": "AGGREGATION",
+    "inputs": [
+      {
+        "var": "source",
+        "fact_key": "question_is_follow_up",
+        "scope": "Q_AND_A"
+      }
+    ]
+  },
+  "unanswered_question_rate": {
+    "name": "Unanswered Question Rate",
+    "unit": "%",
+    "category": "qa_quality",
+    "formula": "unanswered/total_questions*100",
+    "formula_type": "AGGREGATION",
+    "inputs": [
+      {
+        "var": "source",
+        "fact_key": "question_unanswered_flag",
+        "scope": "Q_AND_A"
+      }
+    ]
+  },
+  "new_information_answer_rate": {
+    "name": "New Information Answer Rate",
+    "unit": "%",
+    "category": "qa_quality",
+    "formula": "new_info_answers/total_answers*100",
+    "formula_type": "AGGREGATION",
+    "inputs": [
+      {
+        "var": "source",
+        "fact_key": "answer_contains_new_information",
+        "scope": "Q_AND_A"
+      }
+    ]
+  },
+  "analyst_concern_count": {
+    "name": "Analyst Concern Count",
+    "unit": "count",
+    "category": "analyst_attention",
+    "formula": "count_distinct(concern)",
+    "formula_type": "AGGREGATION",
+    "inputs": [
+      {
+        "var": "concerns",
+        "fact_key": "analyst_concern",
+        "scope": "Q_AND_A"
+      }
+    ]
+  },
+  "repeated_concern_count": {
+    "name": "Repeated Concern Count",
+    "unit": "count",
+    "category": "analyst_attention",
+    "formula": "count(topics raised by multiple analysts)",
+    "formula_type": "SEMANTIC",
+    "inputs": [
+      {
+        "var": "concerns",
+        "fact_key": "analyst_concern",
+        "scope": "Q_AND_A"
+      }
+    ]
+  },
+  "top_concern_concentration": {
+    "name": "Top Concern Concentration",
+    "unit": "%",
+    "category": "analyst_attention",
+    "formula": "questions_on_top_topic/total_questions*100",
+    "formula_type": "AGGREGATION",
+    "inputs": [
+      {
+        "var": "topics",
+        "fact_key": "analyst_question_topic",
+        "scope": "Q_AND_A"
+      }
+    ]
+  },
+  "question_intensity_change_qoq": {
+    "name": "Question Intensity Change QoQ",
+    "unit": "%",
+    "category": "analyst_attention",
+    "formula": "(current-previous)/max(previous,1)*100",
+    "formula_type": "AGGREGATION",
+    "inputs": [
+      {
+        "var": "current",
+        "fact_key": "analyst_question_text",
+        "scope": "CALL"
+      },
+      {
+        "var": "previous",
+        "fact_key": "analyst_question_text",
+        "scope": "PREVIOUS_CALL"
+      }
+    ]
+  },
+  "commitment_completion_rate": {
+    "name": "Commitment Completion Rate",
+    "unit": "%",
+    "category": "execution",
+    "formula": "achieved/evaluable*100",
+    "formula_type": "AGGREGATION",
+    "inputs": [
+      {
+        "var": "status",
+        "fact_key": "commitment_status",
+        "scope": "ROLLING_CALL_WINDOW"
+      }
+    ]
+  },
+  "commitment_miss_rate": {
+    "name": "Commitment Miss Rate",
+    "unit": "%",
+    "category": "execution",
+    "formula": "(missed+delayed+withdrawn)/evaluable*100",
+    "formula_type": "AGGREGATION",
+    "inputs": [
+      {
+        "var": "status",
+        "fact_key": "commitment_status",
+        "scope": "ROLLING_CALL_WINDOW"
+      }
+    ]
+  },
+  "commitment_reiteration_count": {
+    "name": "Commitment Reiteration Count",
+    "unit": "count",
+    "category": "execution",
+    "formula": "count(status==REITERATED)",
+    "formula_type": "AGGREGATION",
+    "inputs": [
+      {
+        "var": "status",
+        "fact_key": "commitment_status",
+        "scope": "ROLLING_CALL_WINDOW"
+      }
+    ]
+  },
+  "project_date_slippage_days": {
+    "name": "Project Date Slippage Days",
+    "unit": "days",
+    "category": "execution",
+    "formula": "date_diff(current,previous)",
+    "formula_type": "DATE",
+    "inputs": [
+      {
+        "var": "current",
+        "fact_key": "commissioning_date_guidance",
+        "scope": "CURRENT_DISCLOSURE"
+      },
+      {
+        "var": "previous",
+        "fact_key": "commissioning_date_guidance",
+        "scope": "PREVIOUS_DISCLOSURE"
+      }
+    ],
+    "preserve_dimensions": true
+  },
+  "project_cost_revision_pct": {
+    "name": "Project Cost Revision Pct",
+    "unit": "%",
+    "category": "execution",
+    "formula": "(current-previous)/abs(previous)*100",
+    "formula_type": "ARITHMETIC",
+    "inputs": [
+      {
+        "var": "current",
+        "fact_key": "project_cost_revision",
+        "scope": "CURRENT_DISCLOSURE"
+      },
+      {
+        "var": "previous",
+        "fact_key": "project_cost_revision",
+        "scope": "PREVIOUS_DISCLOSURE"
+      }
+    ],
+    "preserve_dimensions": true
+  },
+  "claim_support_rate": {
+    "name": "Claim Support Rate",
+    "unit": "%",
+    "category": "cross_document",
+    "formula": "supported_claims/verifiable_claims*100",
+    "formula_type": "AGGREGATION",
+    "inputs": [
+      {
+        "var": "result_support",
+        "fact_key": "claim_supported_by_result",
+        "scope": "CALL"
+      },
+      {
+        "var": "presentation_support",
+        "fact_key": "claim_supported_by_presentation",
+        "scope": "CALL"
+      }
+    ]
+  },
+  "current_disclosure_contradiction_count": {
+    "name": "Current Disclosure Contradiction Count",
+    "unit": "count",
+    "category": "cross_document",
+    "formula": "count(contradiction==true)",
+    "formula_type": "AGGREGATION",
+    "inputs": [
+      {
+        "var": "x",
+        "fact_key": "claim_contradicts_current_disclosure",
+        "scope": "CALL"
+      }
+    ]
+  },
+  "prior_call_contradiction_count": {
+    "name": "Prior Call Contradiction Count",
+    "unit": "count",
+    "category": "cross_document",
+    "formula": "count(contradiction==true)",
+    "formula_type": "AGGREGATION",
+    "inputs": [
+      {
+        "var": "x",
+        "fact_key": "claim_contradicts_prior_call",
+        "scope": "CALL"
+      }
+    ]
+  },
+  "explanation_coverage_ratio": {
+    "name": "Explanation Coverage Ratio",
+    "unit": "%",
+    "category": "cross_document",
+    "formula": "explained_material_movements/material_movements*100",
+    "formula_type": "SEMANTIC",
+    "inputs": [
+      {
+        "var": "movements",
+        "source": "FINANCIAL_RESULT_METRICS"
+      },
+      {
+        "var": "links",
+        "fact_key": "linked_metric_key",
+        "scope": "CALL"
+      }
+    ]
+  },
+  "risk_to_financial_alignment_score": {
+    "name": "Risk To Financial Alignment Score",
+    "unit": "score_0_to_100",
+    "category": "cross_document",
+    "formula": "semantic_alignment(call_risks,financial_deteriorations)",
+    "formula_type": "SEMANTIC",
+    "inputs": [
+      {
+        "var": "risks",
+        "fact_key": "risk_factor",
+        "scope": "CALL"
+      },
+      {
+        "var": "financial_deteriorations",
+        "source": "FINANCIAL_RESULT_SIGNALS"
+      }
+    ]
+  },
+  "guidance_to_actual_gap_pct": {
+    "name": "Guidance To Actual Gap Pct",
+    "unit": "%",
+    "category": "cross_document",
+    "formula": "(actual-guidance_midpoint)/abs(guidance_midpoint)*100",
+    "formula_type": "ARITHMETIC",
+    "inputs": [
+      {
+        "var": "actual",
+        "fact_key": "revenue_from_operations",
+        "scope": "TARGET_PERIOD_ACTUAL"
+      },
+      {
+        "var": "guidance",
+        "metric_key": "revenue_guidance_midpoint",
+        "scope": "ORIGINAL_GUIDANCE"
+      }
+    ]
+  },
+  "management_claim_accuracy_rate": {
+    "name": "Management Claim Accuracy Rate",
+    "unit": "%",
+    "category": "cross_document",
+    "formula": "verified_forward_claims/evaluable_forward_claims*100",
+    "formula_type": "AGGREGATION",
+    "inputs": [
+      {
+        "var": "claims",
+        "source": "CLAIM_TRACKING_TABLE"
+      }
+    ]
+  },
+  "topic_avoidance_score": {
+    "name": "Topic Avoidance Score",
+    "unit": "score_0_to_100",
+    "category": "qa_quality",
+    "formula": "weighted(repeated_concerns,non_responsive,unanswered)",
+    "formula_type": "COMPOSITE",
+    "inputs": [
+      {
+        "var": "repeated",
+        "metric_key": "repeated_concern_count"
+      },
+      {
+        "var": "nonresponsive",
+        "metric_key": "non_responsive_answer_rate"
+      },
+      {
+        "var": "unanswered",
+        "metric_key": "unanswered_question_rate"
+      }
+    ],
+    "notes": "Review prioritization only; not proof of intent."
+  },
+  "transcript_information_density": {
+    "name": "Transcript Information Density",
+    "unit": "%",
+    "category": "narrative",
+    "formula": "composite(quantified_statements,new_information_answers)",
+    "formula_type": "COMPOSITE",
+    "inputs": [
+      {
+        "var": "quantified",
+        "metric_key": "quantified_statement_ratio"
+      },
+      {
+        "var": "new_info",
+        "metric_key": "new_information_answer_rate"
+      }
+    ]
+  }
+}

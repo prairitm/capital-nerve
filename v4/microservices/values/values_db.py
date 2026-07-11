@@ -34,21 +34,66 @@ CREATE TABLE IF NOT EXISTS extracted_values (
     segment TEXT, geography TEXT, source_text TEXT, source_page INTEGER,
     confidence REAL
 );
-CREATE TABLE IF NOT EXISTS metrics (
-    id TEXT PRIMARY KEY, metric_code TEXT UNIQUE NOT NULL, name TEXT NOT NULL,
-    formula TEXT, unit TEXT, description TEXT
+CREATE TABLE IF NOT EXISTS fact_definitions (
+    fact_code TEXT PRIMARY KEY,
+    fact_name TEXT NOT NULL,
+    fact_category TEXT NOT NULL,
+    value_type TEXT NOT NULL,
+    standard_unit TEXT,
+    preferred_source TEXT
 );
-CREATE TABLE IF NOT EXISTS metric_values (
-    id TEXT PRIMARY KEY, company_id TEXT NOT NULL REFERENCES companies(id),
-    event_id TEXT REFERENCES events(id), metric_id TEXT NOT NULL REFERENCES metrics(id),
-    metric_value REAL NOT NULL, period_start TEXT, period_end TEXT, segment TEXT,
-    calculation_data TEXT, calculated_at TEXT DEFAULT (datetime('now'))
+CREATE TABLE IF NOT EXISTS fact_observations (
+    observation_id TEXT PRIMARY KEY,
+    company_id TEXT NOT NULL REFERENCES companies(id),
+    event_id TEXT NOT NULL REFERENCES events(id),
+    document_id TEXT REFERENCES documents(id),
+    fact_code TEXT NOT NULL REFERENCES fact_definitions(fact_code),
+    value REAL,
+    unit TEXT,
+    period TEXT,
+    source_page INTEGER,
+    source_text TEXT,
+    confidence REAL
+);
+CREATE TABLE IF NOT EXISTS resolved_facts (
+    resolved_fact_id TEXT PRIMARY KEY,
+    company_id TEXT NOT NULL REFERENCES companies(id),
+    event_id TEXT NOT NULL REFERENCES events(id),
+    fact_code TEXT NOT NULL REFERENCES fact_definitions(fact_code),
+    resolved_value REAL,
+    unit TEXT,
+    selected_observation_id TEXT REFERENCES fact_observations(observation_id),
+    resolution_status TEXT,
+    confidence REAL
+);
+CREATE TABLE IF NOT EXISTS metrics (
+    metric_id TEXT PRIMARY KEY,
+    company_id TEXT NOT NULL REFERENCES companies(id),
+    event_id TEXT NOT NULL REFERENCES events(id),
+    metric_code TEXT NOT NULL,
+    value REAL,
+    unit TEXT,
+    input_fact_ids TEXT,
+    formula TEXT
 );
 CREATE TABLE IF NOT EXISTS signals (
-    id TEXT PRIMARY KEY, company_id TEXT NOT NULL REFERENCES companies(id),
-    event_id TEXT REFERENCES events(id), signal_type TEXT NOT NULL, title TEXT NOT NULL,
-    description TEXT, direction TEXT, severity TEXT, confidence REAL, evidence TEXT,
-    detected_at TEXT DEFAULT (datetime('now'))
+    signal_id TEXT PRIMARY KEY,
+    company_id TEXT NOT NULL REFERENCES companies(id),
+    event_id TEXT NOT NULL REFERENCES events(id),
+    signal_code TEXT NOT NULL,
+    severity TEXT,
+    direction TEXT,
+    supporting_metric_ids TEXT,
+    supporting_fact_ids TEXT
+);
+CREATE TABLE IF NOT EXISTS intelligence_cards (
+    card_id TEXT PRIMARY KEY,
+    company_id TEXT NOT NULL REFERENCES companies(id),
+    event_id TEXT NOT NULL REFERENCES events(id),
+    card_title TEXT NOT NULL,
+    signal_id TEXT NOT NULL REFERENCES signals(signal_id),
+    confidence TEXT,
+    display_status TEXT DEFAULT 'published'
 );
 """
 
@@ -77,3 +122,53 @@ def get_conn() -> Iterator[sqlite3.Connection]:
 
 def bootstrap_schema(conn: sqlite3.Connection) -> None:
     conn.executescript(SCHEMA)
+    migrate_unified_schema(conn)
+
+
+def _table_columns(conn: sqlite3.Connection, table: str) -> set[str]:
+    return {row["name"] for row in conn.execute(f"PRAGMA table_info({table})").fetchall()}
+
+
+def _ensure_column(conn: sqlite3.Connection, table: str, column: str, ddl: str) -> None:
+    if column not in _table_columns(conn, table):
+        conn.execute(f"ALTER TABLE {table} ADD COLUMN {column} {ddl}")
+
+
+def migrate_unified_schema(conn: sqlite3.Connection) -> None:
+    for table in ("fact_observations", "resolved_facts", "extracted_values"):
+        for column in ("segment", "geography", "product", "channel", "project", "customer_type", "metric_context"):
+            _ensure_column(conn, table, column, "TEXT")
+        for column in ("scope_level", "scope_name", "fact_type", "sentiment"):
+            _ensure_column(conn, table, column, "TEXT")
+        for column in ("value_lower", "value_upper"):
+            _ensure_column(conn, table, column, "REAL")
+        _ensure_column(conn, table, "is_explicit_guidance", "INTEGER")
+    _ensure_column(conn, "fact_observations", "value_text", "TEXT")
+    _ensure_column(conn, "fact_observations", "extraction_method", "TEXT")
+    _ensure_column(conn, "resolved_facts", "resolved_value_text", "TEXT")
+    conn.executescript(
+        """
+        CREATE TABLE IF NOT EXISTS presentation_document_inventory (
+            id TEXT PRIMARY KEY,
+            company_id TEXT NOT NULL REFERENCES companies(id),
+            event_id TEXT NOT NULL REFERENCES events(id),
+            document_id TEXT NOT NULL REFERENCES documents(id),
+            period_label TEXT,
+            inventory_json TEXT NOT NULL,
+            extraction_plan_json TEXT NOT NULL,
+            created_at TEXT DEFAULT (datetime('now'))
+        );
+        CREATE TABLE IF NOT EXISTS presentation_segments (
+            id TEXT PRIMARY KEY,
+            company_id TEXT NOT NULL REFERENCES companies(id),
+            event_id TEXT NOT NULL REFERENCES events(id),
+            document_id TEXT NOT NULL REFERENCES documents(id),
+            segment_name TEXT NOT NULL,
+            segment_slug TEXT,
+            aliases_json TEXT,
+            slides_json TEXT,
+            confidence REAL
+        );
+        """
+    )
+    conn.commit()

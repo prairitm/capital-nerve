@@ -21,18 +21,6 @@ export function signalCategoryLabel(category: string | null | undefined): string
   );
 }
 
-/** First trigger value on a signal, formatted with metric unit when available. */
-export function primaryTriggerValue(
-  signal: Signal,
-  metrics: MetricValue[] = [],
-): string | null {
-  const entries = Object.entries(signal.evidence?.trigger_values ?? {});
-  if (entries.length === 0) return null;
-  const [code, raw] = entries[0];
-  const metric = metrics.find((m) => m.metric_code === code);
-  return formatMetricValue(raw, metric?.unit ?? null);
-}
-
 export interface FeedRow {
   id: string;
   headline: string;

@@ -1,8 +1,7 @@
 """Configuration for the v4 read-only API.
 
-v4 serves the 7-step SQLite DB written by the v3 pipeline / notebook. It never
-writes: ingestion stays in v3. Paths resolve relative to the repo root so the
-service works regardless of the current working directory.
+Paths resolve relative to the repo root so the service works regardless of the
+current working directory.
 """
 
 from __future__ import annotations
@@ -17,13 +16,13 @@ REPO_ROOT = BACKEND_DIR.parent.parent
 
 class Settings:
     def __init__(self) -> None:
-        default_db = REPO_ROOT / "v3" / "data" / "capital_nerve.db"
+        default_db = REPO_ROOT / "v4" / "data" / "capital_nerve.db"
         self.db_path = Path(os.getenv("V4_DB_PATH", str(default_db))).resolve()
         self.data_dir = self.db_path.parent
         self.documents_dir = self.data_dir / "documents"
         self.parsed_dir = self.data_dir / "parsed"
         self.catalog_dir = Path(
-            os.getenv("V4_CATALOG_DIR", str(REPO_ROOT / "v2" / "catalog"))
+            os.getenv("V4_CATALOG_DIR", str(REPO_ROOT / "8_step_flow" / "catalog_mvp"))
         ).resolve()
         # Comma-separated list of allowed CORS origins for the dev frontend.
         self.cors_origins = os.getenv(

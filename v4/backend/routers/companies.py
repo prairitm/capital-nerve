@@ -11,6 +11,7 @@ from queries import (
     event_signals,
     find_company,
     latest_event,
+    uses_eight_step_metrics,
 )
 from serializers import (
     company_dict,
@@ -55,31 +56,98 @@ def company_hub(ticker: str):
         events = company_events(conn, company_id)
         # For the snapshot/metrics block, prefer the most recent event that was
         # actually processed (has metric_values). Fall back to latest by date.
-        latest = conn.execute(
-            """
-            SELECT e.* FROM events e
-            JOIN metric_values mv ON mv.event_id = e.id
-            WHERE e.company_id = ?
-            ORDER BY e.event_date DESC, e.id DESC
-            LIMIT 1
-            """,
-            (company_id,),
-        ).fetchone() or latest_event(conn, company_id)
+        if uses_eight_step_metrics(conn):
+            latest = conn.execute(
+                """
+                SELECT e.* FROM events e
+                JOIN metrics m ON m.event_id = e.id
+                WHERE e.company_id = ?
+                ORDER BY e.event_date DESC, e.id DESC
+                LIMIT 1
+                """,
+                (company_id,),
+            ).fetchone() or latest_event(conn, company_id)
+        else:
+            latest = conn.execute(
+                """
+                SELECT e.* FROM events e
+                JOIN metric_values mv ON mv.event_id = e.id
+                WHERE e.company_id = ?
+                ORDER BY e.event_date DESC, e.id DESC
+                LIMIT 1
+                """,
+                (company_id,),
+            ).fetchone() or latest_event(conn, company_id)
 
         snapshot: list = []
         latest_metrics: list = []
+        latest_period_events: list = []
         period_label = None
         if latest:
             period_label = event_dict(latest)["period_label"]
-            metric_rows = conn.execute(
-                """
-                SELECT mv.*, m.metric_code AS metric_code
-                FROM metric_values mv
-                JOIN metrics m ON m.id = mv.metric_id
-                WHERE mv.event_id = ?
-                """,
-                (latest["id"],),
-            ).fetchall()
+            if latest["fiscal_year"] is not None and latest["fiscal_quarter"] is not None:
+                latest_period_events = conn.execute(
+                    """
+                    SELECT * FROM events
+                    WHERE company_id = ?
+                      AND fiscal_year = ?
+                      AND fiscal_quarter = ?
+                      AND document_id IS NOT NULL
+                      AND COALESCE(status, '') = 'processed'
+                    ORDER BY CASE LOWER(COALESCE(event_type, ''))
+                        WHEN 'quarterly_result' THEN 0
+                        WHEN 'quarterly result' THEN 0
+                        WHEN 'financial_result' THEN 0
+                        WHEN 'financial results' THEN 0
+                        WHEN 'investor presentation' THEN 1
+                        ELSE 9
+                    END, event_date DESC, id DESC
+                    """,
+                    (company_id, latest["fiscal_year"], latest["fiscal_quarter"]),
+                ).fetchall()
+            elif latest["event_date"]:
+                latest_period_events = conn.execute(
+                    """
+                    SELECT * FROM events
+                    WHERE company_id = ?
+                      AND event_date = ?
+                      AND document_id IS NOT NULL
+                      AND COALESCE(status, '') = 'processed'
+                    ORDER BY CASE LOWER(COALESCE(event_type, ''))
+                        WHEN 'quarterly_result' THEN 0
+                        WHEN 'quarterly result' THEN 0
+                        WHEN 'financial_result' THEN 0
+                        WHEN 'financial results' THEN 0
+                        WHEN 'investor presentation' THEN 1
+                        ELSE 9
+                    END, id DESC
+                    """,
+                    (company_id, latest["event_date"]),
+                ).fetchall()
+            if uses_eight_step_metrics(conn):
+                metric_rows = conn.execute(
+                    """
+                    SELECT m.*, p.period_end AS period_end, NULL AS period_start
+                    FROM metrics m
+                    LEFT JOIN (
+                        SELECT event_id, MAX(period_end) AS period_end
+                        FROM extracted_values
+                        GROUP BY event_id
+                    ) p ON p.event_id = m.event_id
+                    WHERE m.event_id = ?
+                    """,
+                    (latest["id"],),
+                ).fetchall()
+            else:
+                metric_rows = conn.execute(
+                    """
+                    SELECT mv.*, m.metric_code AS metric_code
+                    FROM metric_values mv
+                    JOIN metrics m ON m.id = mv.metric_id
+                    WHERE mv.event_id = ?
+                    """,
+                    (latest["id"],),
+                ).fetchall()
             latest_metrics = [metric_value_dict(r) for r in metric_rows]
             period_end = None
             facts = conn.execute(
@@ -94,7 +162,13 @@ def company_hub(ticker: str):
             """
             SELECT * FROM signals
             WHERE company_id = ?
-            ORDER BY detected_at DESC
+            ORDER BY CASE UPPER(COALESCE(severity, ''))
+                WHEN 'CRITICAL' THEN 0
+                WHEN 'HIGH' THEN 1
+                WHEN 'MEDIUM' THEN 2
+                WHEN 'LOW' THEN 3
+                ELSE 9
+            END
             LIMIT 12
             """,
             (company_id,),
@@ -110,6 +184,7 @@ def company_hub(ticker: str):
             "company": company_dict(company),
             "latest_event_id": latest["id"] if latest else None,
             "latest_period_label": period_label,
+            "latest_period_events": [event_dict(e) for e in latest_period_events],
             "financial_snapshot": snapshot,
             "latest_metrics": latest_metrics,
             "signals": signals,
@@ -138,7 +213,13 @@ def list_company_signals(ticker: str, limit: int = Query(default=50, ge=1, le=20
             """
             SELECT * FROM signals
             WHERE company_id = ?
-            ORDER BY detected_at DESC
+            ORDER BY CASE UPPER(COALESCE(severity, ''))
+                WHEN 'CRITICAL' THEN 0
+                WHEN 'HIGH' THEN 1
+                WHEN 'MEDIUM' THEN 2
+                WHEN 'LOW' THEN 3
+                ELSE 9
+            END
             LIMIT ?
             """,
             (company["id"], limit),
@@ -162,17 +243,35 @@ def company_trends(ticker: str, codes: str = ""):
             code_filter = f"AND m.metric_code IN ({placeholders})"
             params.extend(requested)
 
-        rows = conn.execute(
-            f"""
-            SELECT m.metric_code AS metric_code, mv.metric_value AS metric_value,
-                   mv.period_end AS period_end, mv.calculation_data AS calculation_data
-            FROM metric_values mv
-            JOIN metrics m ON m.id = mv.metric_id
-            WHERE mv.company_id = ? {code_filter}
-            ORDER BY mv.period_end ASC
-            """,
-            params,
-        ).fetchall()
+        if uses_eight_step_metrics(conn):
+            rows = conn.execute(
+                f"""
+                SELECT m.metric_code AS metric_code, m.value AS metric_value,
+                       p.period_end AS period_end, m.formula AS formula,
+                       m.input_fact_ids AS input_fact_ids, m.unit AS unit
+                FROM metrics m
+                LEFT JOIN (
+                    SELECT event_id, MAX(period_end) AS period_end
+                    FROM extracted_values
+                    GROUP BY event_id
+                ) p ON p.event_id = m.event_id
+                WHERE m.company_id = ? {code_filter}
+                ORDER BY p.period_end ASC
+                """,
+                params,
+            ).fetchall()
+        else:
+            rows = conn.execute(
+                f"""
+                SELECT m.metric_code AS metric_code, mv.metric_value AS metric_value,
+                       mv.period_end AS period_end, mv.calculation_data AS calculation_data
+                FROM metric_values mv
+                JOIN metrics m ON m.id = mv.metric_id
+                WHERE mv.company_id = ? {code_filter}
+                ORDER BY mv.period_end ASC
+                """,
+                params,
+            ).fetchall()
 
         series: dict[str, dict] = {}
         for r in rows:

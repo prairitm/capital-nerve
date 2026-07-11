@@ -1,17 +1,14 @@
 import { useNavigate } from "react-router-dom";
-import type { MetricValue, Signal } from "@/api/types";
+import type { Signal } from "@/api/types";
 import { SignalBadge } from "@/components/common/SignalBadge";
-import { primaryTriggerValue } from "@/lib/signals";
 
 interface Props {
   signal: Signal;
-  metrics?: MetricValue[];
 }
 
-export function CompactSignalRow({ signal, metrics = [] }: Props) {
+export function CompactSignalRow({ signal }: Props) {
   const navigate = useNavigate();
   const name = signal.signal_name || signal.title || signal.signal_type;
-  const value = primaryTriggerValue(signal, metrics);
 
   return (
     <button
@@ -23,9 +20,6 @@ export function CompactSignalRow({ signal, metrics = [] }: Props) {
         {name}
       </span>
       <SignalBadge direction={signal.direction} />
-      <span className="num text-sm font-medium text-ink whitespace-nowrap shrink-0 w-16 text-right">
-        {value ?? "—"}
-      </span>
     </button>
   );
 }

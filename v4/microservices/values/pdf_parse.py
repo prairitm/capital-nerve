@@ -12,7 +12,7 @@ import json
 import logging
 import time
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 
 logger = logging.getLogger("uvicorn.error")
 
@@ -105,6 +105,7 @@ def pdf_to_markdown_page_by_page(
     client: Any,
     model: str,
     max_workers: int = 1,
+    progress_callback: Callable[[dict[str, Any]], None] | None = None,
 ) -> str:
     import fitz
 
@@ -119,17 +120,47 @@ def pdf_to_markdown_page_by_page(
         page_count,
         workers,
     )
+    if progress_callback is not None:
+        progress_callback(
+            {
+                "phase": "parse_pdf",
+                "message": "Started page-by-page PDF parsing",
+                "pdf": pdf_path.name,
+                "pages": page_count,
+                "workers": workers,
+            }
+        )
 
     def parse_page(i: int) -> tuple[int, str]:
         started = time.monotonic()
+        if progress_callback is not None:
+            progress_callback(
+                {
+                    "phase": "parse_pdf_page",
+                    "message": f"Started parsing page {i + 1}/{page_count}",
+                    "page": i + 1,
+                    "pages": page_count,
+                }
+            )
         png_b64 = _page_png_b64(pdf_path, i)
         page_md = _parse_page_image(client, model=model, png_b64=png_b64, page_no=i + 1)
+        elapsed = time.monotonic() - started
         logger.info(
             "Parsed PDF page %s/%s in %.1fs",
             i + 1,
             page_count,
-            time.monotonic() - started,
+            elapsed,
         )
+        if progress_callback is not None:
+            progress_callback(
+                {
+                    "phase": "parse_pdf_page",
+                    "message": f"Finished parsing page {i + 1}/{page_count}",
+                    "page": i + 1,
+                    "pages": page_count,
+                    "page_elapsed_seconds": round(elapsed, 1),
+                }
+            )
         return i, f"# Page {i + 1}\n\n{page_md}"
 
     if workers == 1:
@@ -154,6 +185,7 @@ def parse_pdf_to_markdown(
     model: str,
     force: bool = False,
     max_workers: int = 1,
+    progress_callback: Callable[[dict[str, Any]], None] | None = None,
 ) -> str:
     """Parse PDF to markdown with disk cache under ``parsed_dir``."""
     import hashlib
@@ -164,6 +196,14 @@ def parse_pdf_to_markdown(
 
     if not should_reparse(md_path, pdf_path, source_sha256=digest, force=force):
         logger.info("Using cached PDF markdown: %s", md_path)
+        if progress_callback is not None:
+            progress_callback(
+                {
+                    "phase": "parse_pdf_cache",
+                    "message": "Using cached PDF markdown",
+                    "markdown_path": str(md_path),
+                }
+            )
         return md_path.read_text(encoding="utf-8")
 
     started = time.monotonic()
@@ -172,6 +212,7 @@ def parse_pdf_to_markdown(
         client=client,
         model=model,
         max_workers=max_workers,
+        progress_callback=progress_callback,
     )
     md_path.write_text(markdown, encoding="utf-8")
     write_parse_meta(

@@ -1,6 +1,7 @@
 export type EvidenceHighlights = {
   patterns: string[];
   quoteTexts: string[];
+  targetValues: string[];
 };
 
 export type SourceBbox = {
@@ -11,6 +12,7 @@ export type SourceBbox = {
 };
 
 const MAX_QUOTE_LEN = 600;
+const NUMBER_RE = /\(?[-+]?\d[\d,]*(?:\.\d+)?\)?/g;
 
 export function normalizeQuoteText(raw: string): string {
   return raw.replace(/\s+/g, " ").trim();
@@ -19,6 +21,49 @@ export function normalizeQuoteText(raw: string): string {
 function sourceLabel(raw: string): string {
   const label = raw.trim().split("|")[0].trim();
   return label.replace(/^\d+\.\s*/, "").trim();
+}
+
+function sourceLabelWords(raw: string): string[] {
+  return sourceLabel(raw)
+    .replace(NUMBER_RE, " ")
+    .split(/[^a-zA-Z]+/)
+    .map((w) => w.toLowerCase())
+    .filter((w) => w.length >= 4);
+}
+
+function canonicalNumber(raw: string): string | null {
+  let text = raw
+    .trim()
+    .replace(/[₹$€£,\s]/g, "")
+    .replace(/[−–—]/g, "-");
+  const parenNegative = /^\(.+\)$/.test(text);
+  text = text.replace(/[()]/g, "");
+  if (parenNegative && !text.startsWith("-")) text = `-${text}`;
+  if (!/^[-+]?\d+(?:\.\d+)?$/.test(text)) return null;
+  const negative = text.startsWith("-");
+  const unsigned = text.replace(/^[-+]/, "");
+  const [wholeRaw, fracRaw = ""] = unsigned.split(".");
+  const whole = wholeRaw.replace(/^0+(?=\d)/, "") || "0";
+  const frac = fracRaw.replace(/0+$/, "");
+  return `${negative ? "-" : ""}${whole}${frac ? `.${frac}` : ""}`;
+}
+
+function numbersEqual(a: string, b: string): boolean {
+  const ca = canonicalNumber(a);
+  const cb = canonicalNumber(b);
+  if (!ca || !cb) return false;
+  return ca === cb;
+}
+
+function addTargetValue(values: string[], seen: Set<string>, raw: string | number | null | undefined) {
+  if (raw == null) return;
+  const text = String(raw).trim();
+  if (!text) return;
+  const canonical = canonicalNumber(text);
+  const key = canonical ?? text;
+  if (seen.has(key)) return;
+  seen.add(key);
+  values.push(text);
 }
 
 function numericFlexibleRegex(digits: string): string | null {
@@ -33,9 +78,15 @@ function numericFlexibleRegex(digits: string): string | null {
 }
 
 /** Build highlight anchors from a pipeline source quote (table rows, line items, etc.). */
-export function buildEvidenceHighlights(sourceTexts: string[]): EvidenceHighlights {
+export function buildEvidenceHighlights(
+  sourceTexts: string[],
+  targetValue?: string | number | null,
+): EvidenceHighlights {
   const patterns = new Set<string>();
   const quoteTexts: string[] = [];
+  const targetValues: string[] = [];
+  const seenTargetValues = new Set<string>();
+  addTargetValue(targetValues, seenTargetValues, targetValue);
 
   const addQuote = (raw: string | null | undefined) => {
     if (!raw) return;
@@ -52,7 +103,14 @@ export function buildEvidenceHighlights(sourceTexts: string[]): EvidenceHighligh
     addQuote(sourceLabel(raw));
 
     const lineMatch = raw.trim().match(/^(\d+)\./);
-    const valueMatch = raw.match(/-?[\d,]+\.?\d*/g);
+    const valueMatch = raw.match(NUMBER_RE);
+    if (targetValues.length === 0) {
+      for (const value of valueMatch ?? []) {
+        if (value.replace(/[^\d]/g, "").length >= 2) {
+          addTargetValue(targetValues, seenTargetValues, value);
+        }
+      }
+    }
     if (lineMatch && valueMatch) {
       const value = valueMatch[valueMatch.length - 1]?.replace(/,/g, "");
       const label = sourceLabel(raw);
@@ -66,6 +124,7 @@ export function buildEvidenceHighlights(sourceTexts: string[]): EvidenceHighligh
   return {
     patterns: [...patterns].sort((a, b) => b.length - a.length),
     quoteTexts,
+    targetValues,
   };
 }
 
@@ -209,6 +268,201 @@ function markSpanRange(ranges: SpanRange[], start: number, end: number, hit: Set
   }
 }
 
+function relativeRect(el: HTMLElement, container: HTMLElement): DOMRect {
+  const rect = el.getBoundingClientRect();
+  const parent = container.getBoundingClientRect();
+  return new DOMRect(rect.left - parent.left, rect.top - parent.top, rect.width, rect.height);
+}
+
+function unionRects(rects: DOMRect[]): DOMRect | null {
+  if (rects.length === 0) return null;
+  const left = Math.min(...rects.map((r) => r.left));
+  const top = Math.min(...rects.map((r) => r.top));
+  const right = Math.max(...rects.map((r) => r.right));
+  const bottom = Math.max(...rects.map((r) => r.bottom));
+  return new DOMRect(left, top, right - left, bottom - top);
+}
+
+function scoreValueCandidate(
+  candidateRect: DOMRect,
+  spans: HTMLElement[],
+  textLayer: HTMLElement,
+  labelWords: string[],
+): number {
+  if (labelWords.length === 0) return 0;
+
+  const candidateMidY = candidateRect.top + candidateRect.height / 2;
+  const lineTolerance = Math.max(8, candidateRect.height * 1.4);
+  let score = 0;
+
+  for (const span of spans) {
+    const text = normalizeMatchToken(span.textContent ?? "");
+    if (!text) continue;
+    const rect = relativeRect(span, textLayer);
+    const midY = rect.top + rect.height / 2;
+    if (Math.abs(midY - candidateMidY) > lineTolerance) continue;
+    const isLeftOrNear = rect.left <= candidateRect.right + 24;
+    if (!isLeftOrNear) continue;
+    for (const word of labelWords) {
+      if (text.includes(word)) score += rect.left < candidateRect.left ? 3 : 1;
+    }
+  }
+
+  return score;
+}
+
+function targetValueRegex(targetValue: string): RegExp | null {
+  const canonical = canonicalNumber(targetValue);
+  if (!canonical) return null;
+
+  const negative = canonical.startsWith("-");
+  const unsigned = canonical.replace(/^-/, "");
+  const [wholeRaw, fracRaw = ""] = unsigned.split(".");
+  const wholePattern = wholeRaw.split("").map(escapeRegex).join("[\\s,]*");
+  const fracPattern =
+    fracRaw.length > 0
+      ? `[.]\\s*${fracRaw.split("").map(escapeRegex).join("\\s*")}\\s*0*`
+      : `(?:[.]\\s*0+)?`;
+  const signPattern = negative ? `(?:[-−–—]\\s*|[(]\\s*)` : "";
+  const closePattern = negative ? `\\s*[)]?` : "";
+  return new RegExp(`${signPattern}${wholePattern}${fracPattern}${closePattern}`, "g");
+}
+
+type ValueCandidate = {
+  start: number;
+  end: number;
+  rects: DOMRect[];
+  score: number;
+};
+
+function isNumericNeighbor(text: string, index: number): boolean {
+  if (index < 0 || index >= text.length) return false;
+  return /[\d.,]/.test(text[index]);
+}
+
+function candidateRectsForTextRange(
+  textLayer: HTMLElement,
+  ranges: SpanRange[],
+  start: number,
+  end: number,
+): DOMRect[] {
+  const layerRect = textLayer.getBoundingClientRect();
+  const rects: DOMRect[] = [];
+
+  for (const spanRange of ranges) {
+    const overlapStart = Math.max(start, spanRange.start);
+    const overlapEnd = Math.min(end, spanRange.end);
+    if (overlapEnd <= overlapStart) continue;
+
+    const textNode = spanRange.el.firstChild;
+    if (!textNode || textNode.nodeType !== Node.TEXT_NODE) {
+      rects.push(relativeRect(spanRange.el, textLayer));
+      continue;
+    }
+
+    const localStart = overlapStart - spanRange.start;
+    const localEnd = overlapEnd - spanRange.start;
+    const range = document.createRange();
+    range.setStart(textNode, Math.max(0, localStart));
+    range.setEnd(textNode, Math.max(0, localEnd));
+    for (const rect of range.getClientRects()) {
+      if (rect.width > 0 && rect.height > 0) {
+        rects.push(
+          new DOMRect(
+            rect.left - layerRect.left,
+            rect.top - layerRect.top,
+            rect.width,
+            rect.height,
+          ),
+        );
+      }
+    }
+    range.detach();
+  }
+
+  return rects;
+}
+
+function removeValueOverlays(textLayer: HTMLElement) {
+  textLayer.querySelectorAll(".evidence-value-highlight").forEach((el) => el.remove());
+}
+
+function addValueOverlay(textLayer: HTMLElement, rect: DOMRect) {
+  const overlay = document.createElement("div");
+  overlay.className = "evidence-value-highlight";
+  overlay.style.left = `${rect.left}px`;
+  overlay.style.top = `${rect.top}px`;
+  overlay.style.width = `${rect.width}px`;
+  overlay.style.height = `${rect.height}px`;
+  textLayer.appendChild(overlay);
+}
+
+function matchTargetValueToPdfSpans(
+  textLayer: HTMLElement,
+  spans: HTMLElement[],
+  ranges: SpanRange[],
+  pdfText: string,
+  highlights: EvidenceHighlights,
+  referenceText: string | null | undefined,
+): boolean {
+  if (highlights.targetValues.length === 0) return false;
+
+  const labelWords = sourceLabelWords(highlights.quoteTexts[0] ?? referenceText ?? "");
+  const candidates: ValueCandidate[] = [];
+  for (const targetValue of highlights.targetValues) {
+    const re = targetValueRegex(targetValue);
+    if (!re) continue;
+    for (const match of pdfText.matchAll(re)) {
+      const matchedText = match[0];
+      if (!numbersEqual(matchedText, targetValue)) continue;
+      const start = match.index ?? 0;
+      const end = start + matchedText.length;
+      if (isNumericNeighbor(pdfText, start - 1) || isNumericNeighbor(pdfText, end)) continue;
+      const rects = candidateRectsForTextRange(textLayer, ranges, start, end);
+      const rect = unionRects(rects);
+      if (!rect) continue;
+      candidates.push({
+        start,
+        end,
+        rects,
+        score: scoreValueCandidate(rect, spans, textLayer, labelWords),
+      });
+    }
+
+    if (candidates.length === 0) {
+      for (const span of spans) {
+        if (!numbersEqual(span.textContent ?? "", targetValue)) continue;
+        const rect = relativeRect(span, textLayer);
+        candidates.push({
+          start: 0,
+          end: 0,
+          rects: [rect],
+          score: scoreValueCandidate(rect, spans, textLayer, labelWords),
+        });
+      }
+    }
+  }
+
+  if (candidates.length === 0) return false;
+
+  let best = candidates[0];
+  for (const candidate of candidates) {
+    if (candidate.score > best.score) {
+      best = candidate;
+    }
+  }
+
+  for (const rect of best.rects) addValueOverlay(textLayer, rect);
+  if (best.rects[0]) {
+    const layerRect = textLayer.getBoundingClientRect();
+    window.scrollTo({
+      top: window.scrollY + layerRect.top + best.rects[0].top - window.innerHeight / 2,
+      behavior: "smooth",
+    });
+  }
+  return true;
+}
+
 export function applyPdfPageHighlights(
   textLayer: HTMLElement,
   highlights: EvidenceHighlights,
@@ -216,12 +470,19 @@ export function applyPdfPageHighlights(
 ): boolean {
   const spans = [...textLayer.querySelectorAll('[role="presentation"]')] as HTMLElement[];
   spans.forEach((el) => el.classList.remove("evidence-highlight"));
+  removeValueOverlays(textLayer);
 
   if (spans.length === 0 || highlights.quoteTexts.length === 0) return false;
 
   const { text: pdfText, ranges } = joinPdfTextSpans(spans);
   const hit = new Set<HTMLElement>();
   const refNorm = referenceText ? normalizeQuoteText(referenceText) : "";
+
+  if (matchTargetValueToPdfSpans(textLayer, spans, ranges, pdfText, highlights, referenceText)) {
+    return true;
+  }
+
+  if (highlights.targetValues.length > 0) return false;
 
   for (const quote of highlights.quoteTexts) {
     let matched = false;

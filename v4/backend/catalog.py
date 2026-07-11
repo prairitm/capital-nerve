@@ -34,7 +34,12 @@ def metrics_catalog() -> dict[str, Any]:
 
 
 def facts_catalog() -> dict[str, Any]:
-    return _load("facts.json")
+    facts = dict(_load("facts.json"))
+    # The 8-step MVP keeps investor-presentation fact definitions in a separate
+    # catalog so deck-highlighted values do not override audited result facts.
+    # Merge it here for UI/API labels while preserving each code's own metadata.
+    facts.update(_load("investor_presentation_facts.json"))
+    return facts
 
 
 def signal_meta(code: str | None) -> dict[str, Any]:

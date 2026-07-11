@@ -1,4 +1,4 @@
-"""Run the full 7-step financial-result microservice flow.
+"""Run the full 7-step event microservice flow.
 
 Example:
     python run.py --symbol ITC --from-date 01-04-2026 --to-date 30-06-2026 \
@@ -20,6 +20,7 @@ from __future__ import annotations
 import argparse
 import json
 import logging
+from pathlib import Path
 import socket
 import sys
 import time
@@ -39,6 +40,15 @@ DEFAULT_SERVICES = {
     "signals": "http://127.0.0.1:8025",
     "alerts": "http://127.0.0.1:8026",
 }
+
+EVENT_TYPE_TO_DOCUMENT_TYPE = {
+    "Financial Results": "financial_result",
+    "Investor Presentation": "investor_presentation",
+    "Earnings Call Transcript": "earnings_call_transcript",
+}
+ALL_EVENT_TYPES = list(EVENT_TYPE_TO_DOCUMENT_TYPE)
+SUPPORTED_EVENT_TYPES = set(EVENT_TYPE_TO_DOCUMENT_TYPE)
+SUPPORTED_SOURCE_MODES = {"nse_auto", "ir_agent", "manual_url", "local_file"}
 
 
 @dataclass(frozen=True)
@@ -85,6 +95,76 @@ def encode_query(params: dict[str, Any]) -> str:
         if value is not None and value != ""
     }
     return urllib.parse.urlencode(clean)
+
+
+def parse_documents_json(value: str | None) -> list[dict[str, Any]] | None:
+    if not value:
+        return None
+    path = Path(value)
+    raw = path.read_text(encoding="utf-8") if path.exists() else value
+    parsed = json.loads(raw)
+    documents = parsed.get("documents") if isinstance(parsed, dict) else parsed
+    if not isinstance(documents, list):
+        raise FlowError("--documents-json must be a JSON array or object with documents")
+    return [dict(item) for item in documents]
+
+
+def parse_document_shorthand(values: list[str] | None) -> list[dict[str, Any]]:
+    documents: list[dict[str, Any]] = []
+    for value in values or []:
+        item: dict[str, Any] = {}
+        for part in value.split(","):
+            if not part.strip():
+                continue
+            if "=" not in part:
+                raise FlowError("--document entries must be comma-separated key=value pairs")
+            key, raw = part.split("=", 1)
+            item[key.strip()] = raw.strip()
+        if item:
+            documents.append(item)
+    return documents
+
+
+def normalize_source_mode(value: str | None) -> str | None:
+    if value is None:
+        return None
+    mode = value.strip().lower().replace("-", "_")
+    if mode not in SUPPORTED_SOURCE_MODES:
+        allowed = ", ".join(sorted(SUPPORTED_SOURCE_MODES))
+        raise FlowError(f"--source-mode must be one of: {allowed}")
+    return mode
+
+
+def default_document_type(event_type: str) -> str:
+    try:
+        return EVENT_TYPE_TO_DOCUMENT_TYPE[event_type]
+    except KeyError as exc:
+        allowed = ", ".join(sorted(SUPPORTED_EVENT_TYPES))
+        raise FlowError(f"EVENT_TYPE must be one of: {allowed}") from exc
+
+
+def apply_source_mode(
+    documents: list[dict[str, Any]] | None,
+    *,
+    event_type: str,
+    source_mode: str | None,
+) -> list[dict[str, Any]] | None:
+    if not source_mode:
+        return documents
+    if not documents:
+        return [
+            {
+                "document_type": default_document_type(event_type),
+                "source_mode": source_mode,
+            }
+        ]
+    return [
+        {
+            **document,
+            "source_mode": document.get("source_mode") or source_mode,
+        }
+        for document in documents
+    ]
 
 
 def request_json(
@@ -345,6 +425,7 @@ def wait_for_values_job(
     job_url = status_url if str(status_url).startswith("http") else f"{values_url}{status_url}"
     logging.info("VALUES job queued: job_id=%s", job_id)
     last_status = ""
+    last_progress = ""
 
     while True:
         elapsed = time.monotonic() - started
@@ -361,6 +442,33 @@ def wait_for_values_job(
         if status != last_status:
             logging.info("VALUES job %s status=%s elapsed=%.1fs", job_id, status, elapsed)
             last_status = status
+        progress = status_response.get("progress")
+        if isinstance(progress, dict):
+            progress_key = json.dumps(progress, sort_keys=True, default=str)
+            if progress_key != last_progress:
+                logging.info(
+                    "VALUES progress: phase=%s job_elapsed=%s route_elapsed=%s message=%s details=%s",
+                    progress.get("phase"),
+                    progress.get("job_elapsed_seconds"),
+                    progress.get("elapsed_seconds"),
+                    progress.get("message"),
+                    compact_params(
+                        {
+                            key: value
+                            for key, value in progress.items()
+                            if key
+                            not in {
+                                "phase",
+                                "message",
+                                "job_id",
+                                "job_elapsed_seconds",
+                                "elapsed_seconds",
+                                "route",
+                            }
+                        }
+                    ),
+                )
+                last_progress = progress_key
 
         if status == "succeeded":
             result = status_response.get("result")
@@ -374,9 +482,20 @@ def wait_for_values_job(
 
 
 def run_flow(args: argparse.Namespace) -> dict[str, Any]:
-    if args.event_type != "Financial Results":
-        raise FlowError("Only EVENT_TYPE='Financial Results' is supported by this flow")
-
+    documents = parse_documents_json(args.documents_json)
+    shorthand_documents = parse_document_shorthand(args.document)
+    if documents and shorthand_documents:
+        raise FlowError("Use either --documents-json or --document, not both")
+    documents = documents or shorthand_documents or None
+    if args.event_type not in SUPPORTED_EVENT_TYPES:
+        allowed = ", ".join(sorted(SUPPORTED_EVENT_TYPES))
+        raise FlowError(f"EVENT_TYPE must be one of: {allowed}")
+    source_mode = normalize_source_mode(args.source_mode)
+    documents = apply_source_mode(
+        documents,
+        event_type=args.event_type,
+        source_mode=source_mode,
+    )
     service_urls = {
         name: normalize_base_url(getattr(args, f"{name}_url"))
         for name in DEFAULT_SERVICES
@@ -391,6 +510,8 @@ def run_flow(args: argparse.Namespace) -> dict[str, Any]:
         "to_date": args.to_date.strip(),
         "event_type": args.event_type,
     }
+    if documents:
+        params["documents"] = documents
 
     final_response: dict[str, Any] = {}
     for step in STEPS:
@@ -416,44 +537,51 @@ def run_flow(args: argparse.Namespace) -> dict[str, Any]:
             if not next_params["company_id"]:
                 raise FlowError("Step 1 response did not include company.id")
         elif step.name == "EVENT TYPE":
+            query = {
+                "symbol": params["symbol"],
+                "from_date": params["from_date"],
+                "to_date": params["to_date"],
+                "company_id": params["company_id"],
+                "event_type": params["event_type"],
+            }
+            if params.get("documents"):
+                query["documents_json"] = json.dumps(params["documents"])
             response = request_json(
                 step.method,
                 url,
-                query={
-                    "symbol": params["symbol"],
-                    "from_date": params["from_date"],
-                    "to_date": params["to_date"],
-                    "company_id": params["company_id"],
-                    "event_type": params["event_type"],
-                },
+                query=query,
                 timeout=args.timeout,
             )
             next_params = require_next_params(response, step)
             next_params["event_type"] = params["event_type"]
+            if response.get("resolved_documents"):
+                next_params["resolved_documents"] = response["resolved_documents"]
         elif step.name == "VALUES" and not args.values_sync:
+            values_params = {
+                **params,
+                **{
+                    key: value
+                    for key, value in {
+                        "parse_max_workers": args.values_parse_workers,
+                        "extraction_max_workers": args.values_extraction_workers,
+                    }.items()
+                    if value is not None
+                },
+            }
+            if values_params.get("resolved_documents"):
+                values_params["resolved_documents_json"] = json.dumps(values_params.pop("resolved_documents"))
             response = wait_for_values_job(
                 values_url=service_urls[step.service],
-                params={
-                    **params,
-                    **{
-                        key: value
-                        for key, value in {
-                            "parse_max_workers": args.values_parse_workers,
-                            "extraction_max_workers": args.values_extraction_workers,
-                        }.items()
-                        if value is not None
-                    },
-                },
+                params=values_params,
                 timeout=args.timeout,
                 poll_interval=args.poll_interval,
             )
             next_params = require_next_params(response, step)
             next_params["event_type"] = params["event_type"]
         else:
-            response = request_json(
-                step.method,
-                url,
-                query={
+            query_params = params
+            if step.name == "VALUES":
+                query_params = {
                     **params,
                     **{
                         key: value
@@ -464,8 +592,13 @@ def run_flow(args: argparse.Namespace) -> dict[str, Any]:
                         if value is not None
                     },
                 }
-                if step.name == "VALUES"
-                else params,
+                if query_params.get("resolved_documents"):
+                    query_params = dict(query_params)
+                    query_params["resolved_documents_json"] = json.dumps(query_params.pop("resolved_documents"))
+            response = request_json(
+                step.method,
+                url,
+                query=query_params,
                 timeout=args.timeout,
             )
             next_params = require_next_params(response, step)
@@ -485,17 +618,56 @@ def run_flow(args: argparse.Namespace) -> dict[str, Any]:
     return final_response
 
 
+def event_types_for_args(args: argparse.Namespace) -> list[str]:
+    if args.all_event_types:
+        if args.event_type:
+            raise FlowError("Use either --event-type or --all-event-types, not both")
+        return ALL_EVENT_TYPES
+    if not args.event_type:
+        raise FlowError("Pass --event-type or --all-event-types")
+    return [args.event_type]
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        description="Run the 7-step Financial Results microservice flow."
+        description="Run the 7-step CapitalNerve event microservice flow."
     )
     parser.add_argument("--symbol", required=True, help="NSE-listed symbol, e.g. ITC")
     parser.add_argument("--from-date", required=True, help="NSE fromDate, DD-MM-YYYY")
     parser.add_argument("--to-date", required=True, help="NSE toDate, DD-MM-YYYY")
     parser.add_argument(
         "--event-type",
-        required=True,
-        help='Only "Financial Results" is supported by the current flow.',
+        default=None,
+        help='Supported values: "Financial Results", "Investor Presentation", "Earnings Call Transcript".',
+    )
+    parser.add_argument(
+        "--all-event-types",
+        action="store_true",
+        help="Run the flow once for each supported event type.",
+    )
+    parser.add_argument(
+        "--documents-json",
+        default=None,
+        help="Unified document queue as a JSON string or a path to a JSON file.",
+    )
+    parser.add_argument(
+        "--document",
+        action="append",
+        default=None,
+        help=(
+            "Repeatable unified document shorthand, e.g. "
+            "document_type=investor_presentation,source_mode=nse_auto"
+        ),
+    )
+    parser.add_argument(
+        "--source-mode",
+        choices=sorted(SUPPORTED_SOURCE_MODES),
+        default=None,
+        help=(
+            "Source mode for the Step 3 document request. If --document or "
+            "--documents-json is provided, this fills source_mode only when a "
+            "document omits it."
+        ),
     )
     parser.add_argument("--timeout", type=float, default=900.0, help="HTTP timeout seconds")
     parser.add_argument(
@@ -545,7 +717,18 @@ def main() -> int:
     setup_logging(args.verbose)
 
     try:
-        run_flow(args)
+        event_types = event_types_for_args(args)
+        for index, event_type in enumerate(event_types, start=1):
+            args.event_type = event_type
+            if len(event_types) > 1:
+                logging.info("=" * 78)
+                logging.info(
+                    "Running event type %s/%s: %s",
+                    index,
+                    len(event_types),
+                    event_type,
+                )
+            run_flow(args)
     except FlowError as exc:
         logging.error("%s", exc)
         return 1

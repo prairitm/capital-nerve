@@ -123,6 +123,15 @@ body {
     border-radius: 2px;
     box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.15);
   }
+  .evidence-value-highlight {
+    position: absolute;
+    z-index: 3;
+    pointer-events: none;
+    background: rgba(34, 197, 94, 0.34);
+    border: 1px solid rgba(34, 197, 94, 0.78);
+    border-radius: 2px;
+    box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.14);
+  }
   .react-pdf__Page__textContent .evidence-highlight,
   .react-pdf__Page__textContent [role="presentation"].evidence-highlight {
     color: transparent;

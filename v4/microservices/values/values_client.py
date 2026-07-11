@@ -26,7 +26,4 @@ def download_pdf(pdf_url: str) -> bytes:
         timeout=settings.request_timeout_seconds,
     )
     response.raise_for_status()
-    data = response.content
-    if not data.startswith(b"%PDF-"):
-        raise ValueError("Downloaded file is not a PDF")
-    return data
+    return response.content

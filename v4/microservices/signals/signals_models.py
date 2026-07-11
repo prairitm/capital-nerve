@@ -14,6 +14,7 @@ class EvaluateSignalsRequest(BaseModel):
     to_date: str = Field(..., examples=["30-06-2026"])
     company_id: str
     event_id: str
+    event_type: str = "Financial Results"
     pdf_url: str | None = None
     document_id: str | None = None
     period_quarter: int = Field(..., ge=1, le=4)
@@ -57,6 +58,14 @@ class EvaluateSignalsRequest(BaseModel):
         datetime.strptime(text, "%Y-%m-%d")
         return text
 
+    @validator("event_type")
+    @classmethod
+    def normalize_event_type(cls, value: str) -> str:
+        event_type = value.strip() or "Financial Results"
+        if event_type not in {"Financial Results", "Investor Presentation", "Earnings Call Transcript"}:
+            raise ValueError("event_type must be Financial Results, Investor Presentation, or Earnings Call Transcript")
+        return event_type
+
 
 class FiredSignalResponse(BaseModel):
     signal_key: str
@@ -69,6 +78,8 @@ class FiredSignalResponse(BaseModel):
     fact_keys: list[str]
     trigger_values: dict[str, Any]
     rule_text: str
+    segment: str | None = None
+    geography: str | None = None
 
 
 class SourceCountsResponse(BaseModel):
@@ -84,6 +95,7 @@ class EvaluateSignalsResponse(BaseModel):
     to_date: str
     company_id: str
     event_id: str
+    event_type: str
     pdf_url: str | None = None
     document_id: str | None = None
     period_quarter: int

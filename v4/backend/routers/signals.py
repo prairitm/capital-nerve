@@ -6,7 +6,7 @@ from fastapi import APIRouter, HTTPException, Query
 
 from catalog import signal_categories, signal_meta
 from db import get_conn
-from queries import signal_input_facts
+from queries import signal_input_facts, table_columns, uses_eight_step_metrics
 from serializers import company_dict, event_dict, metric_value_dict, signal_dict
 
 router = APIRouter(tags=["signals"])
@@ -24,10 +24,22 @@ def list_signals(
             """
             SELECT s.*, c.id AS c_id, c.name AS c_name, c.ticker AS c_ticker,
                    c.exchange AS c_exchange, c.sector AS c_sector,
-                   c.industry AS c_industry, c.isin AS c_isin
+                   c.industry AS c_industry, c.isin AS c_isin,
+                   e.id AS e_id, e.company_id AS e_company_id,
+                   e.event_type AS e_event_type, e.event_date AS e_event_date,
+                   e.fiscal_year AS e_fiscal_year, e.fiscal_quarter AS e_fiscal_quarter,
+                   e.title AS e_title, e.source_url AS e_source_url,
+                   e.document_id AS e_document_id, e.status AS e_status
             FROM signals s
             LEFT JOIN companies c ON c.id = s.company_id
-            ORDER BY s.detected_at DESC
+            LEFT JOIN events e ON e.id = s.event_id
+            ORDER BY CASE UPPER(COALESCE(s.severity, ''))
+                WHEN 'CRITICAL' THEN 0
+                WHEN 'HIGH' THEN 1
+                WHEN 'MEDIUM' THEN 2
+                WHEN 'LOW' THEN 3
+                ELSE 9
+            END
             """
         ).fetchall()
 
@@ -37,6 +49,7 @@ def list_signals(
             if r["c_id"]:
                 company = _company_row(r)
             sig = signal_dict(r, company)
+            sig["event"] = _event_row(r)
             if severity and (sig["severity"] or "").upper() != severity.upper():
                 continue
             if direction and (sig["direction"] or "").upper() != direction.upper():
@@ -57,9 +70,9 @@ def list_signal_categories():
 @router.get("/signals/{signal_id}")
 def signal_detail(signal_id: str):
     with get_conn() as conn:
-        row = conn.execute(
-            "SELECT * FROM signals WHERE id = ?", (signal_id,)
-        ).fetchone()
+        signal_cols = table_columns(conn, "signals")
+        id_column = "signal_id" if "signal_id" in signal_cols else "id"
+        row = conn.execute(f"SELECT * FROM signals WHERE {id_column} = ?", (signal_id,)).fetchone()
         if not row:
             raise HTTPException(status_code=404, detail="Signal not found")
 
@@ -71,6 +84,7 @@ def signal_detail(signal_id: str):
         meta = signal_meta(sig["signal_type"])
         evidence = sig["evidence"] or {}
         metric_keys = evidence.get("metric_keys") or []
+        metric_ids = evidence.get("metric_ids") or []
 
         referenced_metrics: list[dict] = []
         event = None
@@ -79,7 +93,25 @@ def signal_detail(signal_id: str):
                 "SELECT * FROM events WHERE id = ?", (row["event_id"],)
             ).fetchone()
             event = event_dict(event_row) if event_row else None
-            if metric_keys:
+            if uses_eight_step_metrics(conn) and metric_ids:
+                placeholders = ",".join("?" for _ in metric_ids)
+                metric_rows = conn.execute(
+                    f"""
+                    SELECT m.*, p.period_end AS period_end, NULL AS period_start
+                    FROM metrics m
+                    LEFT JOIN (
+                        SELECT event_id, MAX(period_end) AS period_end
+                        FROM extracted_values
+                        GROUP BY event_id
+                    ) p ON p.event_id = m.event_id
+                    WHERE m.event_id = ? AND m.metric_id IN ({placeholders})
+                    """,
+                    [row["event_id"], *metric_ids],
+                ).fetchall()
+                referenced_metrics = [metric_value_dict(r) for r in metric_rows]
+                if not metric_keys:
+                    metric_keys = [r["metric_code"] for r in metric_rows]
+            elif metric_keys:
                 placeholders = ",".join("?" for _ in metric_keys)
                 metric_rows = conn.execute(
                     f"""
@@ -124,3 +156,22 @@ def _company_row(r):
         "industry": r["c_industry"],
         "isin": r["c_isin"],
     }
+
+
+def _event_row(r):
+    if not r["e_id"]:
+        return None
+    return event_dict(
+        {
+            "id": r["e_id"],
+            "company_id": r["e_company_id"],
+            "event_type": r["e_event_type"],
+            "event_date": r["e_event_date"],
+            "fiscal_year": r["e_fiscal_year"],
+            "fiscal_quarter": r["e_fiscal_quarter"],
+            "title": r["e_title"],
+            "source_url": r["e_source_url"],
+            "document_id": r["e_document_id"],
+            "status": r["e_status"],
+        }
+    )

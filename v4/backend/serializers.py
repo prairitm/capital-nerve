@@ -22,6 +22,9 @@ _EVENT_TYPE_MAP = {
     "quarterly results": "QUARTERLY_RESULT",
     "board meeting": "EXCHANGE_FILING",
     "investor presentation": "INVESTOR_PRESENTATION",
+    "earnings call transcript": "EARNINGS_CALL_TRANSCRIPT",
+    "earnings call": "EARNINGS_CALL_TRANSCRIPT",
+    "concall transcript": "EARNINGS_CALL_TRANSCRIPT",
     "analysts/institutional investor meet/con. call updates": "CONCALL_TRANSCRIPT",
     "press release": "PRESS_RELEASE",
     "annual report": "ANNUAL_REPORT",
@@ -98,9 +101,13 @@ def event_dict(row: sqlite3.Row) -> dict[str, Any]:
 def extracted_value_dict(row: sqlite3.Row) -> dict[str, Any]:
     code = row["value_code"]
     meta = fact_meta(code)
+    statement = meta.get("statement")
     return {
         "value_code": code,
         "value_name": meta.get("name") or code,
+        "statement": statement,
+        "category": meta.get("category") or (str(statement).lower() if statement else None),
+        "group": meta.get("group"),
         "value_numeric": _get(row, "value_numeric"),
         "value_text": _get(row, "value_text"),
         "unit": _get(row, "unit") or meta.get("unit"),
@@ -108,9 +115,26 @@ def extracted_value_dict(row: sqlite3.Row) -> dict[str, Any]:
         "period_start": _get(row, "period_start"),
         "period_end": _get(row, "period_end"),
         "basis": _get(row, "basis"),
+        "scope_level": _get(row, "scope_level"),
+        "scope_name": _get(row, "scope_name"),
+        "segment": _get(row, "segment"),
+        "geography": _get(row, "geography"),
+        "product": _get(row, "product"),
+        "channel": _get(row, "channel"),
+        "project": _get(row, "project"),
+        "customer_type": _get(row, "customer_type"),
+        "metric_context": _get(row, "metric_context"),
+        "fact_type": _get(row, "fact_type"),
+        "value_lower": _get(row, "value_lower"),
+        "value_upper": _get(row, "value_upper"),
+        "sentiment": _get(row, "sentiment"),
+        "is_explicit_guidance": _get(row, "is_explicit_guidance"),
+        "resolution_status": _get(row, "resolution_status"),
+        "resolved_fact_id": _get(row, "resolved_fact_id"),
         "source_text": _get(row, "source_text"),
         "source_page": _get(row, "source_page"),
         "confidence": _get(row, "confidence"),
+        "document_id": _get(row, "document_id"),
     }
 
 
@@ -118,11 +142,20 @@ def metric_value_dict(row: sqlite3.Row) -> dict[str, Any]:
     code = _get(row, "metric_code")
     meta = metric_meta(code)
     calc = parse_json(_get(row, "calculation_data")) or {}
+    if not calc and (_get(row, "formula") or _get(row, "input_fact_ids")):
+        calc = {
+            "formula": _get(row, "formula"),
+            "input_fact_ids": [
+                item.strip()
+                for item in str(_get(row, "input_fact_ids") or "").split(",")
+                if item.strip()
+            ],
+        }
     return {
         "metric_code": code,
         "metric_name": meta.get("name") or code,
-        "metric_value": _get(row, "metric_value"),
-        "unit": meta.get("unit") or calc.get("unit"),
+        "metric_value": _get(row, "metric_value", _get(row, "value")),
+        "unit": meta.get("unit") or calc.get("unit") or _get(row, "unit"),
         "category": meta.get("category"),
         "period_start": _get(row, "period_start"),
         "period_end": _get(row, "period_end"),
@@ -131,16 +164,29 @@ def metric_value_dict(row: sqlite3.Row) -> dict[str, Any]:
 
 
 def signal_dict(row: sqlite3.Row, company: sqlite3.Row | None = None) -> dict[str, Any]:
-    code = _get(row, "signal_type")
+    code = _get(row, "signal_type", _get(row, "signal_code"))
     meta = signal_meta(code)
     evidence = parse_json(_get(row, "evidence")) or {}
+    if not evidence and (_get(row, "supporting_metric_ids") or _get(row, "supporting_fact_ids")):
+        evidence = {
+            "metric_ids": [
+                item.strip()
+                for item in str(_get(row, "supporting_metric_ids") or "").split(",")
+                if item.strip()
+            ],
+            "fact_ids": [
+                item.strip()
+                for item in str(_get(row, "supporting_fact_ids") or "").split(",")
+                if item.strip()
+            ],
+        }
     return {
-        "id": row["id"],
+        "id": _get(row, "id", _get(row, "signal_id")),
         "company_id": _get(row, "company_id"),
         "event_id": _get(row, "event_id"),
         "signal_type": code,
         "signal_name": meta.get("name") or _get(row, "title") or code,
-        "title": _get(row, "title"),
+        "title": _get(row, "title") or meta.get("name") or code,
         "description": _get(row, "description") or meta.get("description"),
         "direction": _get(row, "direction") or meta.get("direction"),
         "severity": _get(row, "severity") or meta.get("severity"),

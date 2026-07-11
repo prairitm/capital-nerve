@@ -31,8 +31,30 @@ def signal_id(company_id: str, event_id: str, signal_key: str) -> str:
     return hashlib.sha256(f"{company_id}:{event_id}:{signal_key}".encode()).hexdigest()
 
 
+def dimension_signal_id(
+    company_id: str,
+    event_id: str,
+    signal_key: str,
+    segment: str | None = None,
+    geography: str | None = None,
+) -> str:
+    return hashlib.sha256(
+        f"{company_id}:{event_id}:{signal_key}:{segment or ''}:{geography or ''}".encode()
+    ).hexdigest()
+
+
 def load_signals_catalog() -> dict[str, Any]:
     return json.loads((settings.catalog_dir / "signals.json").read_text(encoding="utf-8"))
+
+
+def load_presentation_signals_catalog() -> dict[str, Any]:
+    path = settings.catalog_dir / "investor_presentation" / "presentation_signals.json"
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
+def load_earnings_call_signals_catalog() -> dict[str, Any]:
+    path = settings.catalog_dir / "earnings-call" / "earnings_call_signals.json"
+    return json.loads(path.read_text(encoding="utf-8"))
 
 
 def load_metrics_by_key(
@@ -43,27 +65,25 @@ def load_metrics_by_key(
 ) -> dict[str, dict[str, Any]]:
     rows = conn.execute(
         """
-        SELECT m.metric_code, m.name, mv.metric_value, m.unit, m.description, mv.calculation_data
-        FROM metric_values mv
-        JOIN metrics m ON m.id = mv.metric_id
-        WHERE mv.company_id = ? AND mv.event_id = ?
+        SELECT metric_id, metric_code, value, unit, input_fact_ids, formula
+        FROM metrics
+        WHERE company_id = ? AND event_id = ?
         """,
         (company_id, event_id),
     ).fetchall()
     out: dict[str, dict[str, Any]] = {}
     for row in rows:
-        calc = {}
-        if row["calculation_data"]:
-            try:
-                calc = json.loads(row["calculation_data"])
-            except json.JSONDecodeError:
-                calc = {}
         out[row["metric_code"]] = {
+            "metric_id": row["metric_id"],
             "metric_key": row["metric_code"],
-            "name": row["name"],
-            "value": float(row["metric_value"]),
-            "unit": calc.get("unit", row["unit"]),
-            "category": row["description"],
+            "value": float(row["value"]),
+            "unit": row["unit"],
+            "input_fact_ids": [
+                item.strip()
+                for item in str(row["input_fact_ids"] or "").split(",")
+                if item.strip()
+            ],
+            "formula": row["formula"],
         }
     return out
 
@@ -72,8 +92,34 @@ def load_facts_by_key(
     conn: sqlite3.Connection,
     *,
     company_id: str,
+    event_id: str,
     period_end: str,
 ) -> dict[str, dict[str, Any]]:
+    resolved_rows = conn.execute(
+        """
+        SELECT resolved_fact_id, fact_code, resolved_value, unit,
+               resolution_status, confidence
+        FROM resolved_facts
+        WHERE company_id = ? AND event_id = ?
+        """,
+        (company_id, event_id),
+    ).fetchall()
+    out: dict[str, dict[str, Any]] = {}
+    for row in resolved_rows:
+        if row["resolved_value"] is None or row["resolution_status"] == "conflict_needs_review":
+            continue
+        out.setdefault(
+            row["fact_code"],
+            {
+                "resolved_fact_id": row["resolved_fact_id"],
+                "value": float(row["resolved_value"]),
+                "unit": row["unit"],
+                "confidence": row["confidence"],
+            },
+        )
+    if out:
+        return out
+
     rows = conn.execute(
         """
         SELECT value_code, value_numeric, value_text, unit FROM extracted_values
@@ -88,7 +134,81 @@ def load_facts_by_key(
             value: Any = float(row["value_numeric"])
         else:
             value = row["value_text"]
-        out.setdefault(row["value_code"], {"value": value, "unit": row["unit"]})
+        out.setdefault(
+            row["value_code"],
+            {
+                "resolved_fact_id": hashlib.sha256(
+                    f"{company_id}:{event_id}:{row['value_code']}".encode()
+                ).hexdigest(),
+                "value": value,
+                "unit": row["unit"],
+            },
+        )
+    return out
+
+
+def _dim_key(row: dict[str, Any]) -> tuple[str, str]:
+    return (row.get("segment") or "", row.get("geography") or "")
+
+
+def load_presentation_metrics_by_key(
+    conn: sqlite3.Connection,
+    *,
+    company_id: str,
+    event_id: str,
+) -> dict[str, list[dict[str, Any]]]:
+    rows = conn.execute(
+        """
+        SELECT metric_id, metric_code, value, unit, formula
+        FROM metrics
+        WHERE company_id = ? AND event_id = ?
+        """,
+        (company_id, event_id),
+    ).fetchall()
+    out: dict[str, list[dict[str, Any]]] = {}
+    for row in rows:
+        out.setdefault(row["metric_code"], []).append(
+            {
+                "metric_key": row["metric_code"],
+                "metric_id": row["metric_id"],
+                "name": row["metric_code"],
+                "value": float(row["value"]),
+                "unit": row["unit"],
+                "category": None,
+                "segment": None,
+                "geography": None,
+            }
+        )
+    return out
+
+
+def load_presentation_facts_by_key(
+    conn: sqlite3.Connection,
+    *,
+    company_id: str,
+    period_end: str,
+) -> dict[str, list[dict[str, Any]]]:
+    rows = conn.execute(
+        """
+        SELECT value_code, value_numeric, value_text, unit, segment, geography
+        FROM extracted_values
+        WHERE company_id = ? AND period_end = ?
+        ORDER BY confidence DESC
+        """,
+        (company_id, period_end),
+    ).fetchall()
+    out: dict[str, list[dict[str, Any]]] = {}
+    for row in rows:
+        value: Any = float(row["value_numeric"]) if row["value_numeric"] is not None else row["value_text"]
+        out.setdefault(row["value_code"], []).append(
+            {
+                "fact_key": row["value_code"],
+                "value": value,
+                "unit": row["unit"],
+                "segment": row["segment"],
+                "geography": row["geography"],
+            }
+        )
     return out
 
 
@@ -192,6 +312,237 @@ def evaluate_signal_rules(
         trigger_values.update(
             {key: facts_by_key[key]["value"] for key in fact_keys if key in facts_by_key}
         )
+        supporting_metric_ids = [
+            metrics_by_key[key]["metric_id"]
+            for key in metric_keys
+            if key in metrics_by_key and metrics_by_key[key].get("metric_id")
+        ]
+        supporting_fact_ids = {
+            facts_by_key[key]["resolved_fact_id"]
+            for key in fact_keys
+            if key in facts_by_key and facts_by_key[key].get("resolved_fact_id")
+        }
+        for key in metric_keys:
+            supporting_fact_ids.update(metrics_by_key.get(key, {}).get("input_fact_ids") or [])
+        fired_signals.append(
+            {
+                "signal_key": code,
+                "title": spec.get("name", code),
+                "description": spec.get("description", ""),
+                "direction": spec.get("direction"),
+                "severity": spec.get("severity"),
+                "category": spec.get("category"),
+                "metric_keys": metric_keys,
+                "fact_keys": fact_keys,
+                "supporting_metric_ids": supporting_metric_ids,
+                "supporting_fact_ids": sorted(supporting_fact_ids),
+                "trigger_values": trigger_values,
+                "rule_text": format_rule(rule),
+            }
+        )
+    return fired_signals
+
+
+def presentation_rule_metric_keys(rule: dict[str, Any]) -> list[str]:
+    keys: list[str] = []
+    if "metric_key" in rule:
+        keys.append(rule["metric_key"])
+    if "compare_metric_key" in rule:
+        keys.append(rule["compare_metric_key"])
+    for key in ("all", "any"):
+        for child in rule.get(key, []):
+            keys.extend(presentation_rule_metric_keys(child))
+    return keys
+
+
+def presentation_rule_fact_keys(rule: dict[str, Any]) -> list[str]:
+    keys: list[str] = []
+    if "fact_key" in rule:
+        keys.append(rule["fact_key"])
+    if "compare_fact_key" in rule:
+        keys.append(rule["compare_fact_key"])
+    for key in ("all", "any"):
+        for child in rule.get(key, []):
+            keys.extend(presentation_rule_fact_keys(child))
+    return keys
+
+
+def _refs_for_key(
+    pool: dict[str, list[dict[str, Any]]],
+    key: str,
+    dim_key: tuple[str, str] | None,
+) -> list[dict[str, Any]]:
+    rows = pool.get(key, [])
+    if not dim_key:
+        company = [row for row in rows if _dim_key(row) == ("", "")]
+        return company or rows
+    exact = [row for row in rows if _dim_key(row) == dim_key]
+    if exact:
+        return exact
+    segment, geography = dim_key
+    segment_only = [row for row in rows if segment and (row.get("segment") or "") == segment]
+    if segment_only:
+        return segment_only
+    geography_only = [row for row in rows if geography and (row.get("geography") or "") == geography]
+    if geography_only:
+        return geography_only
+    company = [row for row in rows if _dim_key(row) == ("", "")]
+    return company or rows
+
+
+def eval_presentation_leaf(
+    rule: dict[str, Any],
+    *,
+    metrics_by_key: dict[str, list[dict[str, Any]]],
+    facts_by_key: dict[str, list[dict[str, Any]]],
+    dim_key: tuple[str, str] | None = None,
+) -> bool:
+    if "metric_key" in rule:
+        refs = _refs_for_key(metrics_by_key, rule["metric_key"], dim_key)
+    elif "fact_key" in rule:
+        refs = _refs_for_key(facts_by_key, rule["fact_key"], dim_key)
+    else:
+        raise ValueError(f"Malformed rule leaf: {rule}")
+    if not refs:
+        return False
+    left = refs[0]["value"]
+    if "compare_metric_key" in rule:
+        compare_refs = _refs_for_key(metrics_by_key, rule["compare_metric_key"], dim_key)
+        if not compare_refs:
+            return False
+        right = compare_refs[0]["value"]
+    elif "compare_fact_key" in rule:
+        compare_refs = _refs_for_key(facts_by_key, rule["compare_fact_key"], dim_key)
+        if not compare_refs:
+            return False
+        right = compare_refs[0]["value"]
+    else:
+        right = rule.get("value")
+    op = rule["op"].upper() if isinstance(rule["op"], str) else rule["op"]
+    if op not in OPS:
+        raise ValueError(f"Unsupported rule operator: {rule['op']}")
+    try:
+        return bool(OPS[op](left, right))
+    except TypeError:
+        return False
+
+
+def eval_presentation_rule(
+    rule: dict[str, Any],
+    *,
+    metrics_by_key: dict[str, list[dict[str, Any]]],
+    facts_by_key: dict[str, list[dict[str, Any]]],
+    dim_key: tuple[str, str] | None = None,
+) -> bool:
+    if "all" in rule:
+        return all(
+            eval_presentation_rule(
+                child,
+                metrics_by_key=metrics_by_key,
+                facts_by_key=facts_by_key,
+                dim_key=dim_key,
+            )
+            for child in rule["all"]
+        )
+    if "any" in rule:
+        return any(
+            eval_presentation_rule(
+                child,
+                metrics_by_key=metrics_by_key,
+                facts_by_key=facts_by_key,
+                dim_key=dim_key,
+            )
+            for child in rule["any"]
+        )
+    if "metric_key" in rule or "fact_key" in rule:
+        return eval_presentation_leaf(
+            rule,
+            metrics_by_key=metrics_by_key,
+            facts_by_key=facts_by_key,
+            dim_key=dim_key,
+        )
+    raise ValueError(f"Malformed rule: {rule}")
+
+
+def format_presentation_rule(rule: dict[str, Any]) -> str:
+    if "metric_key" in rule:
+        rhs = rule.get("compare_metric_key", rule.get("value"))
+        return f"{rule['metric_key']} {rule['op']} {rhs}"
+    if "fact_key" in rule:
+        rhs = rule.get("compare_fact_key", rule.get("value"))
+        return f"{rule['fact_key']} {rule['op']} {rhs}"
+    if "all" in rule:
+        return " AND ".join(f"({format_presentation_rule(child)})" for child in rule["all"])
+    if "any" in rule:
+        return " OR ".join(f"({format_presentation_rule(child)})" for child in rule["any"])
+    return ""
+
+
+def _candidate_dims(
+    metric_keys: list[str],
+    fact_keys: list[str],
+    *,
+    metrics_by_key: dict[str, list[dict[str, Any]]],
+    facts_by_key: dict[str, list[dict[str, Any]]],
+) -> list[tuple[str, str] | None]:
+    keys: set[tuple[str, str]] = set()
+    for key in metric_keys:
+        for row in metrics_by_key.get(key, []):
+            dim = _dim_key(row)
+            if dim != ("", ""):
+                keys.add(dim)
+    for key in fact_keys:
+        for row in facts_by_key.get(key, []):
+            dim = _dim_key(row)
+            if dim != ("", ""):
+                keys.add(dim)
+    return sorted(keys) + [None] if keys else [None]
+
+
+def evaluate_presentation_signal_rules(
+    signals_catalog: dict[str, Any],
+    *,
+    metrics_by_key: dict[str, list[dict[str, Any]]],
+    facts_by_key: dict[str, list[dict[str, Any]]],
+) -> list[dict[str, Any]]:
+    fired_signals: list[dict[str, Any]] = []
+    for code, spec in signals_catalog.items():
+        rule = spec.get("rule")
+        if not rule:
+            continue
+        metric_keys = sorted(set(presentation_rule_metric_keys(rule)))
+        fact_keys = sorted(set(presentation_rule_fact_keys(rule)))
+        if not all(key in metrics_by_key for key in metric_keys):
+            continue
+        if not all(key in facts_by_key for key in fact_keys):
+            continue
+        fired_dim = None
+        for dim_key in _candidate_dims(
+            metric_keys,
+            fact_keys,
+            metrics_by_key=metrics_by_key,
+            facts_by_key=facts_by_key,
+        ):
+            if eval_presentation_rule(
+                rule,
+                metrics_by_key=metrics_by_key,
+                facts_by_key=facts_by_key,
+                dim_key=dim_key,
+            ):
+                fired_dim = dim_key
+                break
+        if fired_dim is None:
+            continue
+        trigger_values = {}
+        for key in metric_keys:
+            refs = _refs_for_key(metrics_by_key, key, fired_dim)
+            if refs:
+                trigger_values[key] = refs[0]["value"]
+        for key in fact_keys:
+            refs = _refs_for_key(facts_by_key, key, fired_dim)
+            if refs:
+                trigger_values[key] = refs[0]["value"]
+        segment, geography = fired_dim or ("", "")
         fired_signals.append(
             {
                 "signal_key": code,
@@ -203,7 +554,9 @@ def evaluate_signal_rules(
                 "metric_keys": metric_keys,
                 "fact_keys": fact_keys,
                 "trigger_values": trigger_values,
-                "rule_text": format_rule(rule),
+                "rule_text": format_presentation_rule(rule),
+                "segment": segment or None,
+                "geography": geography or None,
             }
         )
     return fired_signals
@@ -224,28 +577,25 @@ def persist_fired_signals(
         conn.execute(
             """
             INSERT INTO signals (
-                id, company_id, event_id, signal_type, title, description,
-                direction, severity, evidence
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                signal_id, company_id, event_id, signal_code, severity,
+                direction, supporting_metric_ids, supporting_fact_ids
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
-                signal_id(company_id, event_id, signal["signal_key"]),
+                dimension_signal_id(
+                    company_id,
+                    event_id,
+                    signal["signal_key"],
+                    signal.get("segment"),
+                    signal.get("geography"),
+                ),
                 company_id,
                 event_id,
                 signal["signal_key"],
-                signal["title"],
-                signal["description"],
-                signal["direction"],
                 signal["severity"],
-                json.dumps(
-                    {
-                        "metric_keys": signal["metric_keys"],
-                        "fact_keys": signal["fact_keys"],
-                        "trigger_values": signal["trigger_values"],
-                        "rule_text": signal["rule_text"],
-                        "category": signal["category"],
-                    }
-                ),
+                signal["direction"],
+                ", ".join(signal.get("supporting_metric_ids") or []),
+                ", ".join(signal.get("supporting_fact_ids") or []),
             ),
         )
     conn.commit()
@@ -258,15 +608,58 @@ def evaluate_and_persist_signals(
     company_id: str,
     event_id: str,
     period_end: str,
+    event_type: str = "Financial Results",
 ) -> dict[str, Any]:
     expected_company_id = company_id_for_symbol(symbol)
     if company_id != expected_company_id:
         raise ValueError("company_id does not match the NSE symbol-derived company id")
 
     bootstrap_schema(conn)
+    if event_type in {"Investor Presentation", "Earnings Call Transcript"}:
+        signals_catalog = (
+            load_presentation_signals_catalog()
+            if event_type == "Investor Presentation"
+            else load_earnings_call_signals_catalog()
+        )
+        metrics_by_key = load_presentation_metrics_by_key(
+            conn,
+            company_id=company_id,
+            event_id=event_id,
+        )
+        facts_by_key = load_presentation_facts_by_key(
+            conn,
+            company_id=company_id,
+            period_end=period_end,
+        )
+        fired_signals = evaluate_presentation_signal_rules(
+            signals_catalog,
+            metrics_by_key=metrics_by_key,
+            facts_by_key=facts_by_key,
+        )
+        persist_fired_signals(
+            conn,
+            company_id=company_id,
+            event_id=event_id,
+            fired_signals=fired_signals,
+        )
+        return {
+            "signals": fired_signals,
+            "source_counts": {
+                "metrics": sum(len(rows) for rows in metrics_by_key.values()),
+                "facts": sum(len(rows) for rows in facts_by_key.values()),
+                "rules": len(signals_catalog),
+            },
+        }
+
     signals_catalog = load_signals_catalog()
+
     metrics_by_key = load_metrics_by_key(conn, company_id=company_id, event_id=event_id)
-    facts_by_key = load_facts_by_key(conn, company_id=company_id, period_end=period_end)
+    facts_by_key = load_facts_by_key(
+        conn,
+        company_id=company_id,
+        event_id=event_id,
+        period_end=period_end,
+    )
     fired_signals = evaluate_signal_rules(
         signals_catalog,
         metrics_by_key=metrics_by_key,

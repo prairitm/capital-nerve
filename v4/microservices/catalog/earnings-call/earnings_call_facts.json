@@ -1,0 +1,1373 @@
+{
+  "call_date": {
+    "name": "Call Date",
+    "statement": "CALL_METADATA",
+    "unit": "date",
+    "fact_type": "DATE",
+    "documents": [
+      "EARNINGS_CALL_TRANSCRIPT"
+    ]
+  },
+  "reported_period": {
+    "name": "Reported Period",
+    "statement": "CALL_METADATA",
+    "unit": "text",
+    "fact_type": "TEXT",
+    "documents": [
+      "EARNINGS_CALL_TRANSCRIPT"
+    ]
+  },
+  "call_section": {
+    "name": "Call Section",
+    "statement": "CALL_METADATA",
+    "unit": "enum",
+    "fact_type": "CATEGORICAL",
+    "documents": [
+      "EARNINGS_CALL_TRANSCRIPT"
+    ],
+    "allowed_values": [
+      "PREPARED_REMARKS",
+      "Q_AND_A",
+      "OPENING",
+      "CLOSING"
+    ]
+  },
+  "speaker_name": {
+    "name": "Speaker Name",
+    "statement": "SPEAKER",
+    "unit": "text",
+    "fact_type": "TEXT",
+    "documents": [
+      "EARNINGS_CALL_TRANSCRIPT"
+    ]
+  },
+  "speaker_affiliation": {
+    "name": "Speaker Affiliation",
+    "statement": "SPEAKER",
+    "unit": "text",
+    "fact_type": "TEXT",
+    "documents": [
+      "EARNINGS_CALL_TRANSCRIPT"
+    ]
+  },
+  "speaker_role": {
+    "name": "Speaker Role",
+    "statement": "SPEAKER",
+    "unit": "enum",
+    "fact_type": "CATEGORICAL",
+    "documents": [
+      "EARNINGS_CALL_TRANSCRIPT"
+    ],
+    "allowed_values": [
+      "CEO",
+      "CFO",
+      "COO",
+      "BUSINESS_HEAD",
+      "IR",
+      "ANALYST",
+      "MODERATOR",
+      "OTHER_MANAGEMENT",
+      "OTHER"
+    ]
+  },
+  "utterance_text": {
+    "name": "Utterance Text",
+    "statement": "STATEMENT",
+    "unit": "text",
+    "fact_type": "TEXT",
+    "documents": [
+      "EARNINGS_CALL_TRANSCRIPT"
+    ]
+  },
+  "statement_topic": {
+    "name": "Statement Topic",
+    "statement": "STATEMENT",
+    "unit": "taxonomy",
+    "fact_type": "CATEGORICAL",
+    "documents": [
+      "EARNINGS_CALL_TRANSCRIPT"
+    ]
+  },
+  "statement_time_horizon": {
+    "name": "Statement Time Horizon",
+    "statement": "STATEMENT",
+    "unit": "enum",
+    "fact_type": "CATEGORICAL",
+    "documents": [
+      "EARNINGS_CALL_TRANSCRIPT"
+    ],
+    "allowed_values": [
+      "CURRENT_QUARTER",
+      "NEXT_QUARTER",
+      "CURRENT_FY",
+      "NEXT_FY",
+      "MEDIUM_TERM",
+      "LONG_TERM",
+      "UNSPECIFIED"
+    ]
+  },
+  "statement_polarity": {
+    "name": "Statement Polarity",
+    "statement": "STATEMENT",
+    "unit": "enum",
+    "fact_type": "CATEGORICAL",
+    "documents": [
+      "EARNINGS_CALL_TRANSCRIPT"
+    ],
+    "allowed_values": [
+      "POSITIVE",
+      "NEUTRAL",
+      "CAUTIOUS",
+      "NEGATIVE",
+      "MIXED"
+    ]
+  },
+  "statement_confidence": {
+    "name": "Statement Confidence",
+    "statement": "STATEMENT",
+    "unit": "enum",
+    "fact_type": "CATEGORICAL",
+    "documents": [
+      "EARNINGS_CALL_TRANSCRIPT"
+    ],
+    "allowed_values": [
+      "HIGH",
+      "MEDIUM",
+      "LOW",
+      "UNSPECIFIED"
+    ]
+  },
+  "statement_is_forward_looking": {
+    "name": "Statement Is Forward Looking",
+    "statement": "STATEMENT",
+    "unit": "boolean",
+    "fact_type": "BOOLEAN",
+    "documents": [
+      "EARNINGS_CALL_TRANSCRIPT"
+    ]
+  },
+  "statement_is_quantified": {
+    "name": "Statement Is Quantified",
+    "statement": "STATEMENT",
+    "unit": "boolean",
+    "fact_type": "BOOLEAN",
+    "documents": [
+      "EARNINGS_CALL_TRANSCRIPT"
+    ]
+  },
+  "statement_is_one_off": {
+    "name": "Statement Is One Off",
+    "statement": "STATEMENT",
+    "unit": "boolean",
+    "fact_type": "BOOLEAN",
+    "documents": [
+      "EARNINGS_CALL_TRANSCRIPT"
+    ]
+  },
+  "statement_is_recurring": {
+    "name": "Statement Is Recurring",
+    "statement": "STATEMENT",
+    "unit": "boolean",
+    "fact_type": "BOOLEAN",
+    "documents": [
+      "EARNINGS_CALL_TRANSCRIPT"
+    ]
+  },
+  "statement_is_management_estimate": {
+    "name": "Statement Is Management Estimate",
+    "statement": "STATEMENT",
+    "unit": "boolean",
+    "fact_type": "BOOLEAN",
+    "documents": [
+      "EARNINGS_CALL_TRANSCRIPT"
+    ]
+  },
+  "revenue_guidance_low": {
+    "name": "Revenue Guidance Low",
+    "statement": "GUIDANCE",
+    "unit": "crore",
+    "fact_type": "NUMERIC",
+    "documents": [
+      "EARNINGS_CALL_TRANSCRIPT"
+    ],
+    "dimensions": [
+      "target_period",
+      "segment",
+      "product",
+      "geography"
+    ]
+  },
+  "revenue_guidance_high": {
+    "name": "Revenue Guidance High",
+    "statement": "GUIDANCE",
+    "unit": "crore",
+    "fact_type": "NUMERIC",
+    "documents": [
+      "EARNINGS_CALL_TRANSCRIPT"
+    ],
+    "dimensions": [
+      "target_period",
+      "segment",
+      "product",
+      "geography"
+    ]
+  },
+  "revenue_growth_guidance_low": {
+    "name": "Revenue Growth Guidance Low",
+    "statement": "GUIDANCE",
+    "unit": "%",
+    "fact_type": "NUMERIC",
+    "documents": [
+      "EARNINGS_CALL_TRANSCRIPT"
+    ],
+    "dimensions": [
+      "target_period",
+      "segment",
+      "product",
+      "geography"
+    ]
+  },
+  "revenue_growth_guidance_high": {
+    "name": "Revenue Growth Guidance High",
+    "statement": "GUIDANCE",
+    "unit": "%",
+    "fact_type": "NUMERIC",
+    "documents": [
+      "EARNINGS_CALL_TRANSCRIPT"
+    ],
+    "dimensions": [
+      "target_period",
+      "segment",
+      "product",
+      "geography"
+    ]
+  },
+  "ebitda_guidance_low": {
+    "name": "EBITDA Guidance Low",
+    "statement": "GUIDANCE",
+    "unit": "crore",
+    "fact_type": "NUMERIC",
+    "documents": [
+      "EARNINGS_CALL_TRANSCRIPT"
+    ],
+    "dimensions": [
+      "target_period",
+      "segment",
+      "product",
+      "geography"
+    ]
+  },
+  "ebitda_guidance_high": {
+    "name": "EBITDA Guidance High",
+    "statement": "GUIDANCE",
+    "unit": "crore",
+    "fact_type": "NUMERIC",
+    "documents": [
+      "EARNINGS_CALL_TRANSCRIPT"
+    ],
+    "dimensions": [
+      "target_period",
+      "segment",
+      "product",
+      "geography"
+    ]
+  },
+  "ebitda_margin_guidance_low": {
+    "name": "EBITDA Margin Guidance Low",
+    "statement": "GUIDANCE",
+    "unit": "%",
+    "fact_type": "NUMERIC",
+    "documents": [
+      "EARNINGS_CALL_TRANSCRIPT"
+    ],
+    "dimensions": [
+      "target_period",
+      "segment",
+      "product",
+      "geography"
+    ]
+  },
+  "ebitda_margin_guidance_high": {
+    "name": "EBITDA Margin Guidance High",
+    "statement": "GUIDANCE",
+    "unit": "%",
+    "fact_type": "NUMERIC",
+    "documents": [
+      "EARNINGS_CALL_TRANSCRIPT"
+    ],
+    "dimensions": [
+      "target_period",
+      "segment",
+      "product",
+      "geography"
+    ]
+  },
+  "volume_growth_guidance_low": {
+    "name": "Volume Growth Guidance Low",
+    "statement": "GUIDANCE",
+    "unit": "%",
+    "fact_type": "NUMERIC",
+    "documents": [
+      "EARNINGS_CALL_TRANSCRIPT"
+    ],
+    "dimensions": [
+      "target_period",
+      "segment",
+      "product",
+      "geography"
+    ]
+  },
+  "volume_growth_guidance_high": {
+    "name": "Volume Growth Guidance High",
+    "statement": "GUIDANCE",
+    "unit": "%",
+    "fact_type": "NUMERIC",
+    "documents": [
+      "EARNINGS_CALL_TRANSCRIPT"
+    ],
+    "dimensions": [
+      "target_period",
+      "segment",
+      "product",
+      "geography"
+    ]
+  },
+  "capex_guidance_low": {
+    "name": "Capex Guidance Low",
+    "statement": "GUIDANCE",
+    "unit": "crore",
+    "fact_type": "NUMERIC",
+    "documents": [
+      "EARNINGS_CALL_TRANSCRIPT"
+    ],
+    "dimensions": [
+      "target_period",
+      "segment",
+      "product",
+      "geography"
+    ]
+  },
+  "capex_guidance_high": {
+    "name": "Capex Guidance High",
+    "statement": "GUIDANCE",
+    "unit": "crore",
+    "fact_type": "NUMERIC",
+    "documents": [
+      "EARNINGS_CALL_TRANSCRIPT"
+    ],
+    "dimensions": [
+      "target_period",
+      "segment",
+      "product",
+      "geography"
+    ]
+  },
+  "net_debt_guidance": {
+    "name": "Net Debt Guidance",
+    "statement": "GUIDANCE",
+    "unit": "crore",
+    "fact_type": "NUMERIC",
+    "documents": [
+      "EARNINGS_CALL_TRANSCRIPT"
+    ],
+    "dimensions": [
+      "target_period",
+      "segment",
+      "product",
+      "geography"
+    ]
+  },
+  "net_debt_to_ebitda_guidance": {
+    "name": "Net Debt To EBITDA Guidance",
+    "statement": "GUIDANCE",
+    "unit": "x",
+    "fact_type": "NUMERIC",
+    "documents": [
+      "EARNINGS_CALL_TRANSCRIPT"
+    ],
+    "dimensions": [
+      "target_period",
+      "segment",
+      "product",
+      "geography"
+    ]
+  },
+  "free_cash_flow_guidance": {
+    "name": "Free Cash Flow Guidance",
+    "statement": "GUIDANCE",
+    "unit": "crore",
+    "fact_type": "NUMERIC",
+    "documents": [
+      "EARNINGS_CALL_TRANSCRIPT"
+    ],
+    "dimensions": [
+      "target_period",
+      "segment",
+      "product",
+      "geography"
+    ]
+  },
+  "working_capital_days_guidance": {
+    "name": "Working Capital Days Guidance",
+    "statement": "GUIDANCE",
+    "unit": "days",
+    "fact_type": "NUMERIC",
+    "documents": [
+      "EARNINGS_CALL_TRANSCRIPT"
+    ],
+    "dimensions": [
+      "target_period",
+      "segment",
+      "product",
+      "geography"
+    ]
+  },
+  "tax_rate_guidance_low": {
+    "name": "Tax Rate Guidance Low",
+    "statement": "GUIDANCE",
+    "unit": "%",
+    "fact_type": "NUMERIC",
+    "documents": [
+      "EARNINGS_CALL_TRANSCRIPT"
+    ],
+    "dimensions": [
+      "target_period",
+      "segment",
+      "product",
+      "geography"
+    ]
+  },
+  "tax_rate_guidance_high": {
+    "name": "Tax Rate Guidance High",
+    "statement": "GUIDANCE",
+    "unit": "%",
+    "fact_type": "NUMERIC",
+    "documents": [
+      "EARNINGS_CALL_TRANSCRIPT"
+    ],
+    "dimensions": [
+      "target_period",
+      "segment",
+      "product",
+      "geography"
+    ]
+  },
+  "order_inflow_guidance": {
+    "name": "Order Inflow Guidance",
+    "statement": "GUIDANCE",
+    "unit": "crore",
+    "fact_type": "NUMERIC",
+    "documents": [
+      "EARNINGS_CALL_TRANSCRIPT"
+    ],
+    "dimensions": [
+      "target_period",
+      "segment",
+      "product",
+      "geography"
+    ]
+  },
+  "order_book_guidance": {
+    "name": "Order Book Guidance",
+    "statement": "GUIDANCE",
+    "unit": "crore",
+    "fact_type": "NUMERIC",
+    "documents": [
+      "EARNINGS_CALL_TRANSCRIPT"
+    ],
+    "dimensions": [
+      "target_period",
+      "segment",
+      "product",
+      "geography"
+    ]
+  },
+  "guidance_status": {
+    "name": "Guidance Status",
+    "statement": "GUIDANCE",
+    "unit": "enum",
+    "fact_type": "CATEGORICAL",
+    "documents": [
+      "EARNINGS_CALL_TRANSCRIPT"
+    ],
+    "dimensions": [
+      "target_period",
+      "segment",
+      "product",
+      "geography"
+    ],
+    "allowed_values": [
+      "INITIATED",
+      "MAINTAINED",
+      "RAISED",
+      "LOWERED",
+      "NARROWED",
+      "WIDENED",
+      "WITHDRAWN",
+      "REITERATED",
+      "NOT_PROVIDED"
+    ]
+  },
+  "guidance_basis": {
+    "name": "Guidance Basis",
+    "statement": "GUIDANCE",
+    "unit": "text",
+    "fact_type": "TEXT",
+    "documents": [
+      "EARNINGS_CALL_TRANSCRIPT"
+    ],
+    "dimensions": [
+      "target_period",
+      "segment",
+      "product",
+      "geography"
+    ]
+  },
+  "guidance_condition": {
+    "name": "Guidance Condition",
+    "statement": "GUIDANCE",
+    "unit": "text",
+    "fact_type": "TEXT",
+    "documents": [
+      "EARNINGS_CALL_TRANSCRIPT"
+    ],
+    "dimensions": [
+      "target_period",
+      "segment",
+      "product",
+      "geography"
+    ]
+  },
+  "guidance_exclusion": {
+    "name": "Guidance Exclusion",
+    "statement": "GUIDANCE",
+    "unit": "text",
+    "fact_type": "TEXT",
+    "documents": [
+      "EARNINGS_CALL_TRANSCRIPT"
+    ],
+    "dimensions": [
+      "target_period",
+      "segment",
+      "product",
+      "geography"
+    ]
+  },
+  "guidance_confidence": {
+    "name": "Guidance Confidence",
+    "statement": "GUIDANCE",
+    "unit": "enum",
+    "fact_type": "CATEGORICAL",
+    "documents": [
+      "EARNINGS_CALL_TRANSCRIPT"
+    ],
+    "dimensions": [
+      "target_period",
+      "segment",
+      "product",
+      "geography"
+    ],
+    "allowed_values": [
+      "HIGH",
+      "MEDIUM",
+      "LOW",
+      "UNSPECIFIED"
+    ]
+  },
+  "revenue_driver": {
+    "name": "Revenue Driver",
+    "statement": "MANAGEMENT_EXPLANATION",
+    "unit": "text",
+    "fact_type": "TEXT",
+    "documents": [
+      "EARNINGS_CALL_TRANSCRIPT"
+    ],
+    "dimensions": [
+      "metric",
+      "segment",
+      "product",
+      "geography"
+    ],
+    "notes": "Store each distinct causal claim separately."
+  },
+  "margin_driver": {
+    "name": "Margin Driver",
+    "statement": "MANAGEMENT_EXPLANATION",
+    "unit": "text",
+    "fact_type": "TEXT",
+    "documents": [
+      "EARNINGS_CALL_TRANSCRIPT"
+    ],
+    "dimensions": [
+      "metric",
+      "segment",
+      "product",
+      "geography"
+    ],
+    "notes": "Store each distinct causal claim separately."
+  },
+  "cost_driver": {
+    "name": "Cost Driver",
+    "statement": "MANAGEMENT_EXPLANATION",
+    "unit": "text",
+    "fact_type": "TEXT",
+    "documents": [
+      "EARNINGS_CALL_TRANSCRIPT"
+    ],
+    "dimensions": [
+      "metric",
+      "segment",
+      "product",
+      "geography"
+    ],
+    "notes": "Store each distinct causal claim separately."
+  },
+  "profit_driver": {
+    "name": "Profit Driver",
+    "statement": "MANAGEMENT_EXPLANATION",
+    "unit": "text",
+    "fact_type": "TEXT",
+    "documents": [
+      "EARNINGS_CALL_TRANSCRIPT"
+    ],
+    "dimensions": [
+      "metric",
+      "segment",
+      "product",
+      "geography"
+    ],
+    "notes": "Store each distinct causal claim separately."
+  },
+  "cash_flow_driver": {
+    "name": "Cash Flow Driver",
+    "statement": "MANAGEMENT_EXPLANATION",
+    "unit": "text",
+    "fact_type": "TEXT",
+    "documents": [
+      "EARNINGS_CALL_TRANSCRIPT"
+    ],
+    "dimensions": [
+      "metric",
+      "segment",
+      "product",
+      "geography"
+    ],
+    "notes": "Store each distinct causal claim separately."
+  },
+  "working_capital_driver": {
+    "name": "Working Capital Driver",
+    "statement": "MANAGEMENT_EXPLANATION",
+    "unit": "text",
+    "fact_type": "TEXT",
+    "documents": [
+      "EARNINGS_CALL_TRANSCRIPT"
+    ],
+    "dimensions": [
+      "metric",
+      "segment",
+      "product",
+      "geography"
+    ],
+    "notes": "Store each distinct causal claim separately."
+  },
+  "demand_driver": {
+    "name": "Demand Driver",
+    "statement": "MANAGEMENT_EXPLANATION",
+    "unit": "text",
+    "fact_type": "TEXT",
+    "documents": [
+      "EARNINGS_CALL_TRANSCRIPT"
+    ],
+    "dimensions": [
+      "metric",
+      "segment",
+      "product",
+      "geography"
+    ],
+    "notes": "Store each distinct causal claim separately."
+  },
+  "pricing_driver": {
+    "name": "Pricing Driver",
+    "statement": "MANAGEMENT_EXPLANATION",
+    "unit": "text",
+    "fact_type": "TEXT",
+    "documents": [
+      "EARNINGS_CALL_TRANSCRIPT"
+    ],
+    "dimensions": [
+      "metric",
+      "segment",
+      "product",
+      "geography"
+    ],
+    "notes": "Store each distinct causal claim separately."
+  },
+  "volume_driver": {
+    "name": "Volume Driver",
+    "statement": "MANAGEMENT_EXPLANATION",
+    "unit": "text",
+    "fact_type": "TEXT",
+    "documents": [
+      "EARNINGS_CALL_TRANSCRIPT"
+    ],
+    "dimensions": [
+      "metric",
+      "segment",
+      "product",
+      "geography"
+    ],
+    "notes": "Store each distinct causal claim separately."
+  },
+  "customer_driver": {
+    "name": "Customer Driver",
+    "statement": "MANAGEMENT_EXPLANATION",
+    "unit": "text",
+    "fact_type": "TEXT",
+    "documents": [
+      "EARNINGS_CALL_TRANSCRIPT"
+    ],
+    "dimensions": [
+      "metric",
+      "segment",
+      "product",
+      "geography"
+    ],
+    "notes": "Store each distinct causal claim separately."
+  },
+  "segment_driver": {
+    "name": "Segment Driver",
+    "statement": "MANAGEMENT_EXPLANATION",
+    "unit": "text",
+    "fact_type": "TEXT",
+    "documents": [
+      "EARNINGS_CALL_TRANSCRIPT"
+    ],
+    "dimensions": [
+      "metric",
+      "segment",
+      "product",
+      "geography"
+    ],
+    "notes": "Store each distinct causal claim separately."
+  },
+  "geography_driver": {
+    "name": "Geography Driver",
+    "statement": "MANAGEMENT_EXPLANATION",
+    "unit": "text",
+    "fact_type": "TEXT",
+    "documents": [
+      "EARNINGS_CALL_TRANSCRIPT"
+    ],
+    "dimensions": [
+      "metric",
+      "segment",
+      "product",
+      "geography"
+    ],
+    "notes": "Store each distinct causal claim separately."
+  },
+  "product_mix_driver": {
+    "name": "Product Mix Driver",
+    "statement": "MANAGEMENT_EXPLANATION",
+    "unit": "text",
+    "fact_type": "TEXT",
+    "documents": [
+      "EARNINGS_CALL_TRANSCRIPT"
+    ],
+    "dimensions": [
+      "metric",
+      "segment",
+      "product",
+      "geography"
+    ],
+    "notes": "Store each distinct causal claim separately."
+  },
+  "driver_direction": {
+    "name": "Driver Direction",
+    "statement": "MANAGEMENT_EXPLANATION",
+    "unit": "enum",
+    "fact_type": "CATEGORICAL",
+    "documents": [
+      "EARNINGS_CALL_TRANSCRIPT"
+    ],
+    "dimensions": [
+      "metric"
+    ],
+    "allowed_values": [
+      "POSITIVE",
+      "NEGATIVE",
+      "MIXED",
+      "NEUTRAL"
+    ]
+  },
+  "driver_magnitude": {
+    "name": "Driver Magnitude",
+    "statement": "MANAGEMENT_EXPLANATION",
+    "unit": "company_reported",
+    "fact_type": "NUMERIC",
+    "documents": [
+      "EARNINGS_CALL_TRANSCRIPT"
+    ],
+    "dimensions": [
+      "metric"
+    ]
+  },
+  "driver_duration": {
+    "name": "Driver Duration",
+    "statement": "MANAGEMENT_EXPLANATION",
+    "unit": "enum",
+    "fact_type": "CATEGORICAL",
+    "documents": [
+      "EARNINGS_CALL_TRANSCRIPT"
+    ],
+    "dimensions": [
+      "metric"
+    ],
+    "allowed_values": [
+      "ONE_OFF",
+      "TEMPORARY",
+      "STRUCTURAL",
+      "UNSPECIFIED"
+    ]
+  },
+  "driver_source_type": {
+    "name": "Driver Source Type",
+    "statement": "MANAGEMENT_EXPLANATION",
+    "unit": "enum",
+    "fact_type": "CATEGORICAL",
+    "documents": [
+      "EARNINGS_CALL_TRANSCRIPT"
+    ],
+    "allowed_values": [
+      "INTERNAL",
+      "EXTERNAL",
+      "MIXED",
+      "UNSPECIFIED"
+    ]
+  },
+  "management_outlook": {
+    "name": "Management Outlook",
+    "statement": "OUTLOOK",
+    "unit": "enum",
+    "fact_type": "CATEGORICAL",
+    "documents": [
+      "EARNINGS_CALL_TRANSCRIPT"
+    ],
+    "dimensions": [
+      "segment",
+      "product",
+      "geography",
+      "target_period"
+    ],
+    "allowed_values": [
+      "STRONG_POSITIVE",
+      "POSITIVE",
+      "STABLE",
+      "CAUTIOUS",
+      "NEGATIVE",
+      "MIXED"
+    ]
+  },
+  "demand_outlook": {
+    "name": "Demand Outlook",
+    "statement": "OUTLOOK",
+    "unit": "enum",
+    "fact_type": "CATEGORICAL",
+    "documents": [
+      "EARNINGS_CALL_TRANSCRIPT"
+    ],
+    "dimensions": [
+      "segment",
+      "product",
+      "geography",
+      "target_period"
+    ],
+    "allowed_values": [
+      "ACCELERATING",
+      "STABLE",
+      "MODERATING",
+      "DECLINING",
+      "UNCERTAIN"
+    ]
+  },
+  "pricing_outlook": {
+    "name": "Pricing Outlook",
+    "statement": "OUTLOOK",
+    "unit": "enum",
+    "fact_type": "CATEGORICAL",
+    "documents": [
+      "EARNINGS_CALL_TRANSCRIPT"
+    ],
+    "dimensions": [
+      "segment",
+      "product",
+      "geography",
+      "target_period"
+    ],
+    "allowed_values": [
+      "IMPROVING",
+      "STABLE",
+      "PRESSURED",
+      "DECLINING",
+      "UNCERTAIN"
+    ]
+  },
+  "margin_outlook": {
+    "name": "Margin Outlook",
+    "statement": "OUTLOOK",
+    "unit": "enum",
+    "fact_type": "CATEGORICAL",
+    "documents": [
+      "EARNINGS_CALL_TRANSCRIPT"
+    ],
+    "dimensions": [
+      "segment",
+      "target_period"
+    ],
+    "allowed_values": [
+      "EXPANDING",
+      "STABLE",
+      "COMPRESSING",
+      "RECOVERING",
+      "UNCERTAIN"
+    ]
+  },
+  "visibility_level": {
+    "name": "Visibility Level",
+    "statement": "OUTLOOK",
+    "unit": "enum",
+    "fact_type": "CATEGORICAL",
+    "documents": [
+      "EARNINGS_CALL_TRANSCRIPT"
+    ],
+    "dimensions": [
+      "topic",
+      "target_period"
+    ],
+    "allowed_values": [
+      "HIGH",
+      "MEDIUM",
+      "LOW",
+      "UNSPECIFIED"
+    ]
+  },
+  "risk_factor": {
+    "name": "Risk Factor",
+    "statement": "RISK",
+    "unit": "text",
+    "fact_type": "TEXT",
+    "documents": [
+      "EARNINGS_CALL_TRANSCRIPT"
+    ]
+  },
+  "headwind": {
+    "name": "Headwind",
+    "statement": "RISK",
+    "unit": "text",
+    "fact_type": "TEXT",
+    "documents": [
+      "EARNINGS_CALL_TRANSCRIPT"
+    ]
+  },
+  "tailwind": {
+    "name": "Tailwind",
+    "statement": "RISK",
+    "unit": "text",
+    "fact_type": "TEXT",
+    "documents": [
+      "EARNINGS_CALL_TRANSCRIPT"
+    ]
+  },
+  "risk_mitigation_action": {
+    "name": "Risk Mitigation Action",
+    "statement": "RISK",
+    "unit": "text",
+    "fact_type": "TEXT",
+    "documents": [
+      "EARNINGS_CALL_TRANSCRIPT"
+    ]
+  },
+  "seasonality_comment": {
+    "name": "Seasonality Comment",
+    "statement": "RISK",
+    "unit": "text",
+    "fact_type": "TEXT",
+    "documents": [
+      "EARNINGS_CALL_TRANSCRIPT"
+    ]
+  },
+  "one_off_comment": {
+    "name": "One Off Comment",
+    "statement": "RISK",
+    "unit": "text",
+    "fact_type": "TEXT",
+    "documents": [
+      "EARNINGS_CALL_TRANSCRIPT"
+    ]
+  },
+  "risk_severity": {
+    "name": "Risk Severity",
+    "statement": "RISK",
+    "unit": "enum",
+    "fact_type": "CATEGORICAL",
+    "documents": [
+      "EARNINGS_CALL_TRANSCRIPT"
+    ],
+    "allowed_values": [
+      "LOW",
+      "MEDIUM",
+      "HIGH",
+      "CRITICAL",
+      "UNSPECIFIED"
+    ]
+  },
+  "risk_time_horizon": {
+    "name": "Risk Time Horizon",
+    "statement": "RISK",
+    "unit": "enum",
+    "fact_type": "CATEGORICAL",
+    "documents": [
+      "EARNINGS_CALL_TRANSCRIPT"
+    ],
+    "allowed_values": [
+      "IMMEDIATE",
+      "NEAR_TERM",
+      "MEDIUM_TERM",
+      "LONG_TERM",
+      "UNSPECIFIED"
+    ]
+  },
+  "management_commitment": {
+    "name": "Management Commitment",
+    "statement": "COMMITMENT",
+    "unit": "text",
+    "fact_type": "TEXT",
+    "documents": [
+      "EARNINGS_CALL_TRANSCRIPT"
+    ],
+    "dimensions": [
+      "metric",
+      "segment",
+      "project",
+      "target_period"
+    ]
+  },
+  "commitment_target_value": {
+    "name": "Commitment Target Value",
+    "statement": "COMMITMENT",
+    "unit": "company_reported",
+    "fact_type": "NUMERIC",
+    "documents": [
+      "EARNINGS_CALL_TRANSCRIPT"
+    ],
+    "dimensions": [
+      "metric",
+      "segment",
+      "project",
+      "target_period"
+    ]
+  },
+  "commitment_target_date": {
+    "name": "Commitment Target Date",
+    "statement": "COMMITMENT",
+    "unit": "date",
+    "fact_type": "DATE",
+    "documents": [
+      "EARNINGS_CALL_TRANSCRIPT"
+    ],
+    "dimensions": [
+      "metric",
+      "segment",
+      "project"
+    ]
+  },
+  "commitment_status": {
+    "name": "Commitment Status",
+    "statement": "COMMITMENT",
+    "unit": "enum",
+    "fact_type": "CATEGORICAL",
+    "documents": [
+      "EARNINGS_CALL_TRANSCRIPT"
+    ],
+    "dimensions": [
+      "metric",
+      "segment",
+      "project"
+    ],
+    "allowed_values": [
+      "NEW",
+      "REITERATED",
+      "ON_TRACK",
+      "AT_RISK",
+      "DELAYED",
+      "ACHIEVED",
+      "MISSED",
+      "WITHDRAWN",
+      "UNASSESSED"
+    ]
+  },
+  "project_status": {
+    "name": "Project Status",
+    "statement": "PROJECT_UPDATE",
+    "unit": "enum",
+    "fact_type": "CATEGORICAL",
+    "documents": [
+      "EARNINGS_CALL_TRANSCRIPT"
+    ],
+    "dimensions": [
+      "project"
+    ],
+    "allowed_values": [
+      "PLANNED",
+      "STARTED",
+      "ON_TRACK",
+      "DELAYED",
+      "COMPLETED",
+      "CANCELLED"
+    ]
+  },
+  "project_delay_reason": {
+    "name": "Project Delay Reason",
+    "statement": "PROJECT_UPDATE",
+    "unit": "text",
+    "fact_type": "TEXT",
+    "documents": [
+      "EARNINGS_CALL_TRANSCRIPT"
+    ],
+    "dimensions": [
+      "project"
+    ]
+  },
+  "project_cost_revision": {
+    "name": "Project Cost Revision",
+    "statement": "PROJECT_UPDATE",
+    "unit": "crore",
+    "fact_type": "NUMERIC",
+    "documents": [
+      "EARNINGS_CALL_TRANSCRIPT"
+    ],
+    "dimensions": [
+      "project"
+    ]
+  },
+  "commissioning_date_guidance": {
+    "name": "Commissioning Date Guidance",
+    "statement": "PROJECT_UPDATE",
+    "unit": "date",
+    "fact_type": "DATE",
+    "documents": [
+      "EARNINGS_CALL_TRANSCRIPT"
+    ],
+    "dimensions": [
+      "project"
+    ]
+  },
+  "capacity_addition_guidance": {
+    "name": "Capacity Addition Guidance",
+    "statement": "PROJECT_UPDATE",
+    "unit": "company_reported",
+    "fact_type": "NUMERIC",
+    "documents": [
+      "EARNINGS_CALL_TRANSCRIPT"
+    ],
+    "dimensions": [
+      "project",
+      "product",
+      "plant"
+    ]
+  },
+  "analyst_question_text": {
+    "name": "Analyst Question Text",
+    "statement": "ANALYST_QA",
+    "unit": "text",
+    "fact_type": "TEXT",
+    "documents": [
+      "EARNINGS_CALL_TRANSCRIPT"
+    ]
+  },
+  "analyst_question_topic": {
+    "name": "Analyst Question Topic",
+    "statement": "ANALYST_QA",
+    "unit": "taxonomy",
+    "fact_type": "CATEGORICAL",
+    "documents": [
+      "EARNINGS_CALL_TRANSCRIPT"
+    ]
+  },
+  "analyst_concern": {
+    "name": "Analyst Concern",
+    "statement": "ANALYST_QA",
+    "unit": "text",
+    "fact_type": "TEXT",
+    "documents": [
+      "EARNINGS_CALL_TRANSCRIPT"
+    ],
+    "dimensions": [
+      "topic",
+      "metric",
+      "segment"
+    ]
+  },
+  "question_is_follow_up": {
+    "name": "Question Is Follow Up",
+    "statement": "ANALYST_QA",
+    "unit": "boolean",
+    "fact_type": "BOOLEAN",
+    "documents": [
+      "EARNINGS_CALL_TRANSCRIPT"
+    ]
+  },
+  "question_requests_quantification": {
+    "name": "Question Requests Quantification",
+    "statement": "ANALYST_QA",
+    "unit": "boolean",
+    "fact_type": "BOOLEAN",
+    "documents": [
+      "EARNINGS_CALL_TRANSCRIPT"
+    ]
+  },
+  "answer_contains_commitment": {
+    "name": "Answer Contains Commitment",
+    "statement": "ANALYST_QA",
+    "unit": "boolean",
+    "fact_type": "BOOLEAN",
+    "documents": [
+      "EARNINGS_CALL_TRANSCRIPT"
+    ]
+  },
+  "answer_contains_new_information": {
+    "name": "Answer Contains New Information",
+    "statement": "ANALYST_QA",
+    "unit": "boolean",
+    "fact_type": "BOOLEAN",
+    "documents": [
+      "EARNINGS_CALL_TRANSCRIPT"
+    ]
+  },
+  "question_unanswered_flag": {
+    "name": "Question Unanswered Flag",
+    "statement": "ANALYST_QA",
+    "unit": "boolean",
+    "fact_type": "BOOLEAN",
+    "documents": [
+      "EARNINGS_CALL_TRANSCRIPT"
+    ]
+  },
+  "management_answer_text": {
+    "name": "Management Answer Text",
+    "statement": "ANALYST_QA",
+    "unit": "text",
+    "fact_type": "TEXT",
+    "documents": [
+      "EARNINGS_CALL_TRANSCRIPT"
+    ]
+  },
+  "answer_completeness": {
+    "name": "Answer Completeness",
+    "statement": "ANALYST_QA",
+    "unit": "enum",
+    "fact_type": "CATEGORICAL",
+    "documents": [
+      "EARNINGS_CALL_TRANSCRIPT"
+    ],
+    "allowed_values": [
+      "COMPLETE",
+      "PARTIAL",
+      "NON_RESPONSIVE",
+      "NO_ANSWER"
+    ]
+  },
+  "answer_specificity": {
+    "name": "Answer Specificity",
+    "statement": "ANALYST_QA",
+    "unit": "enum",
+    "fact_type": "CATEGORICAL",
+    "documents": [
+      "EARNINGS_CALL_TRANSCRIPT"
+    ],
+    "allowed_values": [
+      "QUANTIFIED",
+      "SPECIFIC_QUALITATIVE",
+      "GENERIC",
+      "VAGUE"
+    ]
+  },
+  "answer_consistency": {
+    "name": "Answer Consistency",
+    "statement": "ANALYST_QA",
+    "unit": "enum",
+    "fact_type": "CATEGORICAL",
+    "documents": [
+      "EARNINGS_CALL_TRANSCRIPT"
+    ],
+    "allowed_values": [
+      "CONSISTENT",
+      "PARTIALLY_CONSISTENT",
+      "CONTRADICTORY",
+      "UNASSESSED"
+    ]
+  },
+  "claim_supported_by_result": {
+    "name": "Claim Supported By Result",
+    "statement": "CROSS_DOCUMENT",
+    "unit": "boolean",
+    "fact_type": "BOOLEAN",
+    "documents": [
+      "EARNINGS_CALL_TRANSCRIPT"
+    ]
+  },
+  "claim_supported_by_presentation": {
+    "name": "Claim Supported By Presentation",
+    "statement": "CROSS_DOCUMENT",
+    "unit": "boolean",
+    "fact_type": "BOOLEAN",
+    "documents": [
+      "EARNINGS_CALL_TRANSCRIPT"
+    ]
+  },
+  "claim_contradicts_prior_call": {
+    "name": "Claim Contradicts Prior Call",
+    "statement": "CROSS_DOCUMENT",
+    "unit": "boolean",
+    "fact_type": "BOOLEAN",
+    "documents": [
+      "EARNINGS_CALL_TRANSCRIPT"
+    ]
+  },
+  "claim_contradicts_current_disclosure": {
+    "name": "Claim Contradicts Current Disclosure",
+    "statement": "CROSS_DOCUMENT",
+    "unit": "boolean",
+    "fact_type": "BOOLEAN",
+    "documents": [
+      "EARNINGS_CALL_TRANSCRIPT"
+    ]
+  },
+  "linked_fact_key": {
+    "name": "Linked Fact Key",
+    "statement": "CROSS_DOCUMENT",
+    "unit": "text",
+    "fact_type": "TEXT",
+    "documents": [
+      "EARNINGS_CALL_TRANSCRIPT"
+    ]
+  },
+  "linked_metric_key": {
+    "name": "Linked Metric Key",
+    "statement": "CROSS_DOCUMENT",
+    "unit": "text",
+    "fact_type": "TEXT",
+    "documents": [
+      "EARNINGS_CALL_TRANSCRIPT"
+    ]
+  },
+  "linked_source_reference": {
+    "name": "Linked Source Reference",
+    "statement": "CROSS_DOCUMENT",
+    "unit": "text",
+    "fact_type": "TEXT",
+    "documents": [
+      "EARNINGS_CALL_TRANSCRIPT"
+    ]
+  }
+}

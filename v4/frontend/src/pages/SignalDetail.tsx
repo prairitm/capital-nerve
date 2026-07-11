@@ -43,6 +43,7 @@ export function SignalDetail() {
   );
   const showWhyFired = Boolean(data.rule_text || metricRows.length > 0);
   const inputFacts = data.input_facts ?? [];
+  const inputFactBases = Array.from(new Set(inputFacts.map((fact) => fact.basis).filter(Boolean)));
 
   return (
     <div className="max-w-3xl mx-auto space-y-5">
@@ -166,9 +167,20 @@ export function SignalDetail() {
 
             {inputFacts.length > 0 && (
               <div className="border-t border-line/40 pt-4 space-y-3">
-                <h3 className="text-[11px] font-semibold uppercase tracking-wider text-ink-soft">
-                  Based on
-                </h3>
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <h3 className="text-[11px] font-semibold uppercase tracking-wider text-ink-soft">
+                    Based on
+                  </h3>
+                  {inputFactBases.length > 0 && (
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      {inputFactBases.map((basis) => (
+                        <span key={basis} className="chip-neutral text-[10px]">
+                          {basisLabel(basis)}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
                 <div className="divide-y divide-line/40 -mx-5">
                   {inputFacts.map((fact) => (
                     <div
@@ -182,11 +194,6 @@ export function SignalDetail() {
                             <span className="text-xs text-ink-soft">
                               {inputScopeLabel(fact.scope)}
                             </span>
-                            {fact.basis && (
-                              <span className="chip-neutral text-[10px]">
-                                {basisLabel(fact.basis)}
-                              </span>
-                            )}
                           </div>
                         </div>
                         <span className="num text-sm text-ink font-medium whitespace-nowrap shrink-0">
@@ -194,7 +201,7 @@ export function SignalDetail() {
                         </span>
                       </div>
                       {fact.source_text && (
-                        <div className="text-xs text-ink-soft">
+                        <div>
                           <FactSourceLink
                             documentId={fact.document_id ?? data.event?.document_id ?? null}
                             fact={fact}
