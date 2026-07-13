@@ -1,6 +1,6 @@
-"""Load the v2 catalog (signals, metrics, facts) to enrich sparse DB rows.
+"""Load the v4 event catalogs (signals, metrics, facts) for API enrichment.
 
-The 7-step DB stores signal/metric/fact codes but not always the human-facing
+The unified DB stores signal/metric/fact codes but not always the human-facing
 name, category, or direction. The catalog JSON is the source of truth for those,
 and also powers the category filter on the signals screener.
 """
@@ -26,19 +26,25 @@ def _load(name: str) -> dict[str, Any]:
 
 
 def signals_catalog() -> dict[str, Any]:
-    return _load("signals.json")
+    catalog = dict(_load("signals.json"))
+    catalog.update(_load("investor_presentation/presentation_signals.json"))
+    catalog.update(_load("earnings-call/earnings_call_signals.json"))
+    return catalog
 
 
 def metrics_catalog() -> dict[str, Any]:
-    return _load("metrics.json")
+    catalog = dict(_load("metrics.json"))
+    catalog.update(_load("investor_presentation/presentation_metrics.json"))
+    catalog.update(_load("earnings-call/earnings_call_metrics.json"))
+    return catalog
 
 
 def facts_catalog() -> dict[str, Any]:
     facts = dict(_load("facts.json"))
-    # The 8-step MVP keeps investor-presentation fact definitions in a separate
-    # catalog so deck-highlighted values do not override audited result facts.
-    # Merge it here for UI/API labels while preserving each code's own metadata.
-    facts.update(_load("investor_presentation_facts.json"))
+    # Event-specific definitions are overlays. They intentionally win for shared
+    # codes because they describe the value stored by that event pipeline.
+    facts.update(_load("investor_presentation/presentation_facts.json"))
+    facts.update(_load("earnings-call/earnings_call_facts.json"))
     return facts
 
 

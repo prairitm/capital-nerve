@@ -70,12 +70,16 @@ def load_metrics_catalog() -> dict[str, Any]:
 
 
 def load_presentation_metrics_catalog() -> dict[str, Any]:
-    path = settings.catalog_dir / "investor_presentation" / "presentation_metrics.json"
+    path = settings.catalog_dir / "investor_presentation_metrics.json"
+    if not path.exists():
+        path = settings.catalog_dir / "investor_presentation" / "presentation_metrics.json"
     return json.loads(path.read_text(encoding="utf-8"))
 
 
 def load_earnings_call_metrics_catalog() -> dict[str, Any]:
-    path = settings.catalog_dir / "earnings-call" / "earnings_call_metrics.json"
+    path = settings.catalog_dir / "earnings_call_metrics.json"
+    if not path.exists():
+        path = settings.catalog_dir / "earnings-call" / "earnings_call_metrics.json"
     return json.loads(path.read_text(encoding="utf-8"))
 
 
@@ -127,8 +131,9 @@ def load_facts(
     company_id: str,
     event_id: str | None = None,
     period_end: str,
+    basis: str | None = None,
 ) -> dict[str, dict[str, Any]]:
-    if event_id:
+    if event_id and basis is None:
         resolved_rows = conn.execute(
             """
             SELECT resolved_fact_id, fact_code, resolved_value, unit,
@@ -154,13 +159,16 @@ def load_facts(
         if resolved:
             return resolved
 
+    basis_filter = " AND basis = ?" if basis else ""
+    params: tuple[Any, ...] = (company_id, period_end, basis) if basis else (company_id, period_end)
     rows = conn.execute(
-        """
+        f"""
         SELECT event_id, value_code, value_numeric, unit FROM extracted_values
         WHERE company_id = ? AND period_end = ?
+        {basis_filter}
         ORDER BY CASE basis WHEN 'consolidated' THEN 0 ELSE 1 END
         """,
-        (company_id, period_end),
+        params,
     ).fetchall()
     pool: dict[str, dict[str, Any]] = {}
     for row in rows:
@@ -231,7 +239,7 @@ def load_presentation_fact_rows(
     period_fy_start: int,
 ) -> dict[str, list[dict[str, Any]]]:
     scope = scope.upper()
-    if scope in {"CURRENT", "CURRENT_DISCLOSURE", "CUMULATIVE", "YTD"}:
+    if scope in {"CURRENT", "CUMULATIVE", "YTD", "YTD_CURRENT", "TARGET_PERIOD_ACTUAL"}:
         rows = conn.execute(
             """
             SELECT *
@@ -240,6 +248,27 @@ def load_presentation_fact_rows(
             ORDER BY confidence DESC
             """,
             (company_id, period_end),
+        ).fetchall()
+    elif scope in {"CURRENT_DISCLOSURE", "CALL", "PREPARED_REMARKS", "Q_AND_A"}:
+        rows = conn.execute(
+            """
+            SELECT *
+            FROM extracted_values
+            WHERE company_id = ? AND event_id = ?
+            ORDER BY confidence DESC
+            """,
+            (company_id, event_id),
+        ).fetchall()
+    elif scope in {"CONSOLIDATED_CURRENT", "STANDALONE_CURRENT"}:
+        basis = "consolidated" if scope == "CONSOLIDATED_CURRENT" else "standalone"
+        rows = conn.execute(
+            """
+            SELECT *
+            FROM extracted_values
+            WHERE company_id = ? AND period_end = ? AND lower(basis) = ?
+            ORDER BY confidence DESC
+            """,
+            (company_id, period_end, basis),
         ).fetchall()
     elif scope == "PY":
         rows = conn.execute(
@@ -261,13 +290,27 @@ def load_presentation_fact_rows(
             """,
             (company_id, prior_quarter_end(period_quarter, period_fy_start)),
         ).fetchall()
-    elif scope == "PREVIOUS_DISCLOSURE":
+    elif scope in {"PREVIOUS_DISCLOSURE", "PREVIOUS_CALL", "ORIGINAL_GUIDANCE"}:
         rows = conn.execute(
             """
             SELECT *
             FROM extracted_values
             WHERE company_id = ? AND period_end < ?
             ORDER BY period_end DESC, confidence DESC
+            """,
+            (company_id, period_end),
+        ).fetchall()
+    elif scope == "ROLLING_CALL_WINDOW":
+        rows = conn.execute(
+            """
+            SELECT ev.*
+            FROM extracted_values ev
+            JOIN events e ON e.id = ev.event_id
+            WHERE ev.company_id = ? AND ev.period_end <= ?
+              AND lower(e.event_type) IN (
+                  'earnings call transcript', 'earnings call', 'concall transcript'
+              )
+            ORDER BY ev.period_end DESC, ev.confidence DESC
             """,
             (company_id, period_end),
         ).fetchall()
@@ -447,8 +490,10 @@ def _presentation_candidate_rows(
     *,
     scope_pools: dict[str, dict[str, list[dict[str, Any]]]],
     dim_key: tuple[str, str] | None,
+    scope: str | None = None,
 ) -> list[dict[str, Any]]:
-    rows = scope_pools.get(inp.get("scope", "CURRENT").upper(), {}).get(inp["fact_key"], [])
+    pool_scope = (scope or inp.get("scope", "CURRENT")).upper()
+    rows = scope_pools.get(pool_scope, {}).get(inp["fact_key"], [])
     if not dim_key:
         return [row for row in rows if row.get("numeric_value") is not None or row.get("value_text")]
     segment, geography = dim_key
@@ -474,6 +519,23 @@ def _numeric_value(row: dict[str, Any], comparable: bool) -> float | None:
         if scale is not None:
             value *= scale
     return float(value)
+
+
+def _row_value(row: dict[str, Any], comparable: bool = False) -> Any:
+    numeric = _numeric_value(row, comparable)
+    if numeric is not None:
+        return numeric
+    value = row.get("value_text")
+    if value is None:
+        value = row.get("value")
+    if isinstance(value, str):
+        normalized = value.strip()
+        if normalized.lower() in {"true", "yes"}:
+            return True
+        if normalized.lower() in {"false", "no"}:
+            return False
+        return normalized
+    return value
 
 
 def _parse_dateish(value: Any) -> date | None:
@@ -540,6 +602,64 @@ def resolve_presentation_inputs(
 
 
 def safe_eval_presentation(formula: str, variables: dict[str, Any]) -> float | None:
+    def values(value: Any) -> list[Any]:
+        if isinstance(value, list):
+            return [item for item in value if item is not None]
+        return [] if value is None else [value]
+
+    def count_eq(source: Any, expected: Any) -> int:
+        target = str(expected).upper()
+        return sum(str(item).upper() == target for item in values(source))
+
+    def count_in(source: Any, expected: Any) -> int:
+        targets = {str(item).upper() for item in values(expected)}
+        return sum(str(item).upper() in targets for item in values(source))
+
+    def count_true(source: Any) -> int:
+        return sum(
+            item is True
+            or (isinstance(item, (int, float)) and item != 0)
+            or str(item).strip().lower() in {"true", "yes", "1"}
+            for item in values(source)
+        )
+
+    def weighted_mean(source: Any) -> float:
+        polarity = {
+            "POSITIVE": 1.0,
+            "NEUTRAL": 0.0,
+            "MIXED": 0.0,
+            "CAUTIOUS": -0.5,
+            "NEGATIVE": -1.0,
+        }
+        numbers = [
+            float(item) if isinstance(item, (int, float)) else polarity.get(str(item).upper())
+            for item in values(source)
+        ]
+        valid = [item for item in numbers if item is not None]
+        return sum(valid) / len(valid) if valid else 0.0
+
+    def repeated_count(source: Any) -> int:
+        counts: dict[str, int] = {}
+        for item in values(source):
+            key = str(item).strip().casefold()
+            counts[key] = counts.get(key, 0) + 1
+        return sum(count > 1 for count in counts.values())
+
+    def top_share(source: Any) -> float:
+        items = [str(item).strip().casefold() for item in values(source)]
+        if not items:
+            return 0.0
+        counts = {item: items.count(item) for item in set(items)}
+        return max(counts.values()) / len(items) * 100
+
+    def support_rate(primary: Any, secondary: Any) -> float:
+        left, right = values(primary), values(secondary)
+        total = max(len(left), len(right))
+        if not total:
+            return 0.0
+        supported = max(count_true(left), count_true(right))
+        return supported / total * 100
+
     namespace = {
         "__builtins__": {},
         "min": min,
@@ -551,11 +671,20 @@ def safe_eval_presentation(formula: str, variables: dict[str, Any]) -> float | N
         "sum_by_dimension": lambda values: sum(values) if isinstance(values, list) else values,
         "max_by_dimension": lambda values: max(values) if isinstance(values, list) and values else values,
         "date_diff_days": date_diff_days,
+        "count": lambda source: len(values(source)),
+        "count_eq": count_eq,
+        "count_in": count_in,
+        "count_true": count_true,
+        "count_distinct": lambda source: len({str(item).strip().casefold() for item in values(source)}),
+        "weighted_mean": weighted_mean,
+        "repeated_count": repeated_count,
+        "top_share": top_share,
+        "support_rate": support_rate,
         **variables,
     }
     try:
         result = eval(formula, namespace)
-    except (ZeroDivisionError, TypeError, NameError, ValueError):
+    except (ZeroDivisionError, TypeError, NameError, ValueError, SyntaxError, OverflowError):
         return None
     return float(result) if isinstance(result, (int, float)) else None
 
@@ -587,21 +716,117 @@ def compute_presentation_metrics(
     period_quarter: int,
     scope_pools: dict[str, dict[str, list[dict[str, Any]]]],
 ) -> list[dict[str, Any]]:
+    current_scope_aliases = {
+        "CURRENT",
+        "CURRENT_DISCLOSURE",
+        "CALL",
+        "CUMULATIVE",
+        "YTD",
+        "YTD_CURRENT",
+    }
+    runtime_params = {
+        "annualization_factor": 4.0 / period_quarter,
+        "remaining_quarters": float(max(4 - period_quarter, 1)),
+    }
+    cache: dict[tuple[str, str, tuple[str, str] | None], float | None] = {}
+    active: set[tuple[str, str, tuple[str, str] | None]] = set()
+
+    def compute_one(
+        code: str,
+        *,
+        eval_scope: str = "CURRENT",
+        dim_key: tuple[str, str] | None = None,
+    ) -> float | None:
+        cache_key = (code, eval_scope, dim_key)
+        if cache_key in cache:
+            return cache[cache_key]
+        if cache_key in active:
+            return None
+        spec = metrics_catalog.get(code)
+        if not spec or spec.get("enabled") is False:
+            cache[cache_key] = None
+            return None
+
+        active.add(cache_key)
+        formula_type = str(spec.get("formula_type") or "FORMULA").upper()
+        inputs_spec = spec.get("inputs") or []
+        comparable = len(fact_scopes(inputs_spec)) > 1
+        variables: dict[str, Any] = {}
+        valid = True
+        for inp in inputs_spec:
+            var = inp.get("var")
+            if not var:
+                valid = False
+                break
+            if "constant" in inp:
+                variables[var] = inp["constant"]
+                continue
+            if "runtime_parameter" in inp:
+                value = runtime_params.get(inp["runtime_parameter"])
+                if value is None:
+                    valid = False
+                    break
+                variables[var] = value
+                continue
+            if "metric_key" in inp:
+                requested_scope = str(inp.get("scope") or eval_scope).upper()
+                if requested_scope == "CURRENT":
+                    requested_scope = eval_scope
+                value = compute_one(
+                    inp["metric_key"],
+                    eval_scope=requested_scope,
+                    dim_key=dim_key,
+                )
+                if value is None:
+                    valid = False
+                    break
+                variables[var] = value
+                continue
+            if "fact_key" not in inp:
+                valid = False
+                break
+
+            declared_scope = str(inp.get("scope") or "CURRENT").upper()
+            actual_scope = declared_scope
+            if eval_scope != "CURRENT" and declared_scope in current_scope_aliases:
+                actual_scope = eval_scope
+            rows = _presentation_candidate_rows(
+                inp,
+                scope_pools=scope_pools,
+                dim_key=dim_key,
+                scope=actual_scope,
+            )
+            if not rows:
+                if inp.get("optional"):
+                    variables[var] = [] if formula_type in {"AGGREGATION", "SEMANTIC"} else 0.0
+                    continue
+                valid = False
+                break
+            if formula_type in {"AGGREGATION", "SEMANTIC"} and var != "revenue":
+                row_values = [_row_value(row, comparable) for row in rows]
+                variables[var] = [value for value in row_values if value is not None]
+            elif formula_type == "DATE":
+                variables[var] = _row_value(rows[0])
+            else:
+                value = _numeric_value(rows[0], comparable)
+                if value is None:
+                    valid = False
+                    break
+                variables[var] = value
+
+        value = safe_eval_presentation(spec.get("formula", ""), variables) if valid else None
+        active.remove(cache_key)
+        cache[cache_key] = value
+        return value
+
     computed_metrics: list[dict[str, Any]] = []
     for code, spec in metrics_catalog.items():
+        if spec.get("enabled") is False:
+            continue
         inputs_spec = spec.get("inputs") or []
         formula_type = spec.get("formula_type") or "FORMULA"
         for dim_key in _candidate_dimension_keys(spec, scope_pools=scope_pools):
-            variables = resolve_presentation_inputs(
-                inputs_spec,
-                scope_pools=scope_pools,
-                dim_key=dim_key,
-                formula_type=formula_type,
-                period_quarter=period_quarter,
-            )
-            if variables is None:
-                continue
-            value = safe_eval_presentation(spec["formula"], variables)
+            value = compute_one(code, dim_key=dim_key)
             if value is None:
                 continue
             segment, geography = dim_key or ("", "")
@@ -639,8 +864,8 @@ def persist_metric_values(
             """
             INSERT INTO metrics (
                 metric_id, company_id, event_id, metric_code, value,
-                unit, input_fact_ids, formula
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                unit, input_fact_ids, formula, segment, geography
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
                 metric_value_id(
@@ -657,9 +882,132 @@ def persist_metric_values(
                 metric["unit"],
                 ", ".join(metric.get("input_fact_ids") or []),
                 metric["formula"],
+                metric.get("segment"),
+                metric.get("geography"),
             ),
         )
     conn.commit()
+
+
+def compute_presentation_coverage_metrics(
+    conn: sqlite3.Connection,
+    *,
+    company_id: str,
+    event_id: str,
+    period_end: str,
+) -> list[dict[str, Any]]:
+    rows = conn.execute(
+        """
+        SELECT value_code, fact_type, scope_level, segment, confidence
+        FROM extracted_values
+        WHERE company_id = ? AND event_id = ? AND period_end = ?
+        """,
+        (company_id, event_id, period_end),
+    ).fetchall()
+    if not rows:
+        return []
+
+    scope_counts: dict[str, int] = {}
+    segments: set[str] = set()
+    guidance_fact_keys = {
+        "revenue_growth_guidance",
+        "margin_guidance",
+        "management_outlook",
+        "segment_outlook",
+    }
+    guidance_count = 0
+    confidence_values: list[float] = []
+
+    for row in rows:
+        scope_level = row["scope_level"] or "unknown"
+        scope_counts[scope_level] = scope_counts.get(scope_level, 0) + 1
+        if row["segment"]:
+            segments.add(row["segment"])
+        if row["fact_type"] == "guidance" or row["value_code"] in guidance_fact_keys:
+            guidance_count += 1
+        confidence_values.append(float(row["confidence"] or 0.0))
+
+    average_confidence = (
+        sum(confidence_values) / len(confidence_values) if confidence_values else 0.0
+    )
+
+    def metric(
+        metric_key: str,
+        name: str,
+        value: float,
+        unit: str,
+        category: str,
+        formula: str,
+    ) -> dict[str, Any]:
+        return {
+            "metric_key": metric_key,
+            "name": name,
+            "value": round(float(value), 4),
+            "unit": unit,
+            "category": category,
+            "formula": formula,
+            "inputs": [],
+            "input_fact_ids": [],
+        }
+
+    return [
+        metric(
+            "presentation_fact_count",
+            "Presentation Fact Count",
+            len(rows),
+            "count",
+            "coverage",
+            "count(scoped_presentation_facts)",
+        ),
+        metric(
+            "presentation_segment_count",
+            "Detected Segment Count",
+            len(segments),
+            "count",
+            "coverage",
+            "count(distinct segment)",
+        ),
+        metric(
+            "presentation_segment_fact_count",
+            "Segment Scoped Fact Count",
+            scope_counts.get("segment", 0),
+            "count",
+            "coverage",
+            "count(facts where scope_level='segment')",
+        ),
+        metric(
+            "presentation_company_fact_count",
+            "Company Scoped Fact Count",
+            scope_counts.get("company", 0),
+            "count",
+            "coverage",
+            "count(facts where scope_level='company')",
+        ),
+        metric(
+            "presentation_unknown_scope_fact_count",
+            "Unknown Scope Fact Count",
+            scope_counts.get("unknown", 0),
+            "count",
+            "quality",
+            "count(facts where scope_level='unknown')",
+        ),
+        metric(
+            "presentation_average_confidence",
+            "Average Presentation Extraction Confidence",
+            average_confidence,
+            "score",
+            "quality",
+            "avg(fact.confidence)",
+        ),
+        metric(
+            "presentation_guidance_fact_count",
+            "Guidance Fact Count",
+            guidance_count,
+            "count",
+            "content",
+            "count(guidance facts)",
+        ),
+    ]
 
 
 def compute_and_persist_metrics(
@@ -679,11 +1027,22 @@ def compute_and_persist_metrics(
 
     bootstrap_schema(conn)
     if event_type in {"Investor Presentation", "Earnings Call Transcript"}:
-        metrics_catalog = (
+        event_catalog = (
             load_presentation_metrics_catalog()
             if event_type == "Investor Presentation"
             else load_earnings_call_metrics_catalog()
         )
+        # Event catalogs extend the financial catalog. Event definitions win
+        # for shared codes because they use document-specific source facts.
+        metrics_catalog = dict(load_metrics_catalog())
+        metrics_catalog.update(event_catalog)
+        scopes = {
+            str(inp.get("scope") or "CURRENT").upper()
+            for spec in metrics_catalog.values()
+            for inp in spec.get("inputs") or []
+            if "fact_key" in inp
+        }
+        scopes.update({"CURRENT", "PY", "PQ"})
         scope_pools = {
             scope: load_presentation_fact_rows(
                 conn,
@@ -694,21 +1053,22 @@ def compute_and_persist_metrics(
                 period_quarter=period_quarter,
                 period_fy_start=period_fy_start,
             )
-            for scope in {
-                "CURRENT",
-                "CURRENT_DISCLOSURE",
-                "CUMULATIVE",
-                "YTD",
-                "PY",
-                "PQ",
-                "PREVIOUS_DISCLOSURE",
-            }
+            for scope in scopes
         }
         computed_metrics = compute_presentation_metrics(
             metrics_catalog,
             period_quarter=period_quarter,
             scope_pools=scope_pools,
         )
+        if event_type == "Investor Presentation":
+            computed_metrics.extend(
+                compute_presentation_coverage_metrics(
+                    conn,
+                    company_id=company_id,
+                    event_id=event_id,
+                    period_end=period_end,
+                )
+            )
         persist_metric_values(
             conn,
             company_id=company_id,
@@ -720,9 +1080,9 @@ def compute_and_persist_metrics(
             "metrics": computed_metrics,
             "metrics_by_scope": {},
             "scope_counts": {
-                "current_facts": sum(len(v) for v in scope_pools["CURRENT"].values()),
-                "prior_year_facts": sum(len(v) for v in scope_pools["PY"].values()),
-                "prior_quarter_facts": sum(len(v) for v in scope_pools["PQ"].values()),
+                "current_facts": sum(len(rows) for rows in scope_pools["CURRENT"].values()),
+                "prior_year_facts": sum(len(rows) for rows in scope_pools["PY"].values()),
+                "prior_quarter_facts": sum(len(rows) for rows in scope_pools["PQ"].values()),
             },
         }
 
@@ -746,7 +1106,25 @@ def compute_and_persist_metrics(
         event_id=None,
         period_end=prior_quarter_end(period_quarter, period_fy_start),
     )
-    scope_pools = {"CURRENT": facts_current, "PY": facts_py, "PQ": facts_pq}
+    facts_consolidated = load_facts(
+        conn,
+        company_id=company_id,
+        period_end=period_end,
+        basis="consolidated",
+    )
+    facts_standalone = load_facts(
+        conn,
+        company_id=company_id,
+        period_end=period_end,
+        basis="standalone",
+    )
+    scope_pools = {
+        "CURRENT": facts_current,
+        "PY": facts_py,
+        "PQ": facts_pq,
+        "CONSOLIDATED_CURRENT": facts_consolidated,
+        "STANDALONE_CURRENT": facts_standalone,
+    }
 
     computed_metrics, metrics_by_scope = compute_metrics(
         metrics_catalog,

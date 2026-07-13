@@ -31,7 +31,7 @@ class Settings:
         self.catalog_dir = Path(
             os.getenv(
                 "VALUES_SERVICE_CATALOG_DIR",
-                str(REPO_ROOT / "8_step_flow" / "catalog_mvp"),
+                str(REPO_ROOT / "v4" / "microservices" / "catalog"),
             )
         ).resolve()
         self.env_path = Path(

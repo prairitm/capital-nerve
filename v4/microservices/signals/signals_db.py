@@ -74,7 +74,9 @@ CREATE TABLE IF NOT EXISTS metrics (
     value REAL,
     unit TEXT,
     input_fact_ids TEXT,
-    formula TEXT
+    formula TEXT,
+    segment TEXT,
+    geography TEXT
 );
 CREATE TABLE IF NOT EXISTS signals (
     signal_id TEXT PRIMARY KEY,
@@ -144,6 +146,8 @@ def migrate_unified_schema(conn: sqlite3.Connection) -> None:
     _ensure_column(conn, "fact_observations", "value_text", "TEXT")
     _ensure_column(conn, "fact_observations", "extraction_method", "TEXT")
     _ensure_column(conn, "resolved_facts", "resolved_value_text", "TEXT")
+    _ensure_column(conn, "metrics", "segment", "TEXT")
+    _ensure_column(conn, "metrics", "geography", "TEXT")
     conn.executescript(
         """
         CREATE TABLE IF NOT EXISTS presentation_document_inventory (

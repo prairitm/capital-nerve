@@ -149,6 +149,7 @@
     "direction": "NEGATIVE",
     "severity": "HIGH",
     "description": "Management has a weak guidance hit rate",
+    "enabled": false,
     "rule": {
       "metric_key": "historical_guidance_hit_rate",
       "op": "<",
@@ -161,6 +162,7 @@
     "direction": "NEGATIVE",
     "severity": "HIGH",
     "description": "Historical misses are material",
+    "enabled": false,
     "rule": {
       "metric_key": "historical_guidance_miss_magnitude",
       "op": ">",
@@ -185,6 +187,8 @@
     "direction": "NEGATIVE",
     "severity": "MEDIUM",
     "description": "Capex execution is behind elapsed-year pace",
+    "enabled": false,
+    "notes": "Requires an elapsed-year runtime metric in the signal service.",
     "rule": {
       "custom": "capex_guidance_attainment < elapsed_year_pct - 15"
     }
@@ -493,6 +497,7 @@
     "direction": "NEGATIVE",
     "severity": "MEDIUM",
     "description": "Material financial movements were poorly explained",
+    "enabled": false,
     "rule": {
       "metric_key": "explanation_coverage_ratio",
       "op": "<",
@@ -505,6 +510,7 @@
     "direction": "NEGATIVE",
     "severity": "HIGH",
     "description": "Commentary weakly aligns with financial deterioration",
+    "enabled": false,
     "rule": {
       "metric_key": "risk_to_financial_alignment_score",
       "op": "<",
@@ -517,6 +523,7 @@
     "direction": "NEGATIVE",
     "severity": "HIGH",
     "description": "Past forward claims were often not verified",
+    "enabled": false,
     "rule": {
       "metric_key": "management_claim_accuracy_rate",
       "op": "<",

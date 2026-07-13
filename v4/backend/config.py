@@ -22,7 +22,7 @@ class Settings:
         self.documents_dir = self.data_dir / "documents"
         self.parsed_dir = self.data_dir / "parsed"
         self.catalog_dir = Path(
-            os.getenv("V4_CATALOG_DIR", str(REPO_ROOT / "8_step_flow" / "catalog_mvp"))
+            os.getenv("V4_CATALOG_DIR", str(REPO_ROOT / "v4" / "microservices" / "catalog"))
         ).resolve()
         # Comma-separated list of allowed CORS origins for the dev frontend.
         self.cors_origins = os.getenv(

@@ -48,13 +48,56 @@ def load_signals_catalog() -> dict[str, Any]:
 
 
 def load_presentation_signals_catalog() -> dict[str, Any]:
-    path = settings.catalog_dir / "investor_presentation" / "presentation_signals.json"
+    path = settings.catalog_dir / "investor_presentation_signals.json"
+    if not path.exists():
+        path = settings.catalog_dir / "investor_presentation" / "presentation_signals.json"
     return json.loads(path.read_text(encoding="utf-8"))
 
 
 def load_earnings_call_signals_catalog() -> dict[str, Any]:
-    path = settings.catalog_dir / "earnings-call" / "earnings_call_signals.json"
+    path = settings.catalog_dir / "earnings_call_signals.json"
+    if not path.exists():
+        path = settings.catalog_dir / "earnings-call" / "earnings_call_signals.json"
     return json.loads(path.read_text(encoding="utf-8"))
+
+
+PRESENTATION_SIGNALS_CATALOG: dict[str, dict[str, Any]] = {
+    "multi_segment_presentation": {
+        "name": "Multi-Segment Presentation",
+        "category": "coverage",
+        "direction": "NEUTRAL",
+        "severity": "LOW",
+        "description": "Presentation contains more than one detected segment.",
+    },
+    "segment_facts_available": {
+        "name": "Segment Facts Available",
+        "category": "coverage",
+        "direction": "POSITIVE",
+        "severity": "MEDIUM",
+        "description": "Segment-scoped facts were extracted separately from company facts.",
+    },
+    "guidance_present": {
+        "name": "Guidance Present",
+        "category": "content",
+        "direction": "NEUTRAL",
+        "severity": "MEDIUM",
+        "description": "Forward-looking or guidance facts were found in the presentation.",
+    },
+    "unknown_scope_needs_review": {
+        "name": "Unknown Scope Needs Review",
+        "category": "quality",
+        "direction": "NEGATIVE",
+        "severity": "HIGH",
+        "description": "Some presentation facts could not be tied to company, segment, geography, product, channel, project, or customer type scope.",
+    },
+    "low_extraction_confidence": {
+        "name": "Low Presentation Extraction Confidence",
+        "category": "quality",
+        "direction": "NEGATIVE",
+        "severity": "HIGH",
+        "description": "Average presentation extraction confidence is below the review threshold.",
+    },
+}
 
 
 def load_metrics_by_key(
@@ -159,7 +202,7 @@ def load_presentation_metrics_by_key(
 ) -> dict[str, list[dict[str, Any]]]:
     rows = conn.execute(
         """
-        SELECT metric_id, metric_code, value, unit, formula
+        SELECT metric_id, metric_code, value, unit, formula, segment, geography
         FROM metrics
         WHERE company_id = ? AND event_id = ?
         """,
@@ -175,8 +218,8 @@ def load_presentation_metrics_by_key(
                 "value": float(row["value"]),
                 "unit": row["unit"],
                 "category": None,
-                "segment": None,
-                "geography": None,
+                "segment": row["segment"],
+                "geography": row["geography"],
             }
         )
     return out
@@ -293,11 +336,15 @@ def evaluate_signal_rules(
 ) -> list[dict[str, Any]]:
     fired_signals: list[dict[str, Any]] = []
     for code, spec in signals_catalog.items():
+        if spec.get("enabled") is False:
+            continue
         rule = spec.get("rule")
         if not rule:
             continue
         metric_keys = rule_metric_keys(rule)
         fact_keys = rule_fact_keys(rule)
+        if not metric_keys and not fact_keys:
+            continue
         if not all(key in metrics_by_key for key in metric_keys):
             continue
         if not all(key in facts_by_key for key in fact_keys):
@@ -461,6 +508,18 @@ def eval_presentation_rule(
             facts_by_key=facts_by_key,
             dim_key=dim_key,
         )
+    if "semantic_match" in rule:
+        text_parts: list[str] = []
+        for key in facts_by_key:
+            for ref in _refs_for_key(facts_by_key, key, dim_key):
+                if ref.get("value") is not None:
+                    text_parts.append(str(ref["value"]))
+        haystack = " ".join(text_parts).casefold()
+        for phrase in rule.get("semantic_match") or []:
+            terms = [term for term in str(phrase).casefold().replace("-", " ").split() if term]
+            if terms and all(term in haystack for term in terms):
+                return True
+        return False
     raise ValueError(f"Malformed rule: {rule}")
 
 
@@ -475,7 +534,19 @@ def format_presentation_rule(rule: dict[str, Any]) -> str:
         return " AND ".join(f"({format_presentation_rule(child)})" for child in rule["all"])
     if "any" in rule:
         return " OR ".join(f"({format_presentation_rule(child)})" for child in rule["any"])
+    if "semantic_match" in rule:
+        return "semantic match: " + ", ".join(rule.get("semantic_match") or [])
     return ""
+
+
+def rule_has_semantic_match(rule: dict[str, Any]) -> bool:
+    if "semantic_match" in rule:
+        return True
+    return any(
+        rule_has_semantic_match(child)
+        for group in ("all", "any")
+        for child in rule.get(group, [])
+    )
 
 
 def _candidate_dims(
@@ -507,16 +578,21 @@ def evaluate_presentation_signal_rules(
 ) -> list[dict[str, Any]]:
     fired_signals: list[dict[str, Any]] = []
     for code, spec in signals_catalog.items():
+        if spec.get("enabled") is False:
+            continue
         rule = spec.get("rule")
         if not rule:
             continue
         metric_keys = sorted(set(presentation_rule_metric_keys(rule)))
         fact_keys = sorted(set(presentation_rule_fact_keys(rule)))
+        if not metric_keys and not fact_keys and not rule_has_semantic_match(rule):
+            continue
         if not all(key in metrics_by_key for key in metric_keys):
             continue
         if not all(key in facts_by_key for key in fact_keys):
             continue
-        fired_dim = None
+        fired = False
+        fired_dim: tuple[str, str] | None = None
         for dim_key in _candidate_dims(
             metric_keys,
             fact_keys,
@@ -529,9 +605,10 @@ def evaluate_presentation_signal_rules(
                 facts_by_key=facts_by_key,
                 dim_key=dim_key,
             ):
+                fired = True
                 fired_dim = dim_key
                 break
-        if fired_dim is None:
+        if not fired:
             continue
         trigger_values = {}
         for key in metric_keys:
@@ -557,6 +634,76 @@ def evaluate_presentation_signal_rules(
                 "rule_text": format_presentation_rule(rule),
                 "segment": segment or None,
                 "geography": geography or None,
+            }
+        )
+    return fired_signals
+
+
+def evaluate_presentation_coverage_signals(
+    *,
+    metrics_by_key: dict[str, dict[str, Any]],
+) -> list[dict[str, Any]]:
+    if "presentation_fact_count" not in metrics_by_key:
+        return []
+
+    def metric_value(key: str) -> float:
+        return float(metrics_by_key.get(key, {}).get("value") or 0.0)
+
+    checks = [
+        (
+            "multi_segment_presentation",
+            metric_value("presentation_segment_count") >= 2,
+            ["presentation_segment_count"],
+        ),
+        (
+            "segment_facts_available",
+            metric_value("presentation_segment_fact_count") > 0,
+            ["presentation_segment_fact_count"],
+        ),
+        (
+            "guidance_present",
+            metric_value("presentation_guidance_fact_count") > 0,
+            ["presentation_guidance_fact_count"],
+        ),
+        (
+            "unknown_scope_needs_review",
+            metric_value("presentation_unknown_scope_fact_count") > 0,
+            ["presentation_unknown_scope_fact_count"],
+        ),
+        (
+            "low_extraction_confidence",
+            metric_value("presentation_average_confidence") < 0.70,
+            ["presentation_average_confidence"],
+        ),
+    ]
+
+    fired_signals: list[dict[str, Any]] = []
+    for signal_key, fired, metric_keys in checks:
+        if not fired:
+            continue
+        spec = PRESENTATION_SIGNALS_CATALOG[signal_key]
+        fired_signals.append(
+            {
+                "signal_key": signal_key,
+                "title": spec["name"],
+                "description": spec["description"],
+                "direction": spec["direction"],
+                "severity": spec["severity"],
+                "category": spec["category"],
+                "metric_keys": metric_keys,
+                "fact_keys": [],
+                "supporting_metric_ids": [
+                    metrics_by_key[key]["metric_id"]
+                    for key in metric_keys
+                    if key in metrics_by_key and metrics_by_key[key].get("metric_id")
+                ],
+                "supporting_fact_ids": [],
+                "trigger_values": {
+                    key: metrics_by_key[key]["value"]
+                    for key in metric_keys
+                    if key in metrics_by_key
+                },
+                "rule_text": ", ".join(metric_keys),
             }
         )
     return fired_signals
@@ -616,11 +763,13 @@ def evaluate_and_persist_signals(
 
     bootstrap_schema(conn)
     if event_type in {"Investor Presentation", "Earnings Call Transcript"}:
-        signals_catalog = (
+        event_catalog = (
             load_presentation_signals_catalog()
             if event_type == "Investor Presentation"
             else load_earnings_call_signals_catalog()
         )
+        signals_catalog = dict(load_signals_catalog())
+        signals_catalog.update(event_catalog)
         metrics_by_key = load_presentation_metrics_by_key(
             conn,
             company_id=company_id,
@@ -636,6 +785,15 @@ def evaluate_and_persist_signals(
             metrics_by_key=metrics_by_key,
             facts_by_key=facts_by_key,
         )
+        if event_type == "Investor Presentation":
+            flattened_metrics = {
+                key: rows[0]
+                for key, rows in metrics_by_key.items()
+                if rows
+            }
+            fired_signals.extend(
+                evaluate_presentation_coverage_signals(metrics_by_key=flattened_metrics)
+            )
         persist_fired_signals(
             conn,
             company_id=company_id,
@@ -647,7 +805,8 @@ def evaluate_and_persist_signals(
             "source_counts": {
                 "metrics": sum(len(rows) for rows in metrics_by_key.values()),
                 "facts": sum(len(rows) for rows in facts_by_key.values()),
-                "rules": len(signals_catalog),
+                "rules": len(signals_catalog)
+                + (len(PRESENTATION_SIGNALS_CATALOG) if event_type == "Investor Presentation" else 0),
             },
         }
 

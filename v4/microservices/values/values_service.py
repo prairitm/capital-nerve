@@ -119,11 +119,10 @@ def load_presentation_facts_catalog() -> dict[str, Any]:
 
 
 def load_earnings_call_facts_catalog() -> dict[str, Any]:
-    return json.loads(
-        (settings.catalog_dir / "earnings-call" / "earnings_call_facts.json").read_text(
-            encoding="utf-8"
-        )
-    )
+    path = settings.catalog_dir / "earnings_call_facts.json"
+    if not path.exists():
+        path = settings.catalog_dir / "earnings-call" / "earnings_call_facts.json"
+    return json.loads(path.read_text(encoding="utf-8"))
 
 
 def _fact_value_type(spec: dict[str, Any]) -> str:

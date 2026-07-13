@@ -1,9 +1,23 @@
 {
-  "catalog_version": "0.1.0",
-  "description": "Capital Nerve v2 declarative facts, metrics, and signals (Phase 1 financial results).",
+  "catalog_version": "0.2.0",
+  "description": "Capital Nerve v4 declarative catalogs by event type.",
   "files": {
-    "facts": "facts.json",
-    "metrics": "metrics.json",
-    "signals": "signals.json"
+    "financial_results": {
+      "facts": "facts.json",
+      "metrics": "metrics.json",
+      "signals": "signals.json"
+    },
+    "investor_presentation": {
+      "facts": "investor_presentation/presentation_facts.json",
+      "metrics": "investor_presentation/presentation_metrics.json",
+      "signals": "investor_presentation/presentation_signals.json",
+      "extends": "financial_results"
+    },
+    "earnings_call_transcript": {
+      "facts": "earnings-call/earnings_call_facts.json",
+      "metrics": "earnings-call/earnings_call_metrics.json",
+      "signals": "earnings-call/earnings_call_signals.json",
+      "extends": "financial_results"
+    }
   }
 }

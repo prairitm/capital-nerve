@@ -102,3 +102,13 @@ Useful options:
 ```
 
 `run.py` expects the microservices to be running on ports `8020-8026`. The frontend and backend API are useful for browsing results, but they are not required by the flow runner.
+
+## Catalogs
+
+The canonical v4 catalogs live in `v4/microservices/catalog/`. Financial-result
+definitions are the base catalog; investor-presentation and earnings-call
+definitions are event-specific overlays declared in `manifest.json`.
+
+Every v4 service uses that directory by default. The existing `*_CATALOG_DIR`
+environment variables can still point all services at another catalog tree with
+the same manifest layout.
