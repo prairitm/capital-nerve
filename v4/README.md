@@ -47,6 +47,10 @@ To run all supported event types in sequence:
   --source-mode nse_auto
 ```
 
+If one event type has no matching document announcement, the runner marks that
+event type as `skipped`, continues with the remaining event types, and prints a
+final run report.
+
 Supported event types:
 
 - `Financial Results`

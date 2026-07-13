@@ -75,6 +75,10 @@ class FlowError(RuntimeError):
     pass
 
 
+class SkippableFlowError(FlowError):
+    pass
+
+
 def setup_logging(verbose: bool) -> None:
     level = logging.DEBUG if verbose else logging.INFO
     logging.basicConfig(
@@ -195,7 +199,10 @@ def request_json(
         raise FlowError(f"{method} {url} timed out after {timeout:.0f}s") from exc
     except urllib.error.HTTPError as exc:
         detail = exc.read().decode("utf-8", errors="replace")
-        raise FlowError(f"{method} {url} failed with HTTP {exc.code}: {detail}") from exc
+        message = f"{method} {url} failed with HTTP {exc.code}: {detail}"
+        if exc.code == 404 and "announcements found" in detail:
+            raise SkippableFlowError(message) from exc
+        raise FlowError(message) from exc
     except urllib.error.URLError as exc:
         raise FlowError(f"{method} {url} failed: {exc.reason}") from exc
     except json.JSONDecodeError as exc:
@@ -628,6 +635,28 @@ def event_types_for_args(args: argparse.Namespace) -> list[str]:
     return [args.event_type]
 
 
+def log_run_report(results: list[dict[str, Any]]) -> None:
+    logging.info("=" * 78)
+    logging.info("RUN REPORT")
+    for result in results:
+        logging.info(
+            "%-24s %-9s %s",
+            result["event_type"],
+            result["status"],
+            result.get("message") or "",
+        )
+    completed = sum(1 for result in results if result["status"] == "completed")
+    skipped = sum(1 for result in results if result["status"] == "skipped")
+    failed = sum(1 for result in results if result["status"] == "failed")
+    logging.info(
+        "Summary: completed=%s skipped=%s failed=%s total=%s",
+        completed,
+        skipped,
+        failed,
+        len(results),
+    )
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description="Run the 7-step CapitalNerve event microservice flow."
@@ -716,8 +745,14 @@ def main() -> int:
     args = parser.parse_args()
     setup_logging(args.verbose)
 
+    results: list[dict[str, Any]] = []
     try:
         event_types = event_types_for_args(args)
+    except FlowError as exc:
+        logging.error("%s", exc)
+        return 1
+
+    try:
         for index, event_type in enumerate(event_types, start=1):
             args.event_type = event_type
             if len(event_types) > 1:
@@ -728,14 +763,46 @@ def main() -> int:
                     len(event_types),
                     event_type,
                 )
-            run_flow(args)
-    except FlowError as exc:
-        logging.error("%s", exc)
-        return 1
+            try:
+                run_flow(args)
+            except SkippableFlowError as exc:
+                logging.warning("Skipping %s: %s", event_type, exc)
+                results.append(
+                    {
+                        "event_type": event_type,
+                        "status": "skipped",
+                        "message": str(exc),
+                    }
+                )
+                continue
+            except FlowError as exc:
+                logging.error("%s failed: %s", event_type, exc)
+                results.append(
+                    {
+                        "event_type": event_type,
+                        "status": "failed",
+                        "message": str(exc),
+                    }
+                )
+                if len(event_types) == 1:
+                    log_run_report(results)
+                    return 1
+                continue
+            results.append(
+                {
+                    "event_type": event_type,
+                    "status": "completed",
+                    "message": "ok",
+                }
+            )
     except KeyboardInterrupt:
         logging.error("Interrupted")
+        if results:
+            log_run_report(results)
         return 130
-    return 0
+
+    log_run_report(results)
+    return 1 if any(result["status"] == "failed" for result in results) else 0
 
 
 if __name__ == "__main__":
