@@ -124,10 +124,15 @@ export function SignalTable({
       )}
 
       {filters && activeFilters && (
-        <div className="px-5 py-2 border-b border-line/40 flex items-center justify-between gap-3 text-xs">
-          <span className="text-ink-mute">
+        <div className="px-4 md:px-5 py-2.5 border-b border-line/40 flex flex-wrap items-center justify-between gap-3 text-xs">
+          <div className="flex flex-wrap items-center gap-2 text-ink-mute">
+          <span>
             {signals.length} {signals.length === 1 ? "result" : "results"}
           </span>
+          {filters.category && <span className="chip-neutral">{signalCategoryLabel(filters.category)}</span>}
+          {filters.severity && <span className="chip-neutral">{filters.severity.toLowerCase()} materiality</span>}
+          {filters.direction && <span className="chip-neutral">{filters.direction.toLowerCase()}</span>}
+          </div>
           <button
             type="button"
             onClick={filters.onClear}
@@ -215,7 +220,7 @@ export function SignalTable({
 
           <div className="hidden md:block overflow-x-auto">
             <table className="w-full table-fixed text-sm">
-              <thead className="text-[11px] uppercase tracking-wider text-ink-soft">
+              <thead className="sticky top-0 z-10 bg-surface text-[11px] uppercase tracking-wider text-ink-soft">
                 <tr>
                   {showCompany && <th className="w-44 px-5 py-2 text-left font-medium">Company</th>}
                   <th className="w-56 px-5 py-2 text-left font-medium">Document</th>
@@ -428,7 +433,7 @@ export function SignalTable({
 
       <div className="hidden md:block overflow-x-auto">
         <table className="w-full table-fixed text-sm">
-          <thead className="text-[11px] uppercase tracking-wider text-ink-soft">
+          <thead className="sticky top-0 z-10 bg-surface text-[11px] uppercase tracking-wider text-ink-soft">
             <tr>
               {showCompany && (
                 <th className="w-44 px-5 py-2 text-left font-medium hidden md:table-cell">Company</th>

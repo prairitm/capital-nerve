@@ -22,8 +22,8 @@ export default {
         },
         ink: {
           DEFAULT: "#E6EAF2",
-          mute: "#9BA4B8",
-          soft: "#6B7488",
+        mute: "#AAB3C5",
+          soft: "#7D879B",
           fade: "#4B5469",
         },
         brand: {
@@ -71,7 +71,7 @@ export default {
         mono: ["JetBrains Mono", "ui-monospace", "SFMono-Regular", "monospace"],
       },
       boxShadow: {
-        card: "0 1px 0 rgba(255,255,255,0.04) inset, 0 8px 32px rgba(0,0,0,0.35)",
+        card: "0 1px 0 rgba(255,255,255,0.035) inset, 0 14px 35px rgba(0,0,0,0.18)",
         glow: "0 0 0 1px rgba(59, 130, 246, 0.4), 0 0 32px rgba(96, 165, 250, 0.25)",
       },
       backgroundImage: {

@@ -15,13 +15,13 @@ body,
 body {
   @apply bg-bg text-ink font-sans antialiased;
   font-feature-settings: "cv11", "ss01";
-  background-image:
-    radial-gradient(circle at 18% -10%, rgba(59, 130, 246, 0.12), transparent 50%),
-    radial-gradient(circle at 100% 100%, rgba(96, 165, 250, 0.06), transparent 50%);
+  background-image: linear-gradient(180deg, rgba(59, 130, 246, 0.035), transparent 22rem);
   background-attachment: fixed;
+  overflow-x: hidden;
 }
 
 * {
+  box-sizing: border-box;
   -webkit-tap-highlight-color: transparent;
 }
 
@@ -89,7 +89,7 @@ body {
     @apply absolute -left-[6px] mt-1.5 size-3 rounded-full bg-ink-mute border-2 border-bg;
   }
   .input {
-    @apply w-full rounded-xl bg-surface-2 border border-line px-3 py-2 text-sm text-ink placeholder:text-ink-soft outline-none focus:border-line-strong;
+    @apply w-full rounded-xl bg-surface-2 border border-line px-3 py-2.5 text-sm text-ink placeholder:text-ink-soft outline-none focus:border-brand/70 focus:ring-2 focus:ring-brand/15;
   }
   .chip {
     @apply inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium border whitespace-nowrap;
@@ -135,5 +135,14 @@ body {
   .react-pdf__Page__textContent .evidence-highlight,
   .react-pdf__Page__textContent [role="presentation"].evidence-highlight {
     color: transparent;
+  }
+  .eyebrow {
+    @apply text-[11px] font-semibold uppercase tracking-[0.16em] text-brand-soft;
+  }
+  .skeleton {
+    @apply rounded-xl bg-surface-2 animate-pulse;
+  }
+  .focus-ring {
+    @apply focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/70 focus-visible:ring-offset-2 focus-visible:ring-offset-bg;
   }
 }

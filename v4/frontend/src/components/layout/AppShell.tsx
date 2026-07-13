@@ -1,5 +1,5 @@
 import { Outlet, NavLink, useNavigate, useLocation } from "react-router-dom";
-import { LayoutDashboard, Building2, Activity } from "lucide-react";
+import { LayoutDashboard, Building2, Activity, Database } from "lucide-react";
 import clsx from "clsx";
 
 const NAV = [
@@ -15,10 +15,10 @@ export function AppShell() {
   return (
     <div className="min-h-screen flex">
       {/* Left sidebar (desktop) */}
-      <aside className="hidden lg:flex w-60 xl:w-64 shrink-0 border-r border-line/70 bg-bg-deep/40 backdrop-blur sticky top-0 h-screen flex-col px-4 py-5">
+      <aside className="hidden lg:flex w-56 shrink-0 border-r border-line/70 bg-bg-deep/80 sticky top-0 h-screen flex-col px-3 py-5">
         <button
           onClick={() => navigate("/")}
-          className="flex items-center gap-2 px-2 mb-6"
+          className="focus-ring flex items-center gap-2 rounded-lg px-2 mb-7"
         >
           <Logo />
           <span className="text-base font-semibold tracking-tight">CapitalNerve</span>
@@ -32,9 +32,9 @@ export function AppShell() {
               end={item.end}
               className={({ isActive }) =>
                 clsx(
-                  "flex items-center gap-3 px-3 py-2 rounded-xl text-sm transition-colors",
+                  "focus-ring flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors",
                   isActive
-                    ? "bg-surface text-ink border border-line"
+                    ? "bg-surface-2 text-ink border border-line shadow-sm"
                     : "text-ink-mute hover:text-ink hover:bg-surface/70",
                 )
               }
@@ -45,8 +45,9 @@ export function AppShell() {
           ))}
         </nav>
 
-        <div className="mt-auto px-2 text-[11px] text-ink-soft">
-          v4 · 7-step data
+        <div className="mt-auto mx-2 rounded-xl border border-line/60 bg-surface/50 p-3">
+          <div className="flex items-center gap-2 text-xs font-medium text-ink-mute"><Database size={14} className="text-positive" />Research data</div>
+          <div className="mt-1 text-[11px] text-ink-soft">Company intelligence workspace</div>
         </div>
       </aside>
 
@@ -65,7 +66,7 @@ export function AppShell() {
           </div>
         </header>
 
-        <div className="flex-1 px-4 md:px-6 lg:px-8 py-4 md:py-6 pb-24 lg:pb-8">
+        <div className="flex-1 min-w-0 px-4 md:px-6 lg:px-8 xl:px-10 py-5 md:py-7 pb-24 lg:pb-10">
           <Outlet />
         </div>
       </main>
@@ -83,7 +84,7 @@ export function AppShell() {
                 to={item.to}
                 end={item.end}
                 className={clsx(
-                  "flex flex-col items-center gap-0.5 px-1.5 py-1.5 rounded-lg text-[11px] flex-1 min-w-0 max-w-[5rem]",
+                  "focus-ring flex flex-col items-center gap-0.5 px-1.5 py-1.5 rounded-lg text-[11px] flex-1 min-w-0 max-w-[5rem]",
                   active ? "text-ink" : "text-ink-soft",
                 )}
               >

@@ -42,8 +42,8 @@ export function formatMetricValue(
   if (u === "%") return formatPct(value, 1);
   if (u === "bps") return `${value >= 0 ? "+" : ""}${value.toFixed(0)} bps`;
   if (u === "x") return `${formatNumber(value, 2)}x`;
-  if (u === "cr" || u === "crore" || u === "crores") return formatCr(value);
-  if (u === "rs" || u === "rs.") return `Rs ${formatNumber(value, 2)}`;
+  if (u === "cr" || u === "crore" || u === "crores") return `₹${formatCr(value)}`;
+  if (u === "rs" || u === "rs.") return `₹${formatNumber(value, 2)}`;
   if (u === "days") return `${formatNumber(value, 0)} days`;
   if (u) return `${formatNumber(value, 2)} ${unit}`;
   return formatNumber(value, 2);

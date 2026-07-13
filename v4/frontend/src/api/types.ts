@@ -14,6 +14,13 @@ export interface Company {
   isin: string | null;
 }
 
+export interface CompanyListItem extends Company {
+  latest_event_date: string | null;
+  latest_period_label: string | null;
+  signal_count: number;
+  highest_severity: SeverityLevel | null;
+}
+
 export interface CompanyEvent {
   id: string;
   company_id: string | null;

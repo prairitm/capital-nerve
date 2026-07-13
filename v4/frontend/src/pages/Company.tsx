@@ -11,6 +11,7 @@ import { TrendChart } from "@/components/charts/TrendChart";
 import { BackButton } from "@/components/common/BackButton";
 import { PageLoader } from "@/components/common/Spinner";
 import { Empty } from "@/components/common/Empty";
+import { ErrorState, MetricCard, PageHeader, PageSkeleton } from "@/components/common/DashboardUI";
 import { Pagination, usePagination } from "@/components/common/Pagination";
 import { buildCompanyFeedGroupFromHub } from "@/lib/events";
 import { formatMetricValue, formatPct, resolveEventDisplayTitle } from "@/lib/format";
@@ -36,6 +37,13 @@ function FinancialSnapshotTable({ rows, periodLabel }: { rows: SnapshotRow[]; pe
               : "Latest quarter"}
         </p>
       </div>
+      {rows.length <= 6 ? (
+        <div className="grid gap-3 p-4 sm:grid-cols-2 lg:grid-cols-3">
+          {rows.map((row) => (
+            <MetricCard key={row.code} label={row.metric} value={formatMetricValue(row.current_value, row.unit)} prior={row.previous_value != null ? formatMetricValue(row.previous_value, row.unit) : undefined} change={row.yoy_change_pct} />
+          ))}
+        </div>
+      ) : <>
       <div className="md:hidden divide-y divide-line/40">
         {visibleRows.map((row) => {
           const positive = row.yoy_change_pct != null && row.yoy_change_pct > 0;
@@ -137,6 +145,7 @@ function FinancialSnapshotTable({ rows, periodLabel }: { rows: SnapshotRow[]; pe
         total={rows.length}
         onPageChange={pagination.setPage}
       />
+      </>}
     </section>
   );
 }
@@ -145,11 +154,12 @@ export function Company() {
   const { ticker } = useParams<{ ticker: string }>();
   const [documentsOpen, setDocumentsOpen] = useState(false);
 
-  const { data, isLoading } = useQuery({
+  const companyQuery = useQuery({
     queryKey: ["company", ticker],
     queryFn: () => api<CompanyHub>(`/companies/${ticker}`),
     enabled: !!ticker,
   });
+  const { data, isLoading } = companyQuery;
 
   const { data: trends = [] } = useQuery({
     queryKey: ["company-trends", ticker],
@@ -170,8 +180,9 @@ export function Company() {
     [trends],
   );
 
-  if (isLoading) return <PageLoader />;
-  if (!data || !ticker) return <div className="text-ink-mute">Company not found.</div>;
+  if (isLoading) return <PageSkeleton rows={4} />;
+  if (companyQuery.isError) return <ErrorState title="Company unavailable" description="The company profile could not be loaded." onRetry={() => void companyQuery.refetch()} />;
+  if (!data || !ticker) return <ErrorState title="Company not found" description="This company is not part of the current coverage universe." />;
 
   const { company, financial_snapshot, documents } = data;
   const latestEventHref = data.latest_event_id
@@ -180,19 +191,11 @@ export function Company() {
   const latestPeriodEvents = (data.latest_period_events ?? []).filter((event) => event.document_id);
 
   return (
-    <div className="max-w-5xl mx-auto space-y-5">
+    <div className="max-w-6xl mx-auto space-y-6">
       <BackButton fallback="/companies" />
 
-      <header className="flex flex-wrap items-start justify-between gap-3">
-        <div className="min-w-0">
-          <h1 className="text-2xl font-semibold text-ink">{company.name}</h1>
-          <div className="text-sm text-ink-mute mt-1">
-            {company.ticker}
-            {company.exchange && <span className="text-ink-soft"> · {company.exchange}</span>}
-            {company.industry && <span className="text-ink-soft"> · {company.industry}</span>}
-          </div>
-        </div>
-        <div className="flex flex-wrap items-center gap-2 shrink-0">
+      <PageHeader eyebrow={`${company.ticker}${company.exchange ? ` · ${company.exchange}` : ""}`} title={company.name ?? company.ticker ?? "Company"} description={company.industry ?? company.sector ?? "Company intelligence and reported financial performance."} action={
+        <div className="flex max-w-full flex-wrap items-center justify-end gap-2">
           {data.latest_period_label && latestEventHref && (
             <Link to={latestEventHref} className="chip-neutral hover:border-line-strong transition-colors">
               {data.latest_period_label}
@@ -203,7 +206,7 @@ export function Company() {
                 <Link
                   key={event.id}
                   to={`/company/${ticker}/event/${event.id}`}
-                  className="text-sm text-ink-mute hover:text-ink inline-flex items-center gap-1"
+                  className="focus-ring hidden sm:inline-flex text-sm text-ink-mute hover:text-ink items-center gap-1 rounded-lg"
                 >
                   <FileText size={14} />
                   {resolveEventDisplayTitle(event.event_type, event.title)}
@@ -219,9 +222,13 @@ export function Company() {
                 </Link>
               )}
         </div>
-      </header>
+      } />
 
-      {feedGroup && feedGroup.quarterGroups.length > 0 ? (
+      {financial_snapshot.length > 0 && (
+        <FinancialSnapshotTable rows={financial_snapshot} periodLabel={data.latest_period_label} />
+      )}
+
+      {data.signals.length > 0 && feedGroup && feedGroup.quarterGroups.length > 0 ? (
         <section className="card overflow-hidden">
           <div className="px-5 py-4 border-b border-line/60 flex items-center justify-between gap-3">
             <h2 className="text-base font-semibold">Signals by period</h2>
@@ -238,13 +245,7 @@ export function Company() {
             collapsible={feedGroup.quarterGroups.length > 1}
           />
         </section>
-      ) : (
-        <Empty title="No signals" description="No signals fired for this company yet." />
-      )}
-
-      {financial_snapshot.length > 0 && (
-        <FinancialSnapshotTable rows={financial_snapshot} periodLabel={data.latest_period_label} />
-      )}
+      ) : null}
 
       {trendsWithData.length > 0 && (
         <section className="card p-5">
@@ -254,6 +255,16 @@ export function Company() {
               <TrendChart key={s.metric_code} series={s} />
             ))}
           </div>
+        </section>
+      )}
+
+      {feedGroup && feedGroup.quarterGroups.length > 0 && data.signals.length === 0 && (
+        <section className="card overflow-hidden">
+          <div className="flex items-center justify-between gap-3 border-b border-line/60 px-5 py-4">
+            <div><h2 className="text-base font-semibold">Reporting history</h2><p className="mt-0.5 text-xs text-ink-mute">No material signals detected in these reports.</p></div>
+            <Link to={`/company/${ticker}/events`} className="ui-link text-xs">All events</Link>
+          </div>
+          <QuarterSignalsTimeline quarterGroups={feedGroup.quarterGroups} ticker={ticker} collapsible={feedGroup.quarterGroups.length > 1} />
         </section>
       )}
 

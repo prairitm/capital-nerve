@@ -36,11 +36,7 @@ function FeedEventBlock({
             <CompactSignalRow key={signal.id} signal={signal} />
           ))}
         </div>
-      ) : (
-        <div className="border-t border-line/30 px-5 py-2 text-xs text-ink-soft">
-          No signals fired
-        </div>
-      )}
+      ) : null}
     </div>
   );
 }

@@ -27,22 +27,50 @@ router = APIRouter(tags=["companies"])
 @router.get("/companies")
 def list_companies(search: str = "", limit: int = Query(default=200, ge=1, le=1000)):
     with get_conn() as conn:
+        select = """
+            SELECT c.*,
+                   (SELECT e.event_date FROM events e
+                    WHERE e.company_id = c.id
+                    ORDER BY e.event_date DESC, e.id DESC LIMIT 1) AS latest_event_date,
+                   (SELECT e2.id FROM events e2
+                    WHERE e2.company_id = c.id
+                    ORDER BY e2.event_date DESC, e2.id DESC LIMIT 1) AS latest_event_id,
+                   (SELECT COUNT(*) FROM signals s WHERE s.company_id = c.id) AS signal_count,
+                   (SELECT s2.severity FROM signals s2
+                    WHERE s2.company_id = c.id
+                    ORDER BY CASE UPPER(COALESCE(s2.severity, ''))
+                        WHEN 'CRITICAL' THEN 0 WHEN 'HIGH' THEN 1
+                        WHEN 'MEDIUM' THEN 2 WHEN 'LOW' THEN 3 ELSE 9 END
+                    LIMIT 1) AS highest_severity
+            FROM companies c
+        """
         if search:
             like = f"%{search}%"
             rows = conn.execute(
-                """
-                SELECT * FROM companies
-                WHERE name LIKE ? COLLATE NOCASE OR ticker LIKE ? COLLATE NOCASE
-                ORDER BY name
-                LIMIT ?
+                select + """
+                WHERE c.name LIKE ? COLLATE NOCASE OR c.ticker LIKE ? COLLATE NOCASE
+                ORDER BY c.name LIMIT ?
                 """,
                 (like, like, limit),
             ).fetchall()
         else:
             rows = conn.execute(
-                "SELECT * FROM companies ORDER BY name LIMIT ?", (limit,)
+                select + " ORDER BY c.name LIMIT ?", (limit,)
             ).fetchall()
-        return [company_dict(r) for r in rows]
+        out = []
+        for row in rows:
+            company = company_dict(row)
+            company["latest_event_date"] = row["latest_event_date"]
+            company["signal_count"] = row["signal_count"] or 0
+            company["highest_severity"] = row["highest_severity"]
+            latest = None
+            if row["latest_event_id"]:
+                latest = conn.execute(
+                    "SELECT * FROM events WHERE id = ?", (row["latest_event_id"],)
+                ).fetchone()
+            company["latest_period_label"] = event_dict(latest)["period_label"] if latest else None
+            out.append(company)
+        return out
 
 
 @router.get("/companies/{ticker}")

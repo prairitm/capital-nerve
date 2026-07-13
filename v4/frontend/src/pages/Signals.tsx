@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { api } from "@/api/client";
 import type { SeverityLevel, Signal, SignalDirection } from "@/api/types";
 import { SignalTable } from "@/components/signals/SignalTable";
-import { PageLoader } from "@/components/common/Spinner";
+import { ErrorState, PageHeader, PageSkeleton, StatusSummary } from "@/components/common/DashboardUI";
 
 export function Signals() {
   const [params, setParams] = useSearchParams();
@@ -20,28 +20,36 @@ export function Signals() {
 
   const clearFilters = () => setParams(new URLSearchParams());
 
-  const { data, isLoading } = useQuery({
+  const signalQuery = useQuery({
     queryKey: ["signals", category, severity, direction],
     queryFn: () =>
       api<Signal[]>("/signals", {
         query: { category, severity, direction, limit: 200 },
       }),
   });
+  const { data, isLoading } = signalQuery;
+
+  if (isLoading) return <PageSkeleton rows={5} />;
+  if (signalQuery.isError) return <ErrorState onRetry={() => void signalQuery.refetch()} />;
+
+  const signals = data ?? [];
+  const highPriority = signals.filter((s) => s.severity === "HIGH" || s.severity === "CRITICAL").length;
+  const positive = signals.filter((s) => s.direction === "POSITIVE").length;
+  const negative = signals.filter((s) => s.direction === "NEGATIVE").length;
 
   return (
-    <div className="max-w-5xl mx-auto space-y-5">
-      <div>
-        <h1 className="text-xl font-semibold text-ink">Signals</h1>
-        <p className="text-sm text-ink-mute mt-0.5">
-          Every signal the pipeline fired across companies.
-        </p>
-      </div>
+    <div className="max-w-6xl mx-auto space-y-6">
+      <PageHeader eyebrow="Signal registry" title="Material intelligence" description="Detected financial and operational developments across all covered companies." />
 
-      {isLoading ? (
-        <PageLoader />
-      ) : (
-        <SignalTable
-          signals={data ?? []}
+      <StatusSummary items={[
+        { label: "Results", value: signals.length, hint: category || severity || direction ? "Matching active filters" : "All available signals" },
+        { label: "High priority", value: highPriority, hint: "Critical and high materiality", tone: highPriority ? "warning" : "default" },
+        { label: "Positive", value: positive, hint: "Constructive developments", tone: "positive" },
+        { label: "Negative", value: negative, hint: "Adverse developments", tone: "negative" },
+      ]} />
+
+      <SignalTable
+          signals={signals}
           showCompany
           showSeverity
           groupByDocumentType
@@ -55,7 +63,6 @@ export function Signals() {
             onClear: clearFilters,
           }}
         />
-      )}
     </div>
   );
 }
