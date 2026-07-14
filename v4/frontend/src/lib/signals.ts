@@ -112,6 +112,121 @@ function operatorVerb(op: string): string {
   }
 }
 
+type SignalRuleNode = Record<string, unknown>;
+
+interface StructuredRuleLeaf {
+  metricKey: string;
+  operator: string;
+  threshold: number;
+}
+
+function structuredRuleLeaf(rule: SignalRuleNode): StructuredRuleLeaf | null {
+  const metricKey = rule.metric_key;
+  const operator = rule.op;
+  const threshold = rule.value;
+  if (
+    typeof metricKey !== "string" ||
+    typeof operator !== "string" ||
+    typeof threshold !== "number"
+  ) {
+    return null;
+  }
+  return { metricKey, operator, threshold };
+}
+
+function ruleMatches(value: number, operator: string, threshold: number): boolean {
+  switch (operator) {
+    case ">":
+      return value > threshold;
+    case ">=":
+      return value >= threshold;
+    case "<":
+      return value < threshold;
+    case "<=":
+      return value <= threshold;
+    case "==":
+      return value === threshold;
+    case "!=":
+      return value !== threshold;
+    default:
+      return false;
+  }
+}
+
+function ruleChildren(rule: SignalRuleNode, key: "any" | "all"): SignalRuleNode[] {
+  const value = rule[key];
+  if (!Array.isArray(value)) return [];
+  return value.filter(
+    (child): child is SignalRuleNode => Boolean(child) && typeof child === "object" && !Array.isArray(child),
+  );
+}
+
+/** Human-readable definition for the structured rule returned by the signal catalog. */
+export function buildStructuredRuleText(
+  rule: Record<string, unknown> | null | undefined,
+  metrics: MetricValue[] = [],
+): string | null {
+  if (!rule) return null;
+  const leaf = structuredRuleLeaf(rule);
+  if (leaf) {
+    const metric = metrics.find((item) => item.metric_code === leaf.metricKey);
+    return `${metricCodeLabel(leaf.metricKey, metrics)} ${leaf.operator} ${formatMetricValue(leaf.threshold, metric?.unit)}`;
+  }
+
+  for (const key of ["any", "all"] as const) {
+    const children = ruleChildren(rule, key);
+    if (children.length === 0) continue;
+    const definitions = children
+      .map((child) => buildStructuredRuleText(child, metrics))
+      .filter((text): text is string => Boolean(text));
+    if (definitions.length === 0) return null;
+    return definitions.join(key === "any" ? " or " : " and ");
+  }
+  return null;
+}
+
+function findSatisfiedRuleLeaf(
+  rule: SignalRuleNode,
+  metrics: MetricValue[],
+): { leaf: StructuredRuleLeaf; metric: MetricValue } | null {
+  const leaf = structuredRuleLeaf(rule);
+  if (leaf) {
+    const metric = metrics.find(
+      (item) => item.metric_code === leaf.metricKey && item.metric_value != null,
+    );
+    if (
+      metric?.metric_value != null &&
+      ruleMatches(metric.metric_value, leaf.operator, leaf.threshold)
+    ) {
+      return { leaf, metric };
+    }
+    return null;
+  }
+
+  for (const key of ["any", "all"] as const) {
+    for (const child of ruleChildren(rule, key)) {
+      const match = findSatisfiedRuleLeaf(child, metrics);
+      if (match) return match;
+    }
+  }
+  return null;
+}
+
+/** Explain a structured threshold rule using the observed metric value when available. */
+export function buildStructuredTriggerNarrative(
+  rule: Record<string, unknown> | null | undefined,
+  metrics: MetricValue[] = [],
+): string | null {
+  if (!rule) return null;
+  const match = findSatisfiedRuleLeaf(rule, metrics);
+  if (!match) return null;
+  const { leaf, metric } = match;
+  const label = metricCodeLabel(leaf.metricKey, metrics);
+  const observed = formatMetricValue(metric.metric_value, metric.unit);
+  const threshold = formatMetricValue(leaf.threshold, metric.unit);
+  return `${label} was ${observed}, which ${operatorVerb(leaf.operator)} the trigger of ${threshold}.`;
+}
+
 /** Parse a single-metric leaf rule like `cfo_to_pat > 1.0`. */
 function parseSimpleRule(
   rule: string,

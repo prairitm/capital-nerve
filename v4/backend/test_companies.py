@@ -3,9 +3,7 @@ import tempfile
 import unittest
 from contextlib import contextmanager
 from pathlib import Path
-from unittest.mock import patch
-
-from routers.companies import list_companies
+from routers.companies import build_company_list
 
 
 class CompanyListTest(unittest.TestCase):
@@ -50,8 +48,8 @@ class CompanyListTest(unittest.TestCase):
             conn.close()
 
     def test_enriched_fields_and_empty_company(self):
-        with patch("routers.companies.get_conn", self.connection):
-            rows = list_companies(limit=200)
+        with self.connection() as conn:
+            rows = build_company_list(conn, limit=200)
         self.assertEqual(2, len(rows))
         self.assertEqual("Q4 FY2025-26", rows[0]["latest_period_label"])
         self.assertEqual(2, rows[0]["signal_count"])
@@ -60,8 +58,8 @@ class CompanyListTest(unittest.TestCase):
         self.assertEqual(0, rows[1]["signal_count"])
 
     def test_search_and_limit_remain_supported(self):
-        with patch("routers.companies.get_conn", self.connection):
-            rows = list_companies(search="beta", limit=1)
+        with self.connection() as conn:
+            rows = build_company_list(conn, search="beta", limit=1)
         self.assertEqual(["BETA"], [row["ticker"] for row in rows])
 
 

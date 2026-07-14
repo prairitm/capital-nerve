@@ -3,6 +3,24 @@
 
 export type SignalDirection = "POSITIVE" | "NEGATIVE" | "MIXED" | "NEUTRAL";
 export type SeverityLevel = "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
+export type UserRole = "MEMBER" | "ADMIN";
+
+export interface User {
+  id: string;
+  email: string;
+  full_name: string | null;
+  role: UserRole;
+  is_active: boolean;
+  must_change_password: boolean;
+  created_at: string;
+  updated_at: string;
+  last_login_at: string | null;
+}
+
+export interface TemporaryCredentialResponse {
+  user: User;
+  temporary_password: string;
+}
 
 export interface Company {
   id: string;
@@ -19,6 +37,7 @@ export interface CompanyListItem extends Company {
   latest_period_label: string | null;
   signal_count: number;
   highest_severity: SeverityLevel | null;
+  watchlist_status: boolean;
 }
 
 export interface CompanyEvent {
@@ -148,6 +167,7 @@ export interface DocumentInfo {
 
 export interface CompanyHub {
   company: Company;
+  watchlist_status: boolean;
   latest_event_id: string | null;
   latest_period_label: string | null;
   latest_period_events: CompanyEvent[];
@@ -275,4 +295,15 @@ export interface SourceLocateResult {
   page: number | null;
   reference_text: string | null;
   bbox: number[] | null;
+}
+
+export interface WatchlistResponse {
+  companies: CompanyListItem[];
+  count: number;
+}
+
+export interface WatchlistMutationResponse {
+  watchlist_status: boolean;
+  added?: boolean;
+  removed?: boolean;
 }

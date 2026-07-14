@@ -7,6 +7,7 @@ import clsx from "clsx";
 import { api } from "@/api/client";
 import type { CompanyHub, SnapshotRow, TrendSeries } from "@/api/types";
 import { QuarterSignalsTimeline } from "@/components/feed/QuarterSignalsTimeline";
+import { WatchlistButton } from "@/components/company/WatchlistButton";
 import { TrendChart } from "@/components/charts/TrendChart";
 import { BackButton } from "@/components/common/BackButton";
 import { PageLoader } from "@/components/common/Spinner";
@@ -196,6 +197,7 @@ export function Company() {
 
       <PageHeader eyebrow={`${company.ticker}${company.exchange ? ` · ${company.exchange}` : ""}`} title={company.name ?? company.ticker ?? "Company"} description={company.industry ?? company.sector ?? "Company intelligence and reported financial performance."} action={
         <div className="flex max-w-full flex-wrap items-center justify-end gap-2">
+          <WatchlistButton companyId={company.id} watched={data.watchlist_status} />
           {data.latest_period_label && latestEventHref && (
             <Link to={latestEventHref} className="chip-neutral hover:border-line-strong transition-colors">
               {data.latest_period_label}

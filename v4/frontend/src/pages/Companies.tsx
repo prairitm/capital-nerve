@@ -1,14 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { Activity, ArrowUpRight, CalendarDays, Search } from "lucide-react";
-import clsx from "clsx";
+import { Search } from "lucide-react";
 import { api } from "@/api/client";
-import type { CompanyListItem, SeverityLevel } from "@/api/types";
+import type { CompanyListItem } from "@/api/types";
+import { CompanyCard } from "@/components/company/CompanyCard";
 import { Empty } from "@/components/common/Empty";
 import { ErrorState, PageHeader, PageSkeleton } from "@/components/common/DashboardUI";
-import { SeverityBadge } from "@/components/common/SeverityBadge";
-import { formatDate } from "@/lib/format";
 
 const severityRank: Record<string, number> = { CRITICAL: 4, HIGH: 3, MEDIUM: 2, LOW: 1 };
 
@@ -78,26 +76,5 @@ export function Companies() {
         </div>
       )}
     </div>
-  );
-}
-
-function CompanyCard({ company }: { company: CompanyListItem }) {
-  const ticker = company.ticker ?? company.id;
-  const initials = (company.ticker || company.name || "CN").slice(0, 3).toUpperCase();
-  return (
-    <Link to={`/company/${ticker}`} className="focus-ring group card flex min-w-0 items-start gap-4 p-4 transition-colors hover:border-line-strong hover:bg-surface-2/55">
-      <div className="grid size-11 shrink-0 place-items-center rounded-xl border border-brand/20 bg-brand/10 text-xs font-bold tracking-wide text-brand-soft">{initials}</div>
-      <div className="min-w-0 flex-1">
-        <div className="flex min-w-0 items-start justify-between gap-3">
-          <div className="min-w-0"><h2 className="truncate text-sm font-semibold text-ink">{company.name}</h2><p className="mt-0.5 truncate text-xs text-ink-mute">{company.ticker}{company.industry ? ` · ${company.industry}` : ""}</p></div>
-          <ArrowUpRight size={16} className="shrink-0 text-ink-soft transition-colors group-hover:text-brand-soft" />
-        </div>
-        <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-ink-mute">
-          <span className="inline-flex items-center gap-1.5"><CalendarDays size={13} />{company.latest_period_label ?? formatDate(company.latest_event_date)}</span>
-          <span className="inline-flex items-center gap-1.5"><Activity size={13} />{company.signal_count} {company.signal_count === 1 ? "signal" : "signals"}</span>
-          {company.highest_severity && <SeverityBadge level={company.highest_severity as SeverityLevel} />}
-        </div>
-      </div>
-    </Link>
   );
 }

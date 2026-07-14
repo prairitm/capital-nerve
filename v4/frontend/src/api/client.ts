@@ -8,6 +8,12 @@ export class ApiError extends Error {
   }
 }
 
+let unauthorizedHandler: (() => void) | null = null;
+
+export function setUnauthorizedHandler(handler: (() => void) | null) {
+  unauthorizedHandler = handler;
+}
+
 const API_BASE = "/api";
 
 interface RequestOpts {
@@ -17,8 +23,16 @@ interface RequestOpts {
   signal?: AbortSignal;
 }
 
-/** Single HTTP entry point for the v4 frontend. No auth: the 7-step backend
- * has no users. Mirrors the v1 `api<T>()` ergonomics otherwise. */
+function detailMessage(detail: unknown, fallback: string): string {
+  if (typeof detail === "string") return detail;
+  if (detail && typeof detail === "object" && "message" in detail) {
+    const message = (detail as { message?: unknown }).message;
+    if (typeof message === "string") return message;
+  }
+  return fallback;
+}
+
+/** Single cookie-authenticated HTTP entry point for the v4 frontend. */
 export async function api<T>(path: string, opts: RequestOpts = {}): Promise<T> {
   const { method = "GET", body, query, signal } = opts;
   const url = new URL(API_BASE + path, window.location.origin);
@@ -31,6 +45,7 @@ export async function api<T>(path: string, opts: RequestOpts = {}): Promise<T> {
 
   const res = await fetch(url.toString().replace(window.location.origin, ""), {
     method,
+    credentials: "include",
     headers: { "Content-Type": "application/json" },
     body: body ? JSON.stringify(body) : undefined,
     signal,
@@ -52,7 +67,8 @@ export async function api<T>(path: string, opts: RequestOpts = {}): Promise<T> {
         "detail" in payload &&
         (payload as { detail: unknown }).detail) ||
       payload;
-    throw new ApiError(typeof detail === "string" ? detail : res.statusText, res.status, detail);
+    if (res.status === 401) unauthorizedHandler?.();
+    throw new ApiError(detailMessage(detail, res.statusText), res.status, detail);
   }
   return payload as T;
 }
@@ -67,6 +83,7 @@ export async function apiBlob(path: string, opts: { signal?: AbortSignal } = {})
   const url = new URL(API_BASE + path, window.location.origin);
   const res = await fetch(url.toString().replace(window.location.origin, ""), {
     method: "GET",
+    credentials: "include",
     signal: opts.signal,
   });
 
@@ -81,7 +98,8 @@ export async function apiBlob(path: string, opts: { signal?: AbortSignal } = {})
         detail = text;
       }
     }
-    throw new ApiError(typeof detail === "string" ? detail : res.statusText, res.status, detail);
+    if (res.status === 401) unauthorizedHandler?.();
+    throw new ApiError(detailMessage(detail, res.statusText), res.status, detail);
   }
 
   return res.blob();

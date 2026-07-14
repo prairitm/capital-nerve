@@ -1,4 +1,4 @@
-"""Configuration for the v4 read-only API.
+"""Configuration for the v4 API.
 
 Paths resolve relative to the repo root so the service works regardless of the
 current working directory.
@@ -18,6 +18,10 @@ class Settings:
     def __init__(self) -> None:
         default_db = REPO_ROOT / "v4" / "data" / "capital_nerve.db"
         self.db_path = Path(os.getenv("V4_DB_PATH", str(default_db))).resolve()
+        default_app_db = REPO_ROOT / "v4" / "data" / "capital_nerve_app.db"
+        self.app_db_path = Path(
+            os.getenv("V4_APP_DB_PATH", str(default_app_db))
+        ).resolve()
         self.data_dir = self.db_path.parent
         self.documents_dir = self.data_dir / "documents"
         self.parsed_dir = self.data_dir / "parsed"
@@ -29,6 +33,15 @@ class Settings:
             "V4_CORS_ORIGINS",
             "http://localhost:5174,http://127.0.0.1:5174",
         ).split(",")
+        self.session_ttl_hours = int(os.getenv("V4_SESSION_TTL_HOURS", "168"))
+        self.cookie_secure = os.getenv("V4_COOKIE_SECURE", "false").lower() in {
+            "1",
+            "true",
+            "yes",
+            "on",
+        }
+        self.admin_email = os.getenv("V4_ADMIN_EMAIL")
+        self.admin_password = os.getenv("V4_ADMIN_PASSWORD")
 
 
 @lru_cache

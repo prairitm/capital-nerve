@@ -2,8 +2,11 @@
 
 from __future__ import annotations
 
-from fastapi import APIRouter, HTTPException, Query
+import sqlite3
 
+from fastapi import APIRouter, Depends, HTTPException, Query
+
+from app_db import get_app_conn
 from catalog import select_display_signals
 from db import get_conn
 from queries import (
@@ -22,105 +25,139 @@ from serializers import (
     metric_value_dict,
     signal_dict,
 )
+from security import CurrentUser, require_ready_user
 
 router = APIRouter(tags=["companies"])
 
 
+def watched_company_ids(user_id: str) -> set[str]:
+    with get_app_conn() as conn:
+        return {
+            row["company_id"]
+            for row in conn.execute(
+                "SELECT company_id FROM watchlist_companies WHERE user_id = ?", (user_id,)
+            ).fetchall()
+        }
+
+
+def build_company_list(
+    conn: sqlite3.Connection,
+    *,
+    search: str = "",
+    limit: int = 200,
+    company_ids: list[str] | None = None,
+    watched_company_ids: set[str] | None = None,
+) -> list[dict]:
+    select = """
+        SELECT c.*,
+               (SELECT e.event_date FROM events e
+                WHERE e.company_id = c.id
+                ORDER BY e.event_date DESC, e.id DESC LIMIT 1) AS latest_event_date,
+               (SELECT e2.id FROM events e2
+                WHERE e2.company_id = c.id
+                ORDER BY e2.event_date DESC, e2.id DESC LIMIT 1) AS latest_event_id,
+               (SELECT COUNT(*) FROM signals s WHERE s.company_id = c.id) AS signal_count,
+               (SELECT s2.severity FROM signals s2
+                WHERE s2.company_id = c.id
+                ORDER BY CASE UPPER(COALESCE(s2.severity, ''))
+                    WHEN 'CRITICAL' THEN 0 WHEN 'HIGH' THEN 1
+                    WHEN 'MEDIUM' THEN 2 WHEN 'LOW' THEN 3 ELSE 9 END
+                LIMIT 1) AS highest_severity
+        FROM companies c
+    """
+    clauses: list[str] = []
+    params: list[str | int] = []
+    if search:
+        like = f"%{search}%"
+        clauses.append("(c.name LIKE ? COLLATE NOCASE OR c.ticker LIKE ? COLLATE NOCASE)")
+        params.extend((like, like))
+    if company_ids is not None:
+        if not company_ids:
+            return []
+        placeholders = ",".join("?" for _ in company_ids)
+        clauses.append(f"c.id IN ({placeholders})")
+        params.extend(company_ids)
+    if clauses:
+        select += " WHERE " + " AND ".join(clauses)
+    params.append(limit)
+    rows = conn.execute(select + " ORDER BY c.name LIMIT ?", params).fetchall()
+
+    display_signals_by_company: dict[str, list[dict]] = {}
+    signal_columns = table_columns(conn, "signals")
+    if rows and "event_id" in signal_columns:
+        signal_id_column = "signal_id" if "signal_id" in signal_columns else "id"
+        result_company_ids = [row["id"] for row in rows]
+        placeholders = ",".join("?" for _ in result_company_ids)
+        joined_signal_rows = conn.execute(
+            f"""
+            SELECT s.*, e.event_type AS display_event_type
+            FROM signals s
+            LEFT JOIN events e ON e.id = s.event_id
+            WHERE s.company_id IN ({placeholders})
+            """,
+            result_company_ids,
+        ).fetchall()
+        grouped: dict[tuple[str, str], list[dict]] = {}
+        event_types: dict[tuple[str, str], str | None] = {}
+        for signal_row in joined_signal_rows:
+            key = (
+                signal_row["company_id"],
+                signal_row["event_id"] or signal_row[signal_id_column],
+            )
+            grouped.setdefault(key, []).append(signal_dict(signal_row))
+            event_types[key] = signal_row["display_event_type"]
+        for key, event_signals_for_display in grouped.items():
+            display_signals_by_company.setdefault(key[0], []).extend(
+                select_display_signals(event_signals_for_display, event_types[key])
+            )
+
+    severity_rank = {"CRITICAL": 0, "HIGH": 1, "MEDIUM": 2, "LOW": 3}
+    watched = watched_company_ids or set()
+    out = []
+    for row in rows:
+        company = company_dict(row)
+        company["latest_event_date"] = row["latest_event_date"]
+        display_signals = display_signals_by_company.get(row["id"])
+        company["signal_count"] = (
+            len(display_signals) if display_signals is not None else row["signal_count"] or 0
+        )
+        company["highest_severity"] = (
+            min(
+                (signal.get("severity") for signal in display_signals if signal.get("severity")),
+                key=lambda severity: severity_rank.get(str(severity).upper(), 9),
+                default=None,
+            )
+            if display_signals is not None
+            else row["highest_severity"]
+        )
+        latest = None
+        if row["latest_event_id"]:
+            latest = conn.execute(
+                "SELECT * FROM events WHERE id = ?", (row["latest_event_id"],)
+            ).fetchone()
+        company["latest_period_label"] = event_dict(latest)["period_label"] if latest else None
+        company["watchlist_status"] = row["id"] in watched
+        out.append(company)
+    return out
+
+
 @router.get("/companies")
-def list_companies(search: str = "", limit: int = Query(default=200, ge=1, le=1000)):
+def list_companies(
+    search: str = "",
+    limit: int = Query(default=200, ge=1, le=1000),
+    user: CurrentUser = Depends(require_ready_user),
+):
     with get_conn() as conn:
-        select = """
-            SELECT c.*,
-                   (SELECT e.event_date FROM events e
-                    WHERE e.company_id = c.id
-                    ORDER BY e.event_date DESC, e.id DESC LIMIT 1) AS latest_event_date,
-                   (SELECT e2.id FROM events e2
-                    WHERE e2.company_id = c.id
-                    ORDER BY e2.event_date DESC, e2.id DESC LIMIT 1) AS latest_event_id,
-                   (SELECT COUNT(*) FROM signals s WHERE s.company_id = c.id) AS signal_count,
-                   (SELECT s2.severity FROM signals s2
-                    WHERE s2.company_id = c.id
-                    ORDER BY CASE UPPER(COALESCE(s2.severity, ''))
-                        WHEN 'CRITICAL' THEN 0 WHEN 'HIGH' THEN 1
-                        WHEN 'MEDIUM' THEN 2 WHEN 'LOW' THEN 3 ELSE 9 END
-                    LIMIT 1) AS highest_severity
-            FROM companies c
-        """
-        if search:
-            like = f"%{search}%"
-            rows = conn.execute(
-                select + """
-                WHERE c.name LIKE ? COLLATE NOCASE OR c.ticker LIKE ? COLLATE NOCASE
-                ORDER BY c.name LIMIT ?
-                """,
-                (like, like, limit),
-            ).fetchall()
-        else:
-            rows = conn.execute(
-                select + " ORDER BY c.name LIMIT ?", (limit,)
-            ).fetchall()
-
-        display_signals_by_company: dict[str, list[dict]] = {}
-        signal_columns = table_columns(conn, "signals")
-        if rows and "event_id" in signal_columns:
-            signal_id_column = "signal_id" if "signal_id" in signal_columns else "id"
-            company_ids = [row["id"] for row in rows]
-            placeholders = ",".join("?" for _ in company_ids)
-            joined_signal_rows = conn.execute(
-                f"""
-                SELECT s.*, e.event_type AS display_event_type
-                FROM signals s
-                LEFT JOIN events e ON e.id = s.event_id
-                WHERE s.company_id IN ({placeholders})
-                """,
-                company_ids,
-            ).fetchall()
-            grouped: dict[tuple[str, str], list[dict]] = {}
-            event_types: dict[tuple[str, str], str | None] = {}
-            for signal_row in joined_signal_rows:
-                key = (
-                    signal_row["company_id"],
-                    signal_row["event_id"] or signal_row[signal_id_column],
-                )
-                grouped.setdefault(key, []).append(signal_dict(signal_row))
-                event_types[key] = signal_row["display_event_type"]
-            for key, event_signals_for_display in grouped.items():
-                display_signals_by_company.setdefault(key[0], []).extend(
-                    select_display_signals(event_signals_for_display, event_types[key])
-                )
-
-        severity_rank = {"CRITICAL": 0, "HIGH": 1, "MEDIUM": 2, "LOW": 3}
-        out = []
-        for row in rows:
-            company = company_dict(row)
-            company["latest_event_date"] = row["latest_event_date"]
-            display_signals = display_signals_by_company.get(row["id"])
-            company["signal_count"] = (
-                len(display_signals)
-                if display_signals is not None
-                else row["signal_count"] or 0
-            )
-            company["highest_severity"] = (
-                min(
-                    (signal.get("severity") for signal in display_signals if signal.get("severity")),
-                    key=lambda severity: severity_rank.get(str(severity).upper(), 9),
-                    default=None,
-                )
-                if display_signals is not None
-                else row["highest_severity"]
-            )
-            latest = None
-            if row["latest_event_id"]:
-                latest = conn.execute(
-                    "SELECT * FROM events WHERE id = ?", (row["latest_event_id"],)
-                ).fetchone()
-            company["latest_period_label"] = event_dict(latest)["period_label"] if latest else None
-            out.append(company)
-        return out
+        return build_company_list(
+            conn,
+            search=search,
+            limit=limit,
+            watched_company_ids=watched_company_ids(user.id),
+        )
 
 
 @router.get("/companies/{ticker}")
-def company_hub(ticker: str):
+def company_hub(ticker: str, user: CurrentUser = Depends(require_ready_user)):
     with get_conn() as conn:
         company = find_company(conn, ticker)
         if not company:
@@ -245,6 +282,7 @@ def company_hub(ticker: str):
 
         return {
             "company": company_dict(company),
+            "watchlist_status": company_id in watched_company_ids(user.id),
             "latest_event_id": latest["id"] if latest else None,
             "latest_period_label": period_label,
             "latest_period_events": [event_dict(e) for e in latest_period_events],

@@ -1,9 +1,11 @@
-import { Outlet, NavLink, useNavigate, useLocation } from "react-router-dom";
-import { LayoutDashboard, Building2, Activity, Database } from "lucide-react";
+import { Outlet, NavLink, useNavigate, useLocation, Link } from "react-router-dom";
+import { LayoutDashboard, Building2, Activity, Database, Heart, Users, KeyRound, LogOut } from "lucide-react";
 import clsx from "clsx";
+import { useAuth } from "@/auth/AuthContext";
 
 const NAV = [
   { to: "/", label: "Feed", icon: LayoutDashboard, end: true },
+  { to: "/watchlist", label: "Watchlist", icon: Heart },
   { to: "/companies", label: "Companies", icon: Building2 },
   { to: "/signals", label: "Signals", icon: Activity },
 ];
@@ -11,6 +13,9 @@ const NAV = [
 export function AppShell() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { user, logout } = useAuth();
+  const nav = user?.role === "ADMIN" ? [...NAV, { to: "/admin/users", label: "Users", icon: Users }] : NAV;
+  const signOut = async () => { await logout(); navigate("/login", { replace: true }); };
 
   return (
     <div className="min-h-screen flex">
@@ -25,7 +30,7 @@ export function AppShell() {
         </button>
 
         <nav className="flex flex-col gap-1">
-          {NAV.map((item) => (
+          {nav.map((item) => (
             <NavLink
               key={item.to}
               to={item.to}
@@ -49,6 +54,10 @@ export function AppShell() {
           <div className="flex items-center gap-2 text-xs font-medium text-ink-mute"><Database size={14} className="text-positive" />Research data</div>
           <div className="mt-1 text-[11px] text-ink-soft">Company intelligence workspace</div>
         </div>
+        <div className="mx-2 mt-3 rounded-xl border border-line/60 bg-surface/50 p-3">
+          <div className="truncate text-xs font-medium text-ink">{user?.full_name || user?.email}</div>
+          <div className="mt-0.5 flex items-center justify-between gap-2"><span className="truncate text-[11px] text-ink-soft">{user?.role === "ADMIN" ? "Administrator" : "Member"}</span><div className="flex"><Link to="/change-password" className="focus-ring grid size-7 place-items-center rounded-lg text-ink-soft hover:bg-surface-2 hover:text-ink" title="Change password"><KeyRound size={14} /></Link><button type="button" onClick={() => void signOut()} className="focus-ring grid size-7 place-items-center rounded-lg text-ink-soft hover:bg-surface-2 hover:text-ink" title="Sign out"><LogOut size={14} /></button></div></div>
+        </div>
       </aside>
 
       {/* Main column */}
@@ -63,6 +72,7 @@ export function AppShell() {
               <Logo small />
               <span className="text-sm font-semibold">CapitalNerve</span>
             </button>
+            <div className="ml-auto flex items-center gap-1"><Link to="/change-password" className="focus-ring grid size-9 place-items-center rounded-xl text-ink-mute hover:bg-surface" aria-label="Change password"><KeyRound size={17} /></Link><button type="button" onClick={() => void signOut()} className="focus-ring grid size-9 place-items-center rounded-xl text-ink-mute hover:bg-surface" aria-label="Sign out"><LogOut size={17} /></button></div>
           </div>
         </header>
 
@@ -74,7 +84,7 @@ export function AppShell() {
       {/* Mobile bottom nav */}
       <nav className="lg:hidden fixed bottom-0 inset-x-0 z-40 bg-bg-deep/95 backdrop-blur border-t border-line/70">
         <div className="flex items-center justify-around px-1 py-2 pb-[max(env(safe-area-inset-bottom),0.5rem)]">
-          {NAV.map((item) => {
+          {nav.map((item) => {
             const active = item.end
               ? location.pathname === item.to
               : location.pathname.startsWith(item.to);
