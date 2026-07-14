@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from fastapi import APIRouter, HTTPException, Query
 
+from catalog import select_display_signals
 from db import get_conn
 from queries import (
     build_snapshot,
@@ -11,6 +12,7 @@ from queries import (
     event_signals,
     find_company,
     latest_event,
+    table_columns,
     uses_eight_step_metrics,
 )
 from serializers import (
@@ -57,12 +59,56 @@ def list_companies(search: str = "", limit: int = Query(default=200, ge=1, le=10
             rows = conn.execute(
                 select + " ORDER BY c.name LIMIT ?", (limit,)
             ).fetchall()
+
+        display_signals_by_company: dict[str, list[dict]] = {}
+        signal_columns = table_columns(conn, "signals")
+        if rows and "event_id" in signal_columns:
+            signal_id_column = "signal_id" if "signal_id" in signal_columns else "id"
+            company_ids = [row["id"] for row in rows]
+            placeholders = ",".join("?" for _ in company_ids)
+            joined_signal_rows = conn.execute(
+                f"""
+                SELECT s.*, e.event_type AS display_event_type
+                FROM signals s
+                LEFT JOIN events e ON e.id = s.event_id
+                WHERE s.company_id IN ({placeholders})
+                """,
+                company_ids,
+            ).fetchall()
+            grouped: dict[tuple[str, str], list[dict]] = {}
+            event_types: dict[tuple[str, str], str | None] = {}
+            for signal_row in joined_signal_rows:
+                key = (
+                    signal_row["company_id"],
+                    signal_row["event_id"] or signal_row[signal_id_column],
+                )
+                grouped.setdefault(key, []).append(signal_dict(signal_row))
+                event_types[key] = signal_row["display_event_type"]
+            for key, event_signals_for_display in grouped.items():
+                display_signals_by_company.setdefault(key[0], []).extend(
+                    select_display_signals(event_signals_for_display, event_types[key])
+                )
+
+        severity_rank = {"CRITICAL": 0, "HIGH": 1, "MEDIUM": 2, "LOW": 3}
         out = []
         for row in rows:
             company = company_dict(row)
             company["latest_event_date"] = row["latest_event_date"]
-            company["signal_count"] = row["signal_count"] or 0
-            company["highest_severity"] = row["highest_severity"]
+            display_signals = display_signals_by_company.get(row["id"])
+            company["signal_count"] = (
+                len(display_signals)
+                if display_signals is not None
+                else row["signal_count"] or 0
+            )
+            company["highest_severity"] = (
+                min(
+                    (signal.get("severity") for signal in display_signals if signal.get("severity")),
+                    key=lambda severity: severity_rank.get(str(severity).upper(), 9),
+                    default=None,
+                )
+                if display_signals is not None
+                else row["highest_severity"]
+            )
             latest = None
             if row["latest_event_id"]:
                 latest = conn.execute(
@@ -186,22 +232,11 @@ def company_hub(ticker: str):
                 period_end = facts["period_end"]
             snapshot = build_snapshot(conn, company_id, period_end)
 
-        signal_rows = conn.execute(
-            """
-            SELECT * FROM signals
-            WHERE company_id = ?
-            ORDER BY CASE UPPER(COALESCE(severity, ''))
-                WHEN 'CRITICAL' THEN 0
-                WHEN 'HIGH' THEN 1
-                WHEN 'MEDIUM' THEN 2
-                WHEN 'LOW' THEN 3
-                ELSE 9
-            END
-            LIMIT 12
-            """,
-            (company_id,),
-        ).fetchall()
-        signals = [signal_dict(r) for r in signal_rows]
+        signals = [
+            signal
+            for timeline_event in events
+            for signal in event_signals(conn, timeline_event["id"])
+        ][:12]
 
         doc_rows = conn.execute(
             "SELECT * FROM documents WHERE company_id = ? ORDER BY ingested_at DESC",
@@ -237,22 +272,11 @@ def list_company_signals(ticker: str, limit: int = Query(default=50, ge=1, le=20
         company = find_company(conn, ticker)
         if not company:
             raise HTTPException(status_code=404, detail="Company not found")
-        rows = conn.execute(
-            """
-            SELECT * FROM signals
-            WHERE company_id = ?
-            ORDER BY CASE UPPER(COALESCE(severity, ''))
-                WHEN 'CRITICAL' THEN 0
-                WHEN 'HIGH' THEN 1
-                WHEN 'MEDIUM' THEN 2
-                WHEN 'LOW' THEN 3
-                ELSE 9
-            END
-            LIMIT ?
-            """,
-            (company["id"], limit),
-        ).fetchall()
-        return [signal_dict(r) for r in rows]
+        return [
+            signal
+            for timeline_event in company_events(conn, company["id"])
+            for signal in event_signals(conn, timeline_event["id"])
+        ][:limit]
 
 
 @router.get("/companies/{ticker}/trends")

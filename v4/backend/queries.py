@@ -6,7 +6,7 @@ import re
 import sqlite3
 from typing import Any
 
-from catalog import metric_meta
+from catalog import document_display_config, metric_meta, select_display_signals
 from serializers import (
     document_dict,
     extracted_value_dict,
@@ -20,7 +20,6 @@ from serializers import (
 SNAPSHOT_FACTS: list[tuple[str, str]] = [
     ("revenue_from_operations", "Revenue"),
     ("ebitda", "EBITDA"),
-    ("pbt", "Profit Before Tax"),
     ("pat", "PAT"),
     ("eps_basic", "EPS"),
 ]
@@ -162,7 +161,9 @@ def event_signals(conn: sqlite3.Connection, event_id: str) -> list[dict[str, Any
         """,
         (event_id,),
     ).fetchall()
-    return [signal_dict(r) for r in rows]
+    event = conn.execute("SELECT event_type FROM events WHERE id = ?", (event_id,)).fetchone()
+    event_type = event["event_type"] if event else None
+    return select_display_signals([signal_dict(r) for r in rows], event_type)
 
 
 def event_metrics(conn: sqlite3.Connection, event_id: str) -> list[dict[str, Any]]:
@@ -842,6 +843,7 @@ def _quarter_document_section(
         "selected_fact_period_end": selected_period_end,
         "metrics": metrics,
         "signals": signals,
+        "display": document_display_config(document_type),
         "presentation_summary": _presentation_summary(
             conn,
             document_id=document["id"],

@@ -5,6 +5,7 @@ from __future__ import annotations
 from fastapi import APIRouter, HTTPException, Query
 
 from db import get_conn
+from catalog import quarter_synthesis_config
 from queries import (
     build_snapshot,
     event_fact_periods,
@@ -103,4 +104,5 @@ def event_detail(event_id: str, period_end: str | None = Query(default=None)):
             "financial_snapshot": snapshot,
             "related_events": [event_dict(e) for e in related_events],
             "document_sections": document_sections,
+            "quarter_display": quarter_synthesis_config(),
         }

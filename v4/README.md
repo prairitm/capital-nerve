@@ -105,9 +105,17 @@ Useful options:
 
 ## Catalogs
 
-The canonical v4 catalogs live in `v4/microservices/catalog/`. Financial-result
-definitions are the base catalog; investor-presentation and earnings-call
-definitions are event-specific overlays declared in `manifest.json`.
+The canonical v4 catalogs live in `v4/microservices/catalog/`. Financial
+results, investor presentations, and earnings calls are evaluated with
+independent fact, metric, and signal catalogs declared in `manifest.json`.
+Presentation and call catalogs can opt into a small named set of financial
+metrics for cross-document comparisons; they do not inherit the full results
+catalog.
+
+`display.json` is the minimal product-facing catalog. It defines headline facts,
+ranked metrics, evidence groups, signal allow-lists, de-duplication groups, and
+the maximum of three primary signals per document. The extraction catalogs stay
+broader so supporting evidence remains available in the drill-down.
 
 Every v4 service uses that directory by default. The existing `*_CATALOG_DIR`
 environment variables can still point all services at another catalog tree with

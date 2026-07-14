@@ -1,0 +1,338 @@
+{
+  "catalog_version": "0.3.0",
+  "description": "Minimal, source-specific presentation rules. Extraction catalogs remain broad; only entries declared here may appear as primary insight.",
+  "quarter_synthesis": {
+    "title": "Quarter at a glance",
+    "max_items": 3,
+    "source_order": [
+      "FINANCIAL_RESULT",
+      "INVESTOR_PRESENTATION",
+      "EARNINGS_CALL_TRANSCRIPT"
+    ]
+  },
+  "financial_results": {
+    "question": "What happened?",
+    "max_headlines": 6,
+    "max_signals": 3,
+    "headline_facts": [
+      "revenue_from_operations",
+      "ebitda",
+      "pat",
+      "eps_basic"
+    ],
+    "headline_metrics": [
+      "ebitda_margin",
+      "cfo_to_pat",
+      "net_debt_to_annualized_ebitda"
+    ],
+    "metric_priority": [
+      "ebitda_margin",
+      "ebitda_margin_change_yoy_bps",
+      "cfo_to_pat",
+      "free_cash_flow",
+      "net_debt_to_annualized_ebitda",
+      "receivables_yoy_growth",
+      "inventory_yoy_growth",
+      "segment_result_margin",
+      "segment_result_margin_change_yoy_bps"
+    ],
+    "signal_priority": [
+      "adverse_or_disclaimer_conclusion",
+      "going_concern_risk",
+      "qualified_review_conclusion",
+      "emphasis_of_matter",
+      "prior_period_restatement",
+      "dirty_earnings_growth",
+      "other_income_dependency",
+      "exceptional_item_dependency",
+      "pat_decline_despite_revenue_growth",
+      "profit_growth_not_cash_backed",
+      "weak_cash_conversion",
+      "working_capital_stress",
+      "interest_coverage_weakness",
+      "leverage_stress",
+      "negative_operating_leverage",
+      "segment_margin_deterioration",
+      "cash_backed_growth",
+      "positive_operating_leverage",
+      "strong_cash_conversion",
+      "deleveraging"
+    ],
+    "signal_groups": {
+      "adverse_or_disclaimer_conclusion": "audit",
+      "going_concern_risk": "audit",
+      "qualified_review_conclusion": "audit",
+      "emphasis_of_matter": "audit",
+      "prior_period_restatement": "audit",
+      "dirty_earnings_growth": "earnings_quality",
+      "other_income_dependency": "earnings_quality",
+      "exceptional_item_dependency": "earnings_quality",
+      "pat_decline_despite_revenue_growth": "earnings_quality",
+      "profit_growth_not_cash_backed": "cash_quality",
+      "weak_cash_conversion": "cash_quality",
+      "working_capital_stress": "balance_sheet",
+      "interest_coverage_weakness": "balance_sheet",
+      "leverage_stress": "balance_sheet",
+      "negative_operating_leverage": "operating_performance",
+      "positive_operating_leverage": "operating_performance",
+      "segment_margin_deterioration": "segment",
+      "cash_backed_growth": "cash_quality",
+      "strong_cash_conversion": "cash_quality",
+      "deleveraging": "balance_sheet"
+    }
+  },
+  "investor_presentation": {
+    "question": "What drove it?",
+    "max_signals": 3,
+    "metric_priority": [
+      "sales_volume_yoy_growth",
+      "price_mix_contribution_yoy",
+      "order_book_yoy_growth",
+      "book_to_bill",
+      "segment_revenue_yoy_growth",
+      "segment_margin_change_yoy_bps",
+      "capacity_headroom",
+      "commissioning_delay_days",
+      "revenue_growth_guidance_midpoint",
+      "ebitda_margin_guidance_midpoint"
+    ],
+    "fact_groups": [
+      {
+        "key": "growth_driver",
+        "label": "Growth driver",
+        "description": "Volume, pricing and mix behind reported growth.",
+        "max_items": 2,
+        "fact_codes": [
+          "sales_volume",
+          "average_realization",
+          "production_volume"
+        ]
+      },
+      {
+        "key": "demand_visibility",
+        "label": "Demand visibility",
+        "description": "Backlog and fresh orders supporting future revenue.",
+        "max_items": 2,
+        "fact_codes": [
+          "order_book",
+          "order_inflow"
+        ]
+      },
+      {
+        "key": "segment_movement",
+        "label": "Segment movement",
+        "description": "The most relevant change in business mix or profitability.",
+        "max_items": 2,
+        "fact_codes": [
+          "segment_revenue",
+          "segment_ebitda",
+          "product_revenue",
+          "geography_revenue"
+        ]
+      },
+      {
+        "key": "capacity_execution",
+        "label": "Capacity and execution",
+        "description": "Capacity, capex and commissioning progress.",
+        "max_items": 2,
+        "fact_codes": [
+          "capacity_utilization",
+          "capex_incurred",
+          "capex_plan",
+          "project_completion_pct",
+          "expected_commissioning_date",
+          "capacity_addition_planned"
+        ]
+      },
+      {
+        "key": "guidance",
+        "label": "Guidance",
+        "description": "Forward targets and management's reported outlook.",
+        "max_items": 3,
+        "fact_codes": [
+          "revenue_growth_guidance_low",
+          "revenue_growth_guidance_high",
+          "ebitda_margin_guidance_low",
+          "ebitda_margin_guidance_high",
+          "capex_guidance",
+          "management_outlook"
+        ]
+      }
+    ],
+    "signal_priority": [
+      "revenue_guidance_cut",
+      "margin_guidance_cut",
+      "guidance_demand_disconnect",
+      "presentation_reconciliation_issue",
+      "demand_weakness_masked_by_pricing",
+      "backlog_not_converting",
+      "project_delay",
+      "capex_overrun_risk",
+      "capacity_bottleneck",
+      "underutilized_capacity",
+      "order_book_depletion",
+      "market_share_loss",
+      "revenue_guidance_upgrade",
+      "margin_guidance_upgrade",
+      "volume_led_growth",
+      "order_book_acceleration",
+      "market_share_gain",
+      "capex_execution_on_track"
+    ],
+    "signal_groups": {
+      "revenue_guidance_cut": "guidance",
+      "margin_guidance_cut": "guidance",
+      "guidance_demand_disconnect": "guidance",
+      "presentation_reconciliation_issue": "credibility",
+      "revenue_guidance_upgrade": "guidance",
+      "margin_guidance_upgrade": "guidance",
+      "demand_weakness_masked_by_pricing": "growth_driver",
+      "volume_led_growth": "growth_driver",
+      "backlog_not_converting": "demand",
+      "order_book_depletion": "demand",
+      "order_book_acceleration": "demand",
+      "project_delay": "execution",
+      "capex_overrun_risk": "execution",
+      "capacity_bottleneck": "execution",
+      "underutilized_capacity": "execution",
+      "capex_execution_on_track": "execution",
+      "market_share_loss": "market_position",
+      "market_share_gain": "market_position"
+    }
+  },
+  "earnings_call_transcript": {
+    "question": "What changes next?",
+    "max_signals": 3,
+    "metric_priority": [
+      "revenue_growth_guidance_revision_pp",
+      "ebitda_margin_guidance_revision_bps",
+      "required_run_rate_premium",
+      "unanswered_question_rate",
+      "commitment_miss_rate",
+      "current_disclosure_contradiction_count"
+    ],
+    "fact_groups": [
+      {
+        "key": "guidance",
+        "label": "Guidance changed",
+        "description": "New, maintained, raised, lowered or withdrawn targets.",
+        "max_items": 3,
+        "fact_codes": [
+          "guidance_status",
+          "revenue_growth_guidance_low",
+          "revenue_growth_guidance_high",
+          "ebitda_margin_guidance_low",
+          "ebitda_margin_guidance_high",
+          "volume_growth_guidance_low",
+          "volume_growth_guidance_high",
+          "capex_guidance_low",
+          "capex_guidance_high",
+          "net_debt_guidance",
+          "free_cash_flow_guidance",
+          "management_outlook"
+        ]
+      },
+      {
+        "key": "drivers",
+        "label": "What changes performance",
+        "description": "The most material quantified drivers and headwinds.",
+        "max_items": 3,
+        "fact_codes": [
+          "revenue_driver",
+          "margin_driver",
+          "cost_driver",
+          "cash_flow_driver",
+          "working_capital_driver",
+          "demand_driver",
+          "pricing_driver",
+          "volume_driver",
+          "segment_driver",
+          "headwind",
+          "tailwind",
+          "utterance_text"
+        ]
+      },
+      {
+        "key": "analyst_concerns",
+        "label": "What analysts pressed on",
+        "description": "Material concerns, unanswered questions and management responses.",
+        "max_items": 2,
+        "fact_codes": [
+          "analyst_concern",
+          "question_unanswered_flag",
+          "answer_completeness",
+          "answer_specificity",
+          "management_answer_text"
+        ]
+      },
+      {
+        "key": "commitments",
+        "label": "Commitment tracker",
+        "description": "Promises with a measurable target or delivery date.",
+        "max_items": 2,
+        "fact_codes": [
+          "management_commitment",
+          "commitment_target_value",
+          "commitment_target_date",
+          "commitment_status",
+          "project_status",
+          "commissioning_date_guidance"
+        ]
+      },
+      {
+        "key": "credibility",
+        "label": "Credibility checks",
+        "description": "Claims tested against current disclosures and prior calls.",
+        "max_items": 2,
+        "fact_codes": [
+          "claim_contradicts_current_disclosure",
+          "claim_contradicts_prior_call",
+          "claim_supported_by_result",
+          "claim_supported_by_presentation"
+        ]
+      }
+    ],
+    "signal_priority": [
+      "guidance_withdrawn",
+      "revenue_guidance_cut",
+      "growth_guidance_cut",
+      "margin_guidance_cut",
+      "back_end_loaded_guidance_risk",
+      "margin_guidance_at_risk",
+      "repeated_unanswered_concern",
+      "evasive_q_and_a",
+      "repeated_commitment_without_delivery",
+      "commitment_execution_weak",
+      "project_commissioning_delay",
+      "narrative_financial_mismatch",
+      "management_narrative_reversal",
+      "guidance_miss",
+      "revenue_guidance_upgrade",
+      "growth_guidance_upgrade",
+      "margin_guidance_upgrade",
+      "commitment_execution_strong",
+      "management_claims_well_supported"
+    ],
+    "signal_groups": {
+      "guidance_withdrawn": "guidance",
+      "revenue_guidance_cut": "guidance",
+      "growth_guidance_cut": "guidance",
+      "margin_guidance_cut": "guidance",
+      "back_end_loaded_guidance_risk": "guidance",
+      "margin_guidance_at_risk": "guidance",
+      "guidance_miss": "guidance",
+      "revenue_guidance_upgrade": "guidance",
+      "growth_guidance_upgrade": "guidance",
+      "margin_guidance_upgrade": "guidance",
+      "repeated_unanswered_concern": "qa_quality",
+      "evasive_q_and_a": "qa_quality",
+      "repeated_commitment_without_delivery": "execution",
+      "commitment_execution_weak": "execution",
+      "project_commissioning_delay": "execution",
+      "commitment_execution_strong": "execution",
+      "narrative_financial_mismatch": "credibility",
+      "management_narrative_reversal": "credibility",
+      "management_claims_well_supported": "credibility"
+    }
+  }
+}

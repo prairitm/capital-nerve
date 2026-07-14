@@ -83,6 +83,41 @@ def load_earnings_call_metrics_catalog() -> dict[str, Any]:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
+def load_catalog_manifest() -> dict[str, Any]:
+    path = settings.catalog_dir / "manifest.json"
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
+def load_event_metrics_catalog(event_type: str) -> dict[str, Any]:
+    """Return only metrics intentionally enabled for this document type.
+
+    Presentation and call catalogs may name a small set of financial-result
+    metrics as cross-document inputs. They do not inherit the entire financial
+    catalog; this prevents unrelated statement metrics from being persisted on
+    narrative documents.
+    """
+    event_key = (
+        "investor_presentation"
+        if event_type == "Investor Presentation"
+        else "earnings_call_transcript"
+    )
+    event_catalog = (
+        load_presentation_metrics_catalog()
+        if event_key == "investor_presentation"
+        else load_earnings_call_metrics_catalog()
+    )
+    event_spec = load_catalog_manifest().get("files", {}).get(event_key, {})
+    shared_codes = event_spec.get("shared_metrics") or []
+    base_catalog = load_metrics_catalog()
+    selected_shared = {
+        code: base_catalog[code]
+        for code in shared_codes
+        if code in base_catalog
+    }
+    selected_shared.update(event_catalog)
+    return selected_shared
+
+
 def seed_metric_catalog(conn: sqlite3.Connection, metrics_catalog: dict[str, Any]) -> None:
     for code, spec in metrics_catalog.items():
         metric_id = hashlib.sha256(code.encode()).hexdigest()
@@ -1027,15 +1062,7 @@ def compute_and_persist_metrics(
 
     bootstrap_schema(conn)
     if event_type in {"Investor Presentation", "Earnings Call Transcript"}:
-        event_catalog = (
-            load_presentation_metrics_catalog()
-            if event_type == "Investor Presentation"
-            else load_earnings_call_metrics_catalog()
-        )
-        # Event catalogs extend the financial catalog. Event definitions win
-        # for shared codes because they use document-specific source facts.
-        metrics_catalog = dict(load_metrics_catalog())
-        metrics_catalog.update(event_catalog)
+        metrics_catalog = load_event_metrics_catalog(event_type)
         scopes = {
             str(inp.get("scope") or "CURRENT").upper()
             for spec in metrics_catalog.values()

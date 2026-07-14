@@ -48,6 +48,61 @@ def facts_catalog() -> dict[str, Any]:
     return facts
 
 
+def display_catalog() -> dict[str, Any]:
+    """Source-specific rules for the small primary intelligence surface."""
+    return _load("display.json")
+
+
+def document_display_config(document_type: str | None) -> dict[str, Any]:
+    normalized = (document_type or "").strip().upper().replace("-", "_").replace(" ", "_")
+    key = {
+        "FINANCIAL_RESULT": "financial_results",
+        "FINANCIAL_RESULTS": "financial_results",
+        "QUARTERLY_RESULT": "financial_results",
+        "INVESTOR_PRESENTATION": "investor_presentation",
+        "PRESENTATION": "investor_presentation",
+        "EARNINGS_CALL": "earnings_call_transcript",
+        "EARNINGS_CALL_TRANSCRIPT": "earnings_call_transcript",
+        "CONCALL": "earnings_call_transcript",
+        "CONCALL_TRANSCRIPT": "earnings_call_transcript",
+    }.get(normalized)
+    if not key:
+        return {}
+    return dict(display_catalog().get(key) or {})
+
+
+def quarter_synthesis_config() -> dict[str, Any]:
+    return dict(display_catalog().get("quarter_synthesis") or {})
+
+
+def select_display_signals(
+    signals: list[dict[str, Any]],
+    document_type: str | None,
+) -> list[dict[str, Any]]:
+    """Rank, allow-list and de-duplicate primary signals for one event."""
+    config = document_display_config(document_type)
+    priority = config.get("signal_priority") or []
+    if not priority:
+        return signals[: int(config.get("max_signals") or len(signals))]
+    allowed = set(priority)
+    rank = {code: index for index, code in enumerate(priority)}
+    groups = config.get("signal_groups") or {}
+    candidates = [signal for signal in signals if signal.get("signal_type") in allowed]
+    candidates.sort(key=lambda signal: rank.get(signal.get("signal_type"), len(rank)))
+    selected: list[dict[str, Any]] = []
+    seen_groups: set[str] = set()
+    for signal in candidates:
+        code = signal.get("signal_type") or ""
+        group = groups.get(code, code)
+        if group in seen_groups:
+            continue
+        seen_groups.add(group)
+        selected.append(signal)
+        if len(selected) >= int(config.get("max_signals") or 3):
+            break
+    return selected
+
+
 def signal_meta(code: str | None) -> dict[str, Any]:
     """Name / category / direction / severity for a signal code."""
     if not code:

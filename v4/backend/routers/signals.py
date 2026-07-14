@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from fastapi import APIRouter, HTTPException, Query
 
-from catalog import signal_categories, signal_meta
+from catalog import select_display_signals, signal_categories, signal_meta
 from db import get_conn
 from queries import signal_input_facts, table_columns, uses_eight_step_metrics
 from serializers import company_dict, event_dict, metric_value_dict, signal_dict
@@ -43,13 +43,29 @@ def list_signals(
             """
         ).fetchall()
 
-        out: list[dict] = []
+        grouped: dict[str, list[dict]] = {}
+        event_types: dict[str, str | None] = {}
+        event_order: list[str] = []
         for r in rows:
             company = None
             if r["c_id"]:
                 company = _company_row(r)
             sig = signal_dict(r, company)
             sig["event"] = _event_row(r)
+            event_key = r["e_id"] or sig["id"]
+            if event_key not in grouped:
+                grouped[event_key] = []
+                event_types[event_key] = r["e_event_type"]
+                event_order.append(event_key)
+            grouped[event_key].append(sig)
+
+        out: list[dict] = []
+        primary_signals = [
+            signal
+            for event_key in event_order
+            for signal in select_display_signals(grouped[event_key], event_types[event_key])
+        ]
+        for sig in primary_signals:
             if severity and (sig["severity"] or "").upper() != severity.upper():
                 continue
             if direction and (sig["direction"] or "").upper() != direction.upper():

@@ -71,33 +71,54 @@ def walk_rule(rule: dict[str, Any]):
 
 class CatalogContractsTest(unittest.TestCase):
     def catalog_sets(self):
-        base = (
-            read_json(CATALOG_DIR / "facts.json"),
-            read_json(CATALOG_DIR / "metrics.json"),
-            read_json(CATALOG_DIR / "signals.json"),
-        )
-        overlays = {
-            "financial_results": ({}, {}, {}),
-            "investor_presentation": (
-                read_json(CATALOG_DIR / "investor_presentation" / "presentation_facts.json"),
-                read_json(CATALOG_DIR / "investor_presentation" / "presentation_metrics.json"),
-                read_json(CATALOG_DIR / "investor_presentation" / "presentation_signals.json"),
-            ),
-            "earnings_call_transcript": (
-                read_json(CATALOG_DIR / "earnings-call" / "earnings_call_facts.json"),
-                read_json(CATALOG_DIR / "earnings-call" / "earnings_call_metrics.json"),
-                read_json(CATALOG_DIR / "earnings-call" / "earnings_call_signals.json"),
-            ),
-        }
-        for name, overlay in overlays.items():
-            yield name, tuple(base_part | overlay_part for base_part, overlay_part in zip(base, overlay))
+        manifest = read_json(CATALOG_DIR / "manifest.json")
+        base_facts = read_json(CATALOG_DIR / "facts.json")
+        base_metrics = read_json(CATALOG_DIR / "metrics.json")
+        for name, spec in manifest["files"].items():
+            facts = read_json(CATALOG_DIR / spec["facts"])
+            metrics = read_json(CATALOG_DIR / spec["metrics"])
+            signals = read_json(CATALOG_DIR / spec["signals"])
+            if spec.get("cross_document_fact_source") == "financial_results":
+                facts = base_facts | facts
+            shared_metrics = {
+                key: base_metrics[key]
+                for key in spec.get("shared_metrics", [])
+                if key in base_metrics
+            }
+            yield name, (facts, shared_metrics | metrics, signals)
 
     def test_manifest_references_every_event_catalog(self) -> None:
         manifest = read_json(CATALOG_DIR / "manifest.json")
-        self.assertEqual(manifest["catalog_version"], "0.2.0")
+        self.assertEqual(manifest["catalog_version"], "0.3.0")
+        self.assertTrue((CATALOG_DIR / manifest["display"]).is_file())
         for event_spec in manifest["files"].values():
             for key in ("facts", "metrics", "signals"):
                 self.assertTrue((CATALOG_DIR / event_spec[key]).is_file())
+
+    def test_display_catalog_only_references_known_entries(self) -> None:
+        display = read_json(CATALOG_DIR / "display.json")
+        manifest = read_json(CATALOG_DIR / "manifest.json")
+        aliases = {
+            "financial_results": "financial_results",
+            "investor_presentation": "investor_presentation",
+            "earnings_call_transcript": "earnings_call_transcript",
+        }
+        catalog_sets = {name: catalogs for name, catalogs in self.catalog_sets()}
+        for display_key, event_name in aliases.items():
+            facts, metrics, signals = catalog_sets[event_name]
+            spec = display[display_key]
+            with self.subTest(event=display_key):
+                for fact_key in spec.get("headline_facts", []):
+                    self.assertIn(fact_key, facts)
+                for group in spec.get("fact_groups", []):
+                    self.assertGreater(group.get("max_items", 0), 0)
+                    for fact_key in group.get("fact_codes", []):
+                        self.assertIn(fact_key, facts)
+                for metric_key in spec.get("headline_metrics", []) + spec.get("metric_priority", []):
+                    self.assertIn(metric_key, metrics)
+                for signal_key in spec.get("signal_priority", []):
+                    self.assertIn(signal_key, signals)
+                self.assertLessEqual(spec.get("max_signals", 3), 3)
 
     def test_enabled_catalog_entries_have_valid_references_and_formulas(self) -> None:
         for event_name, (facts, metrics, signals) in self.catalog_sets():

@@ -169,6 +169,33 @@ export interface EventDetail {
   financial_snapshot: SnapshotRow[];
   related_events: CompanyEvent[];
   document_sections?: QuarterDocumentSection[];
+  quarter_display?: QuarterDisplayConfig | null;
+}
+
+export interface DisplayFactGroup {
+  key: string;
+  label: string;
+  description?: string | null;
+  max_items: number;
+  fact_codes: string[];
+}
+
+export interface DocumentDisplayConfig {
+  question?: string | null;
+  max_headlines?: number;
+  max_signals?: number;
+  headline_facts?: string[];
+  headline_metrics?: string[];
+  metric_priority?: string[];
+  signal_priority?: string[];
+  signal_groups?: Record<string, string>;
+  fact_groups?: DisplayFactGroup[];
+}
+
+export interface QuarterDisplayConfig {
+  title?: string | null;
+  max_items?: number;
+  source_order?: string[];
 }
 
 export interface QuarterDocumentSection {
@@ -182,6 +209,7 @@ export interface QuarterDocumentSection {
   selected_fact_period_end: string | null;
   metrics: MetricValue[];
   signals: Signal[];
+  display?: DocumentDisplayConfig | null;
   presentation_summary?: PresentationSummary | null;
   counts: {
     facts: number;

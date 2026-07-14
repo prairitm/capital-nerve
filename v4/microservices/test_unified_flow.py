@@ -105,7 +105,7 @@ class UnifiedFlowContractsTest(unittest.TestCase):
         conn = sqlite3.connect(":memory:")
         conn.row_factory = sqlite3.Row
         company_id = metrics_service.company_id_for_symbol("ITC")
-        with patch.object(metrics_service, "load_presentation_metrics_catalog", return_value={"m": {}}) as catalog, \
+        with patch.object(metrics_service, "load_event_metrics_catalog", return_value={"m": {}}) as catalog, \
              patch.object(metrics_service, "load_presentation_fact_rows", return_value={}) as facts, \
              patch.object(metrics_service, "compute_presentation_metrics", return_value=[]) as compute, \
              patch.object(metrics_service, "persist_metric_values") as persist:
@@ -122,6 +122,7 @@ class UnifiedFlowContractsTest(unittest.TestCase):
         conn.close()
         self.assertEqual(result["metrics"], [])
         catalog.assert_called_once()
+        catalog.assert_called_once_with("Investor Presentation")
         self.assertTrue(facts.called)
         compute.assert_called_once()
         persist.assert_called_once()
@@ -150,6 +151,24 @@ class UnifiedFlowContractsTest(unittest.TestCase):
         facts.assert_called_once()
         evaluate.assert_called_once()
         persist.assert_called_once()
+
+    def test_event_catalogs_do_not_inherit_all_financial_definitions(self) -> None:
+        with patch.object(metrics_service, "load_catalog_manifest", return_value={
+            "files": {
+                "investor_presentation": {"shared_metrics": ["shared"]},
+            }
+        }), patch.object(
+            metrics_service,
+            "load_metrics_catalog",
+            return_value={"shared": {"name": "Shared"}, "unrelated": {"name": "Unrelated"}},
+        ), patch.object(
+            metrics_service,
+            "load_presentation_metrics_catalog",
+            return_value={"presentation_only": {"name": "Presentation"}},
+        ):
+            catalog = metrics_service.load_event_metrics_catalog("Investor Presentation")
+
+        self.assertEqual(set(catalog), {"shared", "presentation_only"})
 
 
 if __name__ == "__main__":

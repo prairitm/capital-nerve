@@ -5,6 +5,7 @@ from __future__ import annotations
 
 from fastapi import APIRouter, Query
 
+from catalog import select_display_signals
 from db import get_conn
 from serializers import event_dict, signal_dict
 
@@ -33,10 +34,27 @@ def _signal_rows(conn, limit: int | None = None):
                 ELSE 9
             END
     """
-    if limit is not None:
-        sql += " LIMIT ?"
-        return conn.execute(sql, (limit,)).fetchall()
     return conn.execute(sql).fetchall()
+
+
+def _display_payloads(rows):
+    grouped: dict[str, list[dict]] = {}
+    event_types: dict[str, str | None] = {}
+    order: list[str] = []
+    for row in rows:
+        payload = signal_dict(row, _company_from_row(row))
+        payload["event"] = _event_from_row(row)
+        event_key = row["e_id"] or payload["id"]
+        if event_key not in grouped:
+            grouped[event_key] = []
+            event_types[event_key] = row["e_event_type"]
+            order.append(event_key)
+        grouped[event_key].append(payload)
+    return [
+        signal
+        for event_key in order
+        for signal in select_display_signals(grouped[event_key], event_types[event_key])
+    ]
 
 
 def _company_from_row(r):
@@ -75,24 +93,13 @@ def _event_from_row(r):
 @router.get("/feed")
 def feed(limit: int = Query(default=60, ge=1, le=300)):
     with get_conn() as conn:
-        rows = _signal_rows(conn, limit)
-        out = []
-        for r in rows:
-            payload = signal_dict(r, _company_from_row(r))
-            payload["event"] = _event_from_row(r)
-            out.append(payload)
-        return out
+        return _display_payloads(_signal_rows(conn))[:limit]
 
 
 @router.get("/feed/summary")
 def feed_summary():
     with get_conn() as conn:
-        rows = _signal_rows(conn)
-        signals = []
-        for r in rows:
-            payload = signal_dict(r, _company_from_row(r))
-            payload["event"] = _event_from_row(r)
-            signals.append(payload)
+        signals = _display_payloads(_signal_rows(conn))
 
     summary = {
         "total": len(signals),

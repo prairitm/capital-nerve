@@ -1,6 +1,7 @@
 {
-  "catalog_version": "0.2.0",
+  "catalog_version": "0.3.0",
   "description": "Capital Nerve v4 declarative catalogs by event type.",
+  "display": "display.json",
   "files": {
     "financial_results": {
       "facts": "facts.json",
@@ -11,13 +12,21 @@
       "facts": "investor_presentation/presentation_facts.json",
       "metrics": "investor_presentation/presentation_metrics.json",
       "signals": "investor_presentation/presentation_signals.json",
-      "extends": "financial_results"
+      "cross_document_fact_source": "financial_results",
+      "shared_metrics": [
+        "revenue_yoy_growth",
+        "ebitda_margin",
+        "ebitda_margin_change_yoy_bps"
+      ]
     },
     "earnings_call_transcript": {
       "facts": "earnings-call/earnings_call_facts.json",
       "metrics": "earnings-call/earnings_call_metrics.json",
       "signals": "earnings-call/earnings_call_signals.json",
-      "extends": "financial_results"
+      "cross_document_fact_source": "financial_results",
+      "shared_metrics": [
+        "ebitda_margin"
+      ]
     }
   }
 }

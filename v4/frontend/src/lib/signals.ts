@@ -1,4 +1,4 @@
-import type { MetricValue, Signal } from "@/api/types";
+import type { DocumentDisplayConfig, MetricValue, Signal } from "@/api/types";
 import { formatMetricValue } from "@/lib/format";
 
 const CATEGORY_LABELS: Record<string, string> = {
@@ -19,6 +19,50 @@ export function signalCategoryLabel(category: string | null | undefined): string
     CATEGORY_LABELS[category] ||
     category.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())
   );
+}
+
+const SEVERITY_RANK: Record<string, number> = {
+  CRITICAL: 0,
+  HIGH: 1,
+  MEDIUM: 2,
+  LOW: 3,
+};
+
+/** Select the small, non-duplicative signal set declared for a document type. */
+export function rankDisplaySignals(
+  signals: Signal[],
+  config: DocumentDisplayConfig | null | undefined,
+): Signal[] {
+  const priority = config?.signal_priority ?? [];
+  const maxSignals = config?.max_signals ?? 3;
+  const allowed = new Set(priority);
+  const priorityRank = new Map(priority.map((code, index) => [code, index]));
+  const groups = config?.signal_groups ?? {};
+  const candidates = priority.length > 0
+    ? signals.filter((signal) => allowed.has(signal.signal_type))
+    : [...signals];
+
+  candidates.sort((a, b) => {
+    const priorityDifference =
+      (priorityRank.get(a.signal_type) ?? Number.MAX_SAFE_INTEGER) -
+      (priorityRank.get(b.signal_type) ?? Number.MAX_SAFE_INTEGER);
+    if (priorityDifference !== 0) return priorityDifference;
+    return (
+      (SEVERITY_RANK[a.severity ?? ""] ?? 9) -
+      (SEVERITY_RANK[b.severity ?? ""] ?? 9)
+    );
+  });
+
+  const selected: Signal[] = [];
+  const seenGroups = new Set<string>();
+  for (const signal of candidates) {
+    const group = groups[signal.signal_type] ?? signal.signal_type;
+    if (seenGroups.has(group)) continue;
+    seenGroups.add(group);
+    selected.push(signal);
+    if (selected.length >= maxSignals) break;
+  }
+  return selected;
 }
 
 export interface FeedRow {

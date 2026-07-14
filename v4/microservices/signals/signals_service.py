@@ -763,13 +763,11 @@ def evaluate_and_persist_signals(
 
     bootstrap_schema(conn)
     if event_type in {"Investor Presentation", "Earnings Call Transcript"}:
-        event_catalog = (
+        signals_catalog = (
             load_presentation_signals_catalog()
             if event_type == "Investor Presentation"
             else load_earnings_call_signals_catalog()
         )
-        signals_catalog = dict(load_signals_catalog())
-        signals_catalog.update(event_catalog)
         metrics_by_key = load_presentation_metrics_by_key(
             conn,
             company_id=company_id,
