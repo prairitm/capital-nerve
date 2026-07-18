@@ -36,6 +36,26 @@ RELOAD=1 ./v4/start_all.sh
 
 Stop everything with `Ctrl-C`.
 
+## Deploy publicly on a Raspberry Pi
+
+On a 64-bit Raspberry Pi OS installation, clone this repository and run:
+
+```bash
+chmod +x v4/deploy_pi.sh
+./v4/deploy_pi.sh
+```
+
+The installer prompts for the initial administrator credentials and OpenAI API
+key. It then installs the OS, Python, Node.js, Caddy, and Tailscale dependencies;
+builds the frontend; creates boot-persistent systemd services; and publishes the
+application over HTTPS using a free, stable Tailscale Funnel `*.ts.net` address.
+No purchased domain, public IP address, or router port forwarding is required.
+
+Run the installer as the normal Pi user, not as root. It uses `sudo` for system
+configuration. The services and Caddy bind only to `127.0.0.1`; only the Funnel
+URL is public. The administrator bootstrap password is removed from the service
+environment after the account is created.
+
 ## Authentication and roles
 
 The v4 API uses a separate writable application database for users, sessions,
