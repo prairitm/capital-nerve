@@ -12,6 +12,7 @@ WEB_ROOT="/var/www/capital-nerve"
 SYSTEMD_TEMPLATE="/etc/systemd/system/capital-nerve@.service"
 SYSTEMD_TARGET="/etc/systemd/system/capital-nerve.target"
 CADDYFILE="/etc/caddy/Caddyfile"
+CADDY_PORT="${CAPITAL_NERVE_CADDY_PORT:-8188}"
 SERVICES=(backend company event event_type values metrics signals alerts monitor)
 PORTS=(8010 8020 8021 8022 8023 8024 8025 8026 8027)
 
@@ -86,6 +87,24 @@ install_tailscale() {
   curl -fsSL https://tailscale.com/install.sh -o "${install_script}"
   sh "${install_script}"
   rm -f "${install_script}"
+}
+
+select_caddy_port() {
+  local managed_port=""
+  if sudo test -s "${CADDYFILE}" && sudo grep -q "Managed by ${V4_DIR}/deploy_pi.sh" "${CADDYFILE}"; then
+    managed_port="$(sudo sed -n 's/^:\([0-9][0-9]*\) .*/\1/p' "${CADDYFILE}" | head -n1)"
+  fi
+
+  # Reuse our active listener on repeat runs. After a failed first attempt,
+  # avoid a port already owned by another local application.
+  if [[ "${managed_port}" == "${CADDY_PORT}" ]] && sudo systemctl is-active --quiet caddy; then
+    CADDY_PORT="${managed_port}"
+    return
+  fi
+
+  while sudo ss -H -ltn "sport = :${CADDY_PORT}" | grep -q .; do
+    CADDY_PORT=$((CADDY_PORT + 1))
+  done
 }
 
 write_configuration() {
@@ -179,7 +198,7 @@ install_caddy_config() {
   caddy_tmp="$(mktemp)"
   cat >"${caddy_tmp}" <<EOF
 # Managed by ${V4_DIR}/deploy_pi.sh
-:8080 {
+:${CADDY_PORT} {
     bind 127.0.0.1
     encode zstd gzip
 
@@ -208,6 +227,7 @@ EOF
   fi
   sudo install -m 644 "${caddy_tmp}" "${CADDYFILE}"
   rm -f "${caddy_tmp}"
+  sudo caddy fmt --overwrite "${CADDYFILE}"
   sudo caddy validate --config "${CADDYFILE}"
   sudo systemctl enable --now caddy
   sudo systemctl reload caddy
@@ -264,9 +284,11 @@ main() {
 
   info "Installing operating-system packages"
   sudo apt-get update
-  sudo apt-get install -y curl git python3-venv python3-pip sqlite3 caddy rsync jq
+  sudo apt-get install -y curl git python3-venv python3-pip sqlite3 caddy rsync jq iproute2
   install_node
   install_tailscale
+  select_caddy_port
+  echo "Caddy will use private local port ${CADDY_PORT}."
 
   info "Connecting this Pi to Tailscale"
   sudo systemctl enable --now tailscaled
@@ -310,10 +332,10 @@ main() {
   info "Starting the application"
   sudo systemctl restart capital-nerve.target
   wait_for_services
-  curl -fsS http://127.0.0.1:8080/api/health >/dev/null || die "Caddy API proxy health check failed."
+  curl -fsS "http://127.0.0.1:${CADDY_PORT}/api/health" >/dev/null || die "Caddy API proxy health check failed."
 
   info "Publishing the site through Tailscale Funnel"
-  sudo tailscale funnel --bg 8080
+  sudo tailscale funnel --bg "${CADDY_PORT}"
   remove_bootstrap_secret
 
   info "Deployment complete"
