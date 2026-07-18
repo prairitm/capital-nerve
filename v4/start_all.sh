@@ -135,12 +135,17 @@ for i in "${!SERVICE_NAMES[@]}"; do
   wait_for_url "${SERVICE_NAMES[$i]}" "${SERVICE_URLS[$i]}"
 done
 
+# The monitor reads the application schema and calls the other microservices,
+# so start it only after the backend migrations and pipeline services are ready.
+start_uvicorn "monitor" "${ROOT_DIR}/microservices" "monitor.monitor:app" 8027
+wait_for_url "monitor" "http://${HOST}:8027/health"
+
 cat <<EOF
 
 All v4 services are running.
 Frontend:      http://localhost:5174
 Backend API:   http://${HOST}:8010
-Microservices: http://${HOST}:8020-8026
+Microservices: http://${HOST}:8020-8027
 Logs:          ${LOG_DIR}
 
 Press Ctrl-C to stop everything.

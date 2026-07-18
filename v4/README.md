@@ -5,14 +5,27 @@
 From the repo root:
 
 ```bash
+.venv/bin/pip install -r v4/backend/requirements.txt
+cd v4/frontend && npm install && cd ../..
+```
+
+Then start v4 and bootstrap the first administrator:
+
+```bash
+V4_ADMIN_EMAIL=admin@example.com \
+V4_ADMIN_PASSWORD='replace-with-a-strong-password' \
 ./v4/start_all.sh
 ```
 
-This starts the frontend, backend API, and all seven microservices:
+On the first start, those variables create the initial administrator. The
+bootstrap is idempotent: later starts never overwrite that account or reset its
+password. Both variables can be removed after the administrator exists.
+
+This starts the frontend, backend API, the seven-step pipeline, and the filing monitor:
 
 - Frontend: `http://localhost:5174`
 - Backend API: `http://127.0.0.1:8010`
-- Microservices: `http://127.0.0.1:8020-8026`
+- Microservices: `http://127.0.0.1:8020-8027`
 - Logs: `v4/logs/`
 
 Use reload mode for local FastAPI development:
@@ -22,6 +35,51 @@ RELOAD=1 ./v4/start_all.sh
 ```
 
 Stop everything with `Ctrl-C`.
+
+## Authentication and roles
+
+The v4 API uses a separate writable application database for users, sessions,
+and watchlists. The analytics database remains read-only to the web API and
+continues to be owned by the extraction pipeline.
+
+- `MEMBER` users can access every backend-added company and maintain their own
+  watchlist.
+- `ADMIN` users have the same research access and can create, update,
+  deactivate, reactivate, and reset other user accounts from **Users**.
+- New users receive a generated temporary password and must replace it on first
+  login. There is no public signup or email recovery flow.
+- Sessions are stored server-side, expire after seven days, and use an
+  HttpOnly cookie. Deactivation and password resets revoke existing sessions.
+
+Application schema migrations run automatically at backend startup. The
+default database is `v4/data/capital_nerve_app.db` and is ignored by git.
+
+| Variable | Default | Purpose |
+| --- | --- | --- |
+| `V4_APP_DB_PATH` | `v4/data/capital_nerve_app.db` | User/session/watchlist database |
+| `V4_ADMIN_EMAIL` | unset | Initial administrator email |
+| `V4_ADMIN_PASSWORD` | unset | Initial administrator password (minimum 12 characters) |
+| `V4_SESSION_TTL_HOURS` | `168` | Absolute session lifetime |
+| `V4_COOKIE_SECURE` | `false` | Enable for HTTPS deployments |
+| `V4_CORS_ORIGINS` | local frontend origins | Credentialed frontend origins |
+
+Production deployments must set `V4_COOKIE_SECURE=true`, serve the frontend and
+API over HTTPS, and restrict `V4_CORS_ORIGINS` to the deployed frontend origin.
+
+## Watchlist filing monitor
+
+The service on port `8027` checks each distinct watched NSE company every two
+minutes. New financial results, investor presentations, and earnings-call
+transcripts are processed once and appear in the feeds of all users currently
+watching that company. Existing processed history is visible immediately when a
+company is added; historical filings are not reprocessed.
+
+| Variable | Default | Purpose |
+| --- | --- | --- |
+| `MONITOR_POLL_INTERVAL_SECONDS` | `120` | Seconds between successful company polls |
+| `MONITOR_MAX_ATTEMPTS` | `5` | Maximum full-pipeline attempts per filing |
+| `MONITOR_PIPELINE_VERSION` | `v4-1` | Idempotency version for durable jobs |
+| `MONITOR_FLOW_TIMEOUT_SECONDS` | `1800` | Timeout for one exact-document flow |
 
 ## Run the 7-step microservice flow
 
@@ -120,3 +178,16 @@ broader so supporting evidence remains available in the drill-down.
 Every v4 service uses that directory by default. The existing `*_CATALOG_DIR`
 environment variables can still point all services at another catalog tree with
 the same manifest layout.
+
+## Verification
+
+From the repository root:
+
+```bash
+.venv/bin/pip install -r v4/backend/requirements.txt
+.venv/bin/python -m unittest discover -s v4/backend -p 'test_*.py' -v
+cd v4/frontend
+npm install
+npm test
+npm run build
+```
