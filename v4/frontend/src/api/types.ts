@@ -40,6 +40,17 @@ export interface CompanyListItem extends Company {
   watchlist_status: boolean;
 }
 
+export interface NseCompanySearchResult {
+  symbol: string;
+  name: string;
+  company_name: string;
+  series: string | null;
+  listing_date: string | null;
+  isin: string | null;
+  company_id: string | null;
+  coverage_status: "available" | "covered" | "watched";
+}
+
 export interface CompanyEvent {
   id: string;
   company_id: string | null;
@@ -316,4 +327,5 @@ export interface WatchlistMutationResponse {
   watchlist_status: boolean;
   added?: boolean;
   removed?: boolean;
+  company?: Company;
 }

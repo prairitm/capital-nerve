@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import App from "@/App";
 import { AuthProvider } from "@/auth/AuthContext";
 import { WatchlistButton } from "@/components/company/WatchlistButton";
+import { NseCompanyResult } from "@/components/company/NseCompanyResult";
 import type { User } from "@/api/types";
 
 vi.mock("@/pages/DocumentPage", () => ({ DocumentPage: () => null }));
@@ -79,5 +80,53 @@ describe("role-aware access", () => {
     const [, options] = fetchMock.mock.calls[0];
     expect(options?.method).toBe("PUT");
     expect(String(fetchMock.mock.calls[0][0])).toContain("/watchlist/companies/alpha-id");
+  });
+
+  it("starts monitoring an NSE directory result by symbol", async () => {
+    const fetchMock = vi.fn(async (_input: RequestInfo | URL, _init?: RequestInit) =>
+      json({ watchlist_status: true, added: true }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    const queryClient = new QueryClient({ defaultOptions: { mutations: { retry: false } } });
+    render(
+      <QueryClientProvider client={queryClient}>
+        <NseCompanyResult result={{
+          symbol: "TATAMOTORS",
+          name: "Tata Motors Limited",
+          company_name: "Tata Motors Limited",
+          series: "EQ",
+          listing_date: "22-JUL-1998",
+          isin: "INE155A01022",
+          company_id: null,
+          coverage_status: "available",
+        }} />
+      </QueryClientProvider>,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Start monitoring" }));
+    await waitFor(() => expect(fetchMock).toHaveBeenCalled());
+    expect(String(fetchMock.mock.calls[0][0])).toContain("/watchlist/companies/by-symbol/TATAMOTORS");
+    expect(fetchMock.mock.calls[0][1]?.method).toBe("PUT");
+  });
+
+  it("keeps the company search focused while results refresh", async () => {
+    const neverResolves = new Promise<Response>(() => undefined);
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.includes("/auth/me")) return json(baseUser);
+      if (url.includes("/api/companies?search=ta")) return neverResolves;
+      if (url.includes("/nse-companies/search")) return json([]);
+      if (url.includes("/api/companies")) return json([]);
+      return json({ detail: "Not found" }, 404);
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    renderApp("/companies");
+    const input = await screen.findByPlaceholderText("Search company or ticker");
+    input.focus();
+    fireEvent.change(input, { target: { value: "ta" } });
+    await waitFor(
+      () => expect(fetchMock.mock.calls.some(([url]) => String(url).includes("/api/companies?search=ta"))).toBe(true),
+      { timeout: 1000 },
+    );
+    expect(input).toHaveFocus();
   });
 });

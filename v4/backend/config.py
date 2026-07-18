@@ -42,6 +42,20 @@ class Settings:
         }
         self.admin_email = os.getenv("V4_ADMIN_EMAIL")
         self.admin_password = os.getenv("V4_ADMIN_PASSWORD")
+        self.company_service_url = os.getenv(
+            "V4_COMPANY_SERVICE_URL", "http://127.0.0.1:8020"
+        ).rstrip("/")
+        self.nse_equity_csv_url = os.getenv(
+            "V4_NSE_EQUITY_CSV_URL",
+            "https://nsearchives.nseindia.com/content/equities/EQUITY_L.csv",
+        )
+        self.nse_refresh_hours = int(os.getenv("V4_NSE_REFRESH_HOURS", "24"))
+        self.nse_request_timeout_seconds = float(
+            os.getenv("V4_NSE_REQUEST_TIMEOUT_SECONDS", "30")
+        )
+        self.nse_refresh_on_startup = os.getenv(
+            "V4_NSE_REFRESH_ON_STARTUP", "true"
+        ).lower() in {"1", "true", "yes", "on"}
 
 
 @lru_cache

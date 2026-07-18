@@ -1,9 +1,11 @@
+import hashlib
 import sqlite3
 import tempfile
 import unittest
 import uuid
 from datetime import timedelta
 from pathlib import Path
+from unittest.mock import patch
 
 from fastapi.testclient import TestClient
 
@@ -22,12 +24,14 @@ class AuthWatchlistApiTest(unittest.TestCase):
             "admin_email": settings.admin_email,
             "admin_password": settings.admin_password,
             "cookie_secure": settings.cookie_secure,
+            "nse_refresh_on_startup": settings.nse_refresh_on_startup,
         }
         settings.db_path = Path(self.temp.name) / "analytics.db"
         settings.app_db_path = Path(self.temp.name) / "app.db"
         settings.admin_email = None
         settings.admin_password = None
         settings.cookie_secure = False
+        settings.nse_refresh_on_startup = False
         self._create_analytics_db()
         migrate_app_db()
         self.admin_id = self._create_user(
@@ -226,6 +230,58 @@ class AuthWatchlistApiTest(unittest.TestCase):
             ).fetchone()["baseline_at"]
         self.assertNotEqual("2000-01-01", baseline)
 
+    def test_nse_directory_search_and_watch_by_symbol(self):
+        with get_app_conn() as conn:
+            now = utc_iso()
+            conn.executemany(
+                """
+                INSERT INTO nse_listings(
+                    symbol, company_name, series, listing_date, isin, is_active, refreshed_at
+                ) VALUES (?, ?, 'EQ', NULL, ?, 1, ?)
+                """,
+                [
+                    ("TCS", "Tata Consultancy Services Limited", "INE467B01029", now),
+                    ("TATAMOTORS", "Tata Motors Limited", "INE155A01022", now),
+                ],
+            )
+            conn.commit()
+        self._login()
+        results = self.client.get("/nse-companies/search", params={"q": "tata"})
+        self.assertEqual(200, results.status_code, results.text)
+        self.assertEqual(["TATAMOTORS", "TCS"], [row["symbol"] for row in results.json()])
+        self.assertTrue(all(row["coverage_status"] == "available" for row in results.json()))
+
+        company_id = hashlib.sha256("TCS:NSE".encode()).hexdigest()
+
+        def register(listing):
+            analytics = sqlite3.connect(settings.db_path)
+            analytics.execute(
+                "INSERT INTO companies VALUES (?, ?, ?, 'NSE', NULL, NULL, ?)",
+                (company_id, listing["company_name"], listing["symbol"], listing["isin"]),
+            )
+            analytics.commit()
+            analytics.close()
+            return {
+                "id": company_id,
+                "name": listing["company_name"],
+                "ticker": listing["symbol"],
+                "exchange": "NSE",
+                "sector": None,
+                "industry": None,
+                "isin": listing["isin"],
+            }
+
+        with patch("routers.watchlist.register_company_for_listing", side_effect=register):
+            watched = self.client.put("/watchlist/companies/by-symbol/tcs")
+        self.assertEqual(200, watched.status_code, watched.text)
+        self.assertTrue(watched.json()["added"])
+        self.assertEqual("TCS", watched.json()["company"]["ticker"])
+        refreshed = self.client.get("/nse-companies/search", params={"q": "TCS"}).json()
+        self.assertEqual("watched", refreshed[0]["coverage_status"])
+
+        missing = self.client.put("/watchlist/companies/by-symbol/not-listed")
+        self.assertEqual(404, missing.status_code)
+
     def test_stale_watchlist_company_is_omitted(self):
         self._login()
         self.client.put("/watchlist/companies/beta-id")
@@ -288,7 +344,7 @@ class AuthWatchlistApiTest(unittest.TestCase):
             versions = conn.execute("SELECT COUNT(*) AS count FROM schema_migrations").fetchone()[
                 "count"
             ]
-        self.assertEqual(2, versions)
+        self.assertEqual(3, versions)
         settings.admin_email = "bootstrap@example.com"
         settings.admin_password = "BootstrapPassword123!"
         bootstrap_admin()

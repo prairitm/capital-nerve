@@ -38,7 +38,12 @@ def health() -> dict[str, str | bool]:
 @app.post("/companies", response_model=RegisterCompanyResponse)
 def create_company(payload: RegisterCompanyRequest) -> RegisterCompanyResponse:
     with get_conn() as conn:
-        company = register_company(conn, payload.symbol)
+        company = register_company(
+            conn,
+            payload.symbol,
+            name=payload.name,
+            isin=payload.isin,
+        )
     return RegisterCompanyResponse(
         db_path=str(settings.db_path),
         company=CompanyResponse(**company),

@@ -5,6 +5,7 @@ Run: uvicorn main:app --port 8010 --reload
 
 from __future__ import annotations
 
+import logging
 from contextlib import asynccontextmanager
 
 import uvicorn
@@ -13,14 +14,23 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app_db import migrate_app_db
 from config import settings
-from routers import admin, auth, companies, documents, events, feed, signals, watchlist
+from nse_listings import refresh_nse_listings_if_due
+from routers import admin, auth, companies, documents, events, feed, nse, signals, watchlist
 from security import bootstrap_admin, require_ready_user
+
+
+logger = logging.getLogger(__name__)
 
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
     migrate_app_db()
     bootstrap_admin()
+    if settings.nse_refresh_on_startup:
+        try:
+            refresh_nse_listings_if_due()
+        except Exception:
+            logger.exception("Could not refresh NSE directory; retaining cached listings")
     yield
 
 
@@ -38,6 +48,7 @@ protected = [Depends(require_ready_user)]
 app.include_router(auth.router)
 app.include_router(admin.router)
 app.include_router(watchlist.router)
+app.include_router(nse.router)
 app.include_router(companies.router, dependencies=protected)
 app.include_router(events.router, dependencies=protected)
 app.include_router(signals.router, dependencies=protected)

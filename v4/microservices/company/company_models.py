@@ -7,6 +7,8 @@ from pydantic import BaseModel, Field, validator
 
 class RegisterCompanyRequest(BaseModel):
     symbol: str = Field(..., min_length=1, examples=["ITC"])
+    name: str | None = None
+    isin: str | None = None
 
     @validator("symbol")
     @classmethod

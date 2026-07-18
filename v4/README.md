@@ -82,9 +82,32 @@ default database is `v4/data/capital_nerve_app.db` and is ignored by git.
 | `V4_SESSION_TTL_HOURS` | `168` | Absolute session lifetime |
 | `V4_COOKIE_SECURE` | `false` | Enable for HTTPS deployments |
 | `V4_CORS_ORIGINS` | local frontend origins | Credentialed frontend origins |
+| `V4_COMPANY_SERVICE_URL` | `http://127.0.0.1:8020` | Step 1 service used to register a newly monitored NSE company |
+| `V4_NSE_EQUITY_CSV_URL` | official NSE equity CSV | Source for the searchable NSE company directory |
+| `V4_NSE_REFRESH_HOURS` | `24` | Maximum age of the cached NSE directory |
+| `V4_NSE_REQUEST_TIMEOUT_SECONDS` | `30` | Timeout for directory downloads and company registration |
+| `V4_NSE_REFRESH_ON_STARTUP` | `true` | Refresh the directory at backend startup when it is stale |
 
 Production deployments must set `V4_COOKIE_SECURE=true`, serve the frontend and
 API over HTTPS, and restrict `V4_CORS_ORIGINS` to the deployed frontend origin.
+
+## NSE company search
+
+The **Companies** search checks both the processed CapitalNerve coverage universe
+and a locally cached copy of NSE's official equity-segment security list. Search
+results that are not covered appear under **More companies on NSE** and can be
+added with **Start monitoring**.
+
+The directory is stored in the writable application database and refreshed at
+backend startup when it is older than `V4_NSE_REFRESH_HOURS`. A failed download
+does not delete the last successful snapshot. The analytics database remains
+read-only to the backend: when a user starts monitoring a new symbol, the
+backend asks the Step 1 company service to register it before adding it to the
+user's watchlist.
+
+Monitoring begins at the time the company is added. Previously published
+filings are not automatically processed; future supported filings are handled
+by the filing monitor.
 
 ## Watchlist filing monitor
 

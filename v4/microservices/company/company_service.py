@@ -17,16 +17,34 @@ def row_to_dict(row: sqlite3.Row) -> dict[str, Any]:
     return dict(row)
 
 
-def register_company(conn: sqlite3.Connection, symbol: str) -> dict[str, Any]:
+def register_company(
+    conn: sqlite3.Connection,
+    symbol: str,
+    *,
+    name: str | None = None,
+    isin: str | None = None,
+) -> dict[str, Any]:
     company_id = company_id_for_symbol(symbol)
     bootstrap_schema(conn)
+    safe_isin = isin
+    if safe_isin:
+        owner = conn.execute("SELECT id FROM companies WHERE isin = ?", (safe_isin,)).fetchone()
+        if owner is not None and owner["id"] != company_id:
+            safe_isin = None
     conn.execute(
         """
-        INSERT INTO companies (id, name, ticker, exchange)
-        VALUES (?, ?, ?, 'NSE')
-        ON CONFLICT(id) DO UPDATE SET ticker = excluded.ticker
+        INSERT INTO companies (id, name, ticker, exchange, isin)
+        VALUES (?, ?, ?, 'NSE', ?)
+        ON CONFLICT(id) DO UPDATE SET
+            name = CASE
+                WHEN excluded.name <> excluded.ticker THEN excluded.name
+                ELSE companies.name
+            END,
+            ticker = excluded.ticker,
+            exchange = 'NSE',
+            isin = COALESCE(excluded.isin, companies.isin)
         """,
-        (company_id, symbol, symbol),
+        (company_id, (name or symbol).strip(), symbol, safe_isin),
     )
     conn.commit()
     row = conn.execute("SELECT * FROM companies WHERE id = ?", (company_id,)).fetchone()
