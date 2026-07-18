@@ -29,7 +29,8 @@ export function FeedCompanyTimeline({ group }: { group: CompanyFeedGroup }) {
           to={`/company/${ticker}`}
           className="text-xs text-ink-mute hover:text-ink inline-flex items-center gap-1 shrink-0"
         >
-          {group.signals.length} {group.signals.length === 1 ? "signal" : "signals"}
+          {group.filingCount} {group.filingCount === 1 ? "filing" : "filings"}
+          <span className="text-ink-soft">· {group.signals.length} signals</span>
           <ChevronRight size={13} />
         </Link>
       </div>

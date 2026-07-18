@@ -31,7 +31,7 @@ DOCUMENT_TYPE_TO_EVENT_TYPE = {
     "earnings_call_transcript": "Earnings Call Transcript",
 }
 SUPPORTED_EVENT_TYPES = set(EVENT_TYPE_TO_DOCUMENT_TYPE)
-SUPPORTED_SOURCE_MODES = {"nse_auto", "ir_agent", "manual_url", "local_file"}
+SUPPORTED_SOURCE_MODES = {"nse_auto", "nse_exact", "ir_agent", "manual_url", "local_file"}
 
 
 def normalize_document_type(value: str) -> str:

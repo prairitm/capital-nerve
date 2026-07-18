@@ -62,6 +62,13 @@ class UnifiedFlowContractsTest(unittest.TestCase):
         self.assertEqual(request.document_type, "earnings_call_transcript")
         self.assertEqual(request.source_mode, "manual_url")
 
+        exact = event_type_models.DocumentRequest(
+            document_type="financial_result",
+            source_mode="nse-exact",
+            source_url="https://example.com/results.pdf",
+        )
+        self.assertEqual("nse_exact", exact.source_mode)
+
     def test_values_request_parses_resolved_documents_json(self) -> None:
         if values_models is None:
             self.skipTest("pydantic is not installed")

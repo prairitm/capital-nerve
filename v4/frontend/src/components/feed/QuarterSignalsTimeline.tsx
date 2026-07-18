@@ -36,7 +36,11 @@ function FeedEventBlock({
             <CompactSignalRow key={signal.id} signal={signal} />
           ))}
         </div>
-      ) : null}
+      ) : (
+        <div className="border-t border-line/30 px-5 py-2.5 text-xs text-ink-soft">
+          No material signals detected.
+        </div>
+      )}
     </div>
   );
 }

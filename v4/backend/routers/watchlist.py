@@ -50,13 +50,52 @@ def add_company(company_id: str, user: CurrentUser = Depends(require_ready_user)
             "Company not found.",
         )
     with get_app_conn() as conn:
+        now = utc_iso()
+        had_watchers = conn.execute(
+            """
+            SELECT 1 FROM watchlist_companies w
+            JOIN users u ON u.id = w.user_id
+            WHERE w.company_id = ? AND u.is_active = 1
+            LIMIT 1
+            """,
+            (company_id,),
+        ).fetchone() is not None
         cursor = conn.execute(
             """
             INSERT OR IGNORE INTO watchlist_companies(user_id, company_id, added_at)
             VALUES (?, ?, ?)
             """,
-            (user.id, company_id, utc_iso()),
+            (user.id, company_id, now),
         )
+        conn.execute(
+            """
+            INSERT OR IGNORE INTO company_poll_state(
+                company_id, baseline_at, next_poll_at, created_at, updated_at
+            ) VALUES (?, ?, ?, ?, ?)
+            """,
+            (company_id, now, now, now, now),
+        )
+        if had_watchers:
+            conn.execute(
+                """
+                UPDATE company_poll_state
+                SET next_poll_at = CASE WHEN next_poll_at > ? THEN ? ELSE next_poll_at END,
+                    updated_at = ?
+                WHERE company_id = ?
+                """,
+                (now, now, now, company_id),
+            )
+        else:
+            conn.execute(
+                """
+                UPDATE company_poll_state
+                SET baseline_at = ?, last_success_at = NULL, next_poll_at = ?,
+                    lease_until = NULL, last_error = NULL, consecutive_failures = 0,
+                    updated_at = ?
+                WHERE company_id = ?
+                """,
+                (now, now, now, company_id),
+            )
         conn.commit()
     return {"watchlist_status": True, "added": cursor.rowcount > 0}
 

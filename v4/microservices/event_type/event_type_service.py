@@ -215,6 +215,55 @@ def _resolve_nse_document(
     }
 
 
+def _resolve_exact_nse_document(
+    *,
+    session: requests.Session,
+    announcements: list[dict[str, Any]],
+    document_type: str,
+    source_url: str,
+) -> dict[str, Any]:
+    """Resolve one discovered announcement without selecting a newer filing."""
+    exact = next(
+        (
+            item
+            for item in announcements
+            if (item.get("attchmntFile") or "").strip() == source_url
+        ),
+        None,
+    )
+    if exact is None:
+        raise LookupError("The exact NSE announcement is no longer present in the requested window")
+
+    if document_type == "financial_result":
+        resolved = resolve_canonical_financial_report(
+            announcements,
+            [exact],
+            period_markers=infer_period_markers(announcements) or None,
+            session=session,
+            referer=PAGE_URL,
+        )
+        if not resolved:
+            raise LookupError("No valid financial results PDF found for the exact announcement")
+        chosen = resolved["announcement"]
+        return {
+            "source_url": resolved["url"],
+            "title": chosen.get("attchmntText"),
+            "sort_date": chosen.get("sort_date"),
+            "classification": resolved.get("classification") or {},
+            "recovery_needed": bool(resolved.get("recovery_needed")),
+            "rejected_url": resolved.get("rejected_url"),
+            "candidates": [exact],
+        }
+
+    resolved = _resolve_nse_document(
+        session=session,
+        announcements=[exact],
+        document_type=document_type,
+    )
+    resolved["candidates"] = [exact]
+    return resolved
+
+
 def _resolve_document_request(
     conn: sqlite3.Connection,
     *,
@@ -238,6 +287,18 @@ def _resolve_document_request(
     }
     if source_mode == "nse_auto":
         resolved.update(_resolve_nse_document(session=session, announcements=announcements, document_type=document_type))
+    elif source_mode == "nse_exact":
+        source_url = request.get("source_url")
+        if not source_url:
+            raise ValueError("source_mode='nse_exact' requires source_url")
+        resolved.update(
+            _resolve_exact_nse_document(
+                session=session,
+                announcements=announcements,
+                document_type=document_type,
+                source_url=source_url,
+            )
+        )
     elif source_mode == "manual_url":
         source_url = request.get("source_url")
         if not source_url:

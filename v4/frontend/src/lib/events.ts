@@ -1,4 +1,4 @@
-import type { Company, CompanyEvent, SeverityLevel, Signal, SignalDirection } from "@/api/types";
+import type { Company, CompanyEvent, FeedItem, SeverityLevel, Signal, SignalDirection } from "@/api/types";
 import { eventTitleToPeriodLabel } from "@/lib/format";
 
 export const OTHER_FILINGS_LABEL = "Other filings";
@@ -165,6 +165,7 @@ export interface FeedTimelineEvent extends TimelineEvent {
 export interface CompanyFeedGroup {
   company: Company;
   signals: Signal[];
+  filingCount: number;
   quarterGroups: QuarterEventGroup<FeedTimelineEvent>[];
   latestDetectedAt: string;
 }
@@ -256,13 +257,61 @@ export function buildCompanyFeedGroups(signals: Signal[]): CompanyFeedGroup[] {
       return at > latest ? at : latest;
     }, "");
 
-    groups.push({ company, signals: companySignals, quarterGroups, latestDetectedAt });
+    groups.push({
+      company,
+      signals: companySignals,
+      filingCount: byEvent.size + ungrouped.length,
+      quarterGroups,
+      latestDetectedAt,
+    });
   }
 
   groups.sort(
     (a, b) => new Date(b.latestDetectedAt).getTime() - new Date(a.latestDetectedAt).getTime(),
   );
   return groups;
+}
+
+/** Group the authenticated event-based home feed by company and reporting period. */
+export function buildCompanyFeedGroupsFromItems(items: FeedItem[]): CompanyFeedGroup[] {
+  const byCompany = new Map<string, { company: Company; events: FeedTimelineEvent[] }>();
+  for (const item of items) {
+    let group = byCompany.get(item.company.id);
+    if (!group) {
+      group = { company: item.company, events: [] };
+      byCompany.set(item.company.id, group);
+    }
+    const signals = [...item.signals].sort(
+      (a, b) => new Date(b.detected_at ?? 0).getTime() - new Date(a.detected_at ?? 0).getTime(),
+    );
+    const lead = signals[0];
+    group.events.push({
+      ...item.event,
+      signals,
+      overall_signal: lead?.direction ?? null,
+      overall_severity: lead?.severity ?? null,
+      summary_text: lead?.title ?? lead?.description ?? null,
+    });
+  }
+
+  return [...byCompany.values()]
+    .map(({ company, events }) => {
+      const signals = events.flatMap((event) => event.signals);
+      const latestDetectedAt = events.reduce(
+        (latest, event) => (event.event_date ?? "") > latest ? (event.event_date ?? "") : latest,
+        "",
+      );
+      return {
+        company,
+        signals,
+        filingCount: events.length,
+        quarterGroups: groupEventsByQuarter(events),
+        latestDetectedAt,
+      };
+    })
+    .sort(
+      (a, b) => new Date(b.latestDetectedAt).getTime() - new Date(a.latestDetectedAt).getTime(),
+    );
 }
 
 /** Build a single company's feed group from hub data (timeline + signals). */
@@ -328,6 +377,7 @@ export function buildCompanyFeedGroupFromHub(
   return {
     company,
     signals,
+    filingCount: events.length,
     quarterGroups: groupEventsByQuarter(events),
     latestDetectedAt,
   };

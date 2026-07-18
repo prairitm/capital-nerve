@@ -58,6 +58,12 @@ class AuthWatchlistApiTest(unittest.TestCase):
                 event_date TEXT, fiscal_year INTEGER, fiscal_quarter INTEGER,
                 title TEXT, source_url TEXT, document_id TEXT, status TEXT
             );
+            CREATE TABLE documents (
+                id TEXT PRIMARY KEY, company_id TEXT, source_url TEXT,
+                storage_path TEXT, sha256 TEXT, title TEXT,
+                document_kind TEXT, file_size INTEGER, status TEXT,
+                error_message TEXT, ingested_at TEXT
+            );
             CREATE TABLE signals (
                 signal_id TEXT PRIMARY KEY, company_id TEXT, event_id TEXT,
                 signal_code TEXT, severity TEXT, direction TEXT,
@@ -68,7 +74,14 @@ class AuthWatchlistApiTest(unittest.TestCase):
                 ('beta-id', 'Beta Ltd', 'BETA', 'NSE', 'Industrials', 'Engineering', NULL);
             INSERT INTO events VALUES
                 ('event-1', 'alpha-id', 'Financial Results', '2026-05-10', 2025, 4,
-                 'Results', NULL, NULL, 'processed');
+                 'Results', NULL, 'document-1', 'processed'),
+                ('event-2', 'beta-id', 'Investor Presentation', '2026-05-11', 2025, 4,
+                 'Presentation', NULL, 'document-2', 'processed');
+            INSERT INTO documents VALUES
+                ('document-1', 'alpha-id', NULL, '/tmp/alpha.pdf', 'sha-alpha',
+                 'Results', 'financial_result', 100, 'processed', NULL, '2026-05-10'),
+                ('document-2', 'beta-id', NULL, '/tmp/beta.pdf', 'sha-beta',
+                 'Presentation', 'investor_presentation', 100, 'processed', NULL, '2026-05-11');
             INSERT INTO signals VALUES
                 ('signal-1', 'alpha-id', 'event-1', 'revenue_growth', 'HIGH', 'POSITIVE', '[]', '[]');
             """
@@ -201,6 +214,17 @@ class AuthWatchlistApiTest(unittest.TestCase):
         removed = self.client.delete("/watchlist/companies/alpha-id")
         self.assertTrue(removed.json()["removed"])
         self.assertFalse(self.client.delete("/watchlist/companies/alpha-id").json()["removed"])
+        with get_app_conn() as conn:
+            conn.execute(
+                "UPDATE company_poll_state SET baseline_at = '2000-01-01' WHERE company_id = 'alpha-id'"
+            )
+            conn.commit()
+        self.assertTrue(self.client.put("/watchlist/companies/alpha-id").json()["added"])
+        with get_app_conn() as conn:
+            baseline = conn.execute(
+                "SELECT baseline_at FROM company_poll_state WHERE company_id = 'alpha-id'"
+            ).fetchone()["baseline_at"]
+        self.assertNotEqual("2000-01-01", baseline)
 
     def test_stale_watchlist_company_is_omitted(self):
         self._login()
@@ -213,13 +237,58 @@ class AuthWatchlistApiTest(unittest.TestCase):
         self.assertEqual(200, response.status_code)
         self.assertEqual({"companies": [], "count": 0}, response.json())
 
+    def test_feed_is_watchlist_scoped_and_includes_zero_signal_filings(self):
+        self._login()
+        self.client.put("/watchlist/companies/alpha-id")
+        member_feed = self.client.get("/feed")
+        self.assertEqual(200, member_feed.status_code, member_feed.text)
+        self.assertEqual(["event-1"], [item["event"]["id"] for item in member_feed.json()])
+        self.assertIn("signals", member_feed.json()[0])
+
+        self.client.post("/auth/logout")
+        self._login("admin@example.com", "AdminPassword123!")
+        self.client.put("/watchlist/companies/alpha-id")
+        self.assertEqual(["event-1"], [item["event"]["id"] for item in self.client.get("/feed").json()])
+        self.client.put("/watchlist/companies/beta-id")
+        admin_feed = self.client.get("/feed")
+        self.assertEqual(["event-2", "event-1"], [item["event"]["id"] for item in admin_feed.json()])
+        self.assertEqual([], next(item for item in admin_feed.json() if item["event"]["id"] == "event-2")["signals"])
+        self.assertEqual([], self.client.get("/feed", params={"offset": 2}).json())
+
+        now = utc_iso()
+        with get_app_conn() as conn:
+            conn.execute(
+                """
+                INSERT INTO pipeline_jobs(
+                    id, event_id, canonical_event_id, pipeline_version, company_id,
+                    symbol, event_type, source_url, published_at, from_date, to_date,
+                    status, attempts, max_attempts, available_at, created_at, updated_at
+                ) VALUES (?, ?, ?, 'v4-1', ?, 'BETA', 'Investor Presentation',
+                          'https://example.com/beta.pdf', ?, '10-05-2026', '11-05-2026',
+                          'queued', 0, 5, ?, ?, ?)
+                """,
+                ("job-2", "event-2", "event-2", "beta-id", now, now, now, now),
+            )
+            conn.commit()
+        self.assertEqual(["event-1"], [item["event"]["id"] for item in self.client.get("/feed").json()])
+        with get_app_conn() as conn:
+            conn.execute("UPDATE pipeline_jobs SET status = 'succeeded' WHERE id = 'job-2'")
+            conn.commit()
+        self.assertEqual(["event-2", "event-1"], [item["event"]["id"] for item in self.client.get("/feed").json()])
+        summary = self.client.get("/feed/summary").json()
+        self.assertEqual(2, summary["processed_filings"])
+        self.assertEqual(0, summary["total_signals"])
+
+        self.client.delete("/watchlist/companies/beta-id")
+        self.assertEqual(["event-1"], [item["event"]["id"] for item in self.client.get("/feed").json()])
+
     def test_migration_and_admin_bootstrap_are_idempotent(self):
         migrate_app_db()
         with get_app_conn() as conn:
             versions = conn.execute("SELECT COUNT(*) AS count FROM schema_migrations").fetchone()[
                 "count"
             ]
-        self.assertEqual(1, versions)
+        self.assertEqual(2, versions)
         settings.admin_email = "bootstrap@example.com"
         settings.admin_password = "BootstrapPassword123!"
         bootstrap_admin()

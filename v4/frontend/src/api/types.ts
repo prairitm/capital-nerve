@@ -272,12 +272,22 @@ export interface TrendSeries {
 }
 
 export interface FeedSummary {
+  processed_filings: number;
+  total_signals: number;
   total: number;
   positive: number;
   negative: number;
   mixed: number;
   by_category: Record<string, number>;
   by_severity: Record<string, number>;
+}
+
+export interface FeedItem {
+  company: Company;
+  event: CompanyEvent;
+  document: DocumentInfo | null;
+  signals: Signal[];
+  detail_path: string | null;
 }
 
 export interface DocumentDetail {

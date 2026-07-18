@@ -51,6 +51,9 @@ class EventResponse(BaseModel):
     title: str | None = None
     source_url: str | None = None
     status: str | None = None
+    published_at: str | None = None
+    normalized_event_type: str | None = None
+    inserted: bool = False
 
 
 class DiscoverEventsResponse(BaseModel):

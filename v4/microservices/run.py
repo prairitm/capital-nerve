@@ -28,7 +28,7 @@ import urllib.error
 import urllib.parse
 import urllib.request
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, Callable
 
 
 DEFAULT_SERVICES = {
@@ -48,7 +48,7 @@ EVENT_TYPE_TO_DOCUMENT_TYPE = {
 }
 ALL_EVENT_TYPES = list(EVENT_TYPE_TO_DOCUMENT_TYPE)
 SUPPORTED_EVENT_TYPES = set(EVENT_TYPE_TO_DOCUMENT_TYPE)
-SUPPORTED_SOURCE_MODES = {"nse_auto", "ir_agent", "manual_url", "local_file"}
+SUPPORTED_SOURCE_MODES = {"nse_auto", "nse_exact", "ir_agent", "manual_url", "local_file"}
 
 
 @dataclass(frozen=True)
@@ -623,6 +623,146 @@ def run_flow(args: argparse.Namespace) -> dict[str, Any]:
     logging.info("Flow complete for %s [%s -> %s]", args.symbol, args.from_date, args.to_date)
     logging.info("Final params: %s", compact_params(params))
     return final_response
+
+
+def run_exact_document_flow(
+    args: argparse.Namespace,
+    *,
+    company_id: str,
+    source_url: str,
+    title: str | None = None,
+    resolved_callback: Callable[[str], None] | None = None,
+) -> dict[str, Any]:
+    """Run Steps 3-7 for one discovered NSE attachment.
+
+    Unlike ``run_flow``, this entry point does not repeat company or event
+    discovery. Step 3 receives ``nse_exact`` so a later filing cannot replace
+    the queued source; financial-result mislink recovery remains available.
+    """
+    if args.event_type not in SUPPORTED_EVENT_TYPES:
+        allowed = ", ".join(sorted(SUPPORTED_EVENT_TYPES))
+        raise FlowError(f"EVENT_TYPE must be one of: {allowed}")
+    if not source_url:
+        raise FlowError("An exact source_url is required")
+
+    service_urls = {
+        name: normalize_base_url(getattr(args, f"{name}_url"))
+        for name in DEFAULT_SERVICES
+    }
+    if not args.skip_health:
+        health_check(service_urls, args.timeout)
+
+    params: dict[str, Any] = {
+        "symbol": args.symbol.strip().upper(),
+        "from_date": args.from_date.strip(),
+        "to_date": args.to_date.strip(),
+        "event_type": args.event_type,
+        "company_id": company_id,
+        "documents": [
+            {
+                "document_type": default_document_type(args.event_type),
+                "source_mode": "nse_exact",
+                "source_url": source_url,
+                **({"title": title} if title else {}),
+            }
+        ],
+    }
+
+    canonical_event_id: str | None = None
+    chosen_source_url = source_url
+    final_response: dict[str, Any] = {}
+    for step in STEPS[2:]:
+        log_step_start(step, params)
+        url = f"{service_urls[step.service]}{step.path}"
+        started = time.monotonic()
+
+        if step.name == "EVENT TYPE":
+            response = request_json(
+                step.method,
+                url,
+                query={
+                    "symbol": params["symbol"],
+                    "from_date": params["from_date"],
+                    "to_date": params["to_date"],
+                    "company_id": params["company_id"],
+                    "event_type": params["event_type"],
+                    "documents_json": json.dumps(params["documents"]),
+                },
+                timeout=args.timeout,
+            )
+            canonical_event_id = response.get("event_id")
+            if canonical_event_id and resolved_callback is not None:
+                resolved_callback(canonical_event_id)
+            chosen_source_url = response.get("chosen_source_url") or chosen_source_url
+            next_params = require_next_params(response, step)
+            next_params["event_type"] = params["event_type"]
+            if response.get("resolved_documents"):
+                next_params["resolved_documents"] = response["resolved_documents"]
+        elif step.name == "VALUES" and not args.values_sync:
+            values_params = {
+                **params,
+                **{
+                    key: value
+                    for key, value in {
+                        "parse_max_workers": args.values_parse_workers,
+                        "extraction_max_workers": args.values_extraction_workers,
+                    }.items()
+                    if value is not None
+                },
+            }
+            if values_params.get("resolved_documents"):
+                values_params["resolved_documents_json"] = json.dumps(
+                    values_params.pop("resolved_documents")
+                )
+            response = wait_for_values_job(
+                values_url=service_urls[step.service],
+                params=values_params,
+                timeout=args.timeout,
+                poll_interval=args.poll_interval,
+            )
+            next_params = require_next_params(response, step)
+            next_params["event_type"] = params["event_type"]
+        else:
+            query_params = params
+            if step.name == "VALUES":
+                query_params = {
+                    **params,
+                    **{
+                        key: value
+                        for key, value in {
+                            "parse_max_workers": args.values_parse_workers,
+                            "extraction_max_workers": args.values_extraction_workers,
+                        }.items()
+                        if value is not None
+                    },
+                }
+                if query_params.get("resolved_documents"):
+                    query_params = dict(query_params)
+                    query_params["resolved_documents_json"] = json.dumps(
+                        query_params.pop("resolved_documents")
+                    )
+            response = request_json(
+                step.method,
+                url,
+                query=query_params,
+                timeout=args.timeout,
+            )
+            next_params = require_next_params(response, step)
+            next_params["event_type"] = params["event_type"]
+
+        elapsed = time.monotonic() - started
+        log_step_result(step, response, elapsed)
+        log_microservice_details(step, response, detail_limit=args.detail_limit)
+        params = next_params
+        final_response = response
+
+    if not canonical_event_id:
+        raise FlowError("Exact document resolution did not return an event_id")
+    return {
+        "canonical_event_id": canonical_event_id,
+        "chosen_source_url": chosen_source_url,
+        "final_response": final_response,
+    }
 
 
 def event_types_for_args(args: argparse.Namespace) -> list[str]:

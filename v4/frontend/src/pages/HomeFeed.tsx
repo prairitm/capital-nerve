@@ -1,38 +1,40 @@
 import { useQuery } from "@tanstack/react-query";
 import { useMemo } from "react";
 import { api } from "@/api/client";
-import type { FeedSummary, Signal } from "@/api/types";
+import type { FeedItem, FeedSummary } from "@/api/types";
 import { FeedCompanyTimeline } from "@/components/feed/FeedCompanyTimeline";
 import { Empty } from "@/components/common/Empty";
 import { ErrorState, PageHeader, PageSkeleton, StatusSummary } from "@/components/common/DashboardUI";
-import { buildCompanyFeedGroups } from "@/lib/events";
+import { buildCompanyFeedGroupsFromItems } from "@/lib/events";
 
 const severityRank = { CRITICAL: 4, HIGH: 3, MEDIUM: 2, LOW: 1 } as const;
 
 export function HomeFeed() {
   const feedQuery = useQuery({
     queryKey: ["feed"],
-    queryFn: () => api<Signal[]>("/feed", { query: { limit: 60 } }),
+    queryFn: () => api<FeedItem[]>("/feed", { query: { limit: 60 } }),
+    refetchInterval: 60_000,
   });
   const summaryQuery = useQuery({
     queryKey: ["feed-summary"],
     queryFn: () => api<FeedSummary>("/feed/summary"),
+    refetchInterval: 60_000,
   });
-  const signals = feedQuery.data;
+  const items = feedQuery.data;
 
   const companyGroups = useMemo(
-    () => (signals ? buildCompanyFeedGroups(signals).sort((a, b) => {
+    () => (items ? buildCompanyFeedGroupsFromItems(items).sort((a, b) => {
       const rank = (group: typeof a) => Math.max(0, ...group.signals.map((s) => severityRank[s.severity as keyof typeof severityRank] ?? 0));
       return rank(b) - rank(a);
     }) : []),
-    [signals],
+    [items],
   );
 
   if (feedQuery.isLoading || summaryQuery.isLoading) return <PageSkeleton />;
   if (feedQuery.isError || summaryQuery.isError) return <ErrorState onRetry={() => { void feedQuery.refetch(); void summaryQuery.refetch(); }} />;
 
   const summary = summaryQuery.data;
-  const representedCompanies = new Set((signals ?? []).map((s) => s.company_id).filter(Boolean)).size;
+  const representedCompanies = new Set((items ?? []).map((item) => item.company.id)).size;
   const highPriority = (summary?.by_severity.CRITICAL ?? 0) + (summary?.by_severity.HIGH ?? 0);
 
   return (
@@ -41,7 +43,7 @@ export function HomeFeed() {
 
       {summary && summary.total > 0 && (
         <StatusSummary items={[
-          { label: "Total signals", value: summary.total, hint: "Across all processed reports" },
+          { label: "Processed filings", value: summary.processed_filings, hint: "Across your watchlist" },
           { label: "High priority", value: highPriority, hint: "Critical and high materiality", tone: highPriority ? "warning" : "default" },
           { label: "Coverage", value: representedCompanies, hint: "Companies represented" },
           { label: "Direction", value: `${summary.positive} / ${summary.negative}`, hint: "Positive / negative", tone: summary.negative > summary.positive ? "negative" : "positive" },
@@ -55,10 +57,10 @@ export function HomeFeed() {
         </div>
       </div>
 
-      {!signals || signals.length === 0 ? (
+      {!items || items.length === 0 ? (
         <Empty
-          title="No signals yet"
-          description="No material intelligence is available for the current coverage universe."
+          title="No watched filings yet"
+          description="Add companies to your watchlist to see their processed filings here."
         />
       ) : (
         <div className="space-y-3">
