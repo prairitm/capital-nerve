@@ -2,8 +2,8 @@
 """Run the v4 pipeline for an administrator's watchlist quarter by quarter.
 
 The oldest quarter is processed first so prior-period facts exist before later
-quarters calculate comparisons. By default, the script processes Financial
-Results for the latest eight completed calendar quarters.
+quarters calculate comparisons. By default, the script processes every
+supported event type for the latest eight completed calendar quarters.
 """
 
 from __future__ import annotations
@@ -194,10 +194,10 @@ def build_run_command(
         "--to-date",
         window.to_date,
     ]
-    if args.all_event_types:
-        command.append("--all-event-types")
-    else:
+    if args.event_type:
         command.extend(["--event-type", args.event_type])
+    else:
+        command.append("--all-event-types")
     command.extend(args.run_args)
     return command
 
@@ -218,13 +218,12 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     )
     parser.add_argument(
         "--event-type",
-        default="Financial Results",
-        help="run.py event type (default: Financial Results)",
+        help="run only this event type instead of all supported event types",
     )
     parser.add_argument(
         "--all-event-types",
         action="store_true",
-        help="pass --all-event-types to run.py instead of --event-type",
+        help="explicitly run all supported event types (this is the default)",
     )
     parser.add_argument(
         "--app-db",
@@ -257,7 +256,7 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         help="extra run.py arguments after --, for example: -- --verbose",
     )
     args = parser.parse_args(argv)
-    if args.all_event_types and args.event_type != "Financial Results":
+    if args.all_event_types and args.event_type:
         parser.error("use either --event-type or --all-event-types, not both")
     if args.run_args[:1] == ["--"]:
         args.run_args = args.run_args[1:]

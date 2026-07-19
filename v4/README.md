@@ -38,9 +38,9 @@ Stop everything with `Ctrl-C`.
 
 ## Backfill the administrator watchlist
 
-With the seven pipeline services running, process Financial Results for every
-company on the active administrator's watchlist over the latest eight completed
-calendar quarters (oldest first):
+With the seven pipeline services running, process every supported event type
+for each company on the active administrator's watchlist over the latest eight
+completed calendar quarters (oldest first):
 
 ```bash
 .venv/bin/python v4/run_admin_watchlist_history.py
@@ -54,7 +54,8 @@ Preview the generated `run.py` commands without calling the services:
 
 If the database has multiple active administrators, select one with
 `--admin-email`. Use `--as-of YYYY-MM-DD` for a reproducible cutoff and append
-extra `run.py` options after `--`, for example `-- --verbose`.
+extra `run.py` options after `--`, for example `-- --verbose`. To run only one
+event type, pass `--event-type`, for example `--event-type "Financial Results"`.
 
 ## Remove all company data
 
