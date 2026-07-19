@@ -36,6 +36,26 @@ RELOAD=1 ./v4/start_all.sh
 
 Stop everything with `Ctrl-C`.
 
+## Backfill the administrator watchlist
+
+With the seven pipeline services running, process Financial Results for every
+company on the active administrator's watchlist over the latest eight completed
+calendar quarters (oldest first):
+
+```bash
+.venv/bin/python v4/run_admin_watchlist_history.py
+```
+
+Preview the generated `run.py` commands without calling the services:
+
+```bash
+.venv/bin/python v4/run_admin_watchlist_history.py --dry-run
+```
+
+If the database has multiple active administrators, select one with
+`--admin-email`. Use `--as-of YYYY-MM-DD` for a reproducible cutoff and append
+extra `run.py` options after `--`, for example `-- --verbose`.
+
 ## Remove all company data
 
 Stop the v4 services, review the dry-run report, then explicitly confirm the
