@@ -36,6 +36,20 @@ RELOAD=1 ./v4/start_all.sh
 
 Stop everything with `Ctrl-C`.
 
+## Remove all company data
+
+Stop the v4 services, review the dry-run report, then explicitly confirm the
+cleanup:
+
+```bash
+.venv/bin/python v4/remove_all_company_data.py
+.venv/bin/python v4/remove_all_company_data.py --confirm
+```
+
+This removes all companies, their pipeline data, monitor jobs, watchlist
+entries, stored PDFs, and parsed-document cache. It preserves user accounts,
+user settings, and the static fact-definition catalog.
+
 ## Deploy publicly on a Raspberry Pi
 
 On a 64-bit Raspberry Pi OS installation, clone this repository and run:
