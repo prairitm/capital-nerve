@@ -1,0 +1,2351 @@
+{
+  "after_fix": {
+    "basis": {
+      "consolidated": {
+        "counts": {
+          "abstain": 36,
+          "correct_published": 138,
+          "publish": 138,
+          "review": 41,
+          "spurious_published": 0
+        },
+        "errors": {
+          "spurious_prediction": 0
+        },
+        "gold": 215,
+        "metrics": {
+          "abstention_rate": 0.16744186046511628,
+          "auto_published_coverage": 0.641860465116279,
+          "auto_published_precision": 1.0,
+          "recall": 0.641860465116279,
+          "review_rate": 0.19069767441860466
+        },
+        "predictions": 215
+      },
+      "standalone": {
+        "counts": {
+          "abstain": 47,
+          "correct_published": 124,
+          "publish": 124,
+          "review": 42,
+          "spurious_published": 0
+        },
+        "errors": {
+          "spurious_prediction": 0
+        },
+        "gold": 213,
+        "metrics": {
+          "abstention_rate": 0.22065727699530516,
+          "auto_published_coverage": 0.5821596244131455,
+          "auto_published_precision": 1.0,
+          "recall": 0.5821596244131455,
+          "review_rate": 0.19718309859154928
+        },
+        "predictions": 213
+      }
+    },
+    "company": {
+      "ASIANPAINT": {
+        "counts": {
+          "correct_published": 22,
+          "publish": 22,
+          "spurious_published": 0
+        },
+        "errors": {
+          "spurious_prediction": 0
+        },
+        "gold": 22,
+        "metrics": {
+          "abstention_rate": 0.0,
+          "auto_published_coverage": 1.0,
+          "auto_published_precision": 1.0,
+          "recall": 1.0,
+          "review_rate": 0.0
+        },
+        "predictions": 22
+      },
+      "BHARTIARTL": {
+        "counts": {
+          "abstain": 4,
+          "correct_published": 16,
+          "publish": 16,
+          "spurious_published": 0
+        },
+        "errors": {
+          "spurious_prediction": 0
+        },
+        "gold": 20,
+        "metrics": {
+          "abstention_rate": 0.2,
+          "auto_published_coverage": 0.8,
+          "auto_published_precision": 1.0,
+          "recall": 0.8,
+          "review_rate": 0.0
+        },
+        "predictions": 20
+      },
+      "DRREDDY": {
+        "counts": {
+          "correct_published": 20,
+          "publish": 20,
+          "spurious_published": 0
+        },
+        "errors": {
+          "spurious_prediction": 0
+        },
+        "gold": 20,
+        "metrics": {
+          "abstention_rate": 0.0,
+          "auto_published_coverage": 1.0,
+          "auto_published_precision": 1.0,
+          "recall": 1.0,
+          "review_rate": 0.0
+        },
+        "predictions": 20
+      },
+      "HINDUNILVR": {
+        "counts": {
+          "abstain": 18,
+          "spurious_published": 0
+        },
+        "errors": {
+          "spurious_prediction": 0
+        },
+        "gold": 18,
+        "metrics": {
+          "abstention_rate": 1.0,
+          "auto_published_coverage": 0.0,
+          "auto_published_precision": null,
+          "recall": 0.0,
+          "review_rate": 0.0
+        },
+        "predictions": 18
+      },
+      "INFY": {
+        "counts": {
+          "abstain": 40,
+          "correct_published": 8,
+          "publish": 8,
+          "spurious_published": 0
+        },
+        "errors": {
+          "spurious_prediction": 0
+        },
+        "gold": 48,
+        "metrics": {
+          "abstention_rate": 0.8333333333333334,
+          "auto_published_coverage": 0.16666666666666666,
+          "auto_published_precision": 1.0,
+          "recall": 0.16666666666666666,
+          "review_rate": 0.0
+        },
+        "predictions": 48
+      },
+      "ITC": {
+        "counts": {
+          "abstain": 6,
+          "correct_published": 20,
+          "publish": 20,
+          "review": 40,
+          "spurious_published": 0
+        },
+        "errors": {
+          "spurious_prediction": 0
+        },
+        "gold": 66,
+        "metrics": {
+          "abstention_rate": 0.09090909090909091,
+          "auto_published_coverage": 0.30303030303030304,
+          "auto_published_precision": 1.0,
+          "recall": 0.30303030303030304,
+          "review_rate": 0.6060606060606061
+        },
+        "predictions": 66
+      },
+      "KEC": {
+        "counts": {
+          "correct_published": 44,
+          "publish": 44,
+          "spurious_published": 0
+        },
+        "errors": {
+          "spurious_prediction": 0
+        },
+        "gold": 44,
+        "metrics": {
+          "abstention_rate": 0.0,
+          "auto_published_coverage": 1.0,
+          "auto_published_precision": 1.0,
+          "recall": 1.0,
+          "review_rate": 0.0
+        },
+        "predictions": 44
+      },
+      "LT": {
+        "counts": {
+          "abstain": 1,
+          "review": 43,
+          "spurious_published": 0
+        },
+        "errors": {
+          "spurious_prediction": 0
+        },
+        "gold": 44,
+        "metrics": {
+          "abstention_rate": 0.022727272727272728,
+          "auto_published_coverage": 0.0,
+          "auto_published_precision": null,
+          "recall": 0.0,
+          "review_rate": 0.9772727272727273
+        },
+        "predictions": 44
+      },
+      "MARUTI": {
+        "counts": {
+          "correct_published": 22,
+          "publish": 22,
+          "spurious_published": 0
+        },
+        "errors": {
+          "spurious_prediction": 0
+        },
+        "gold": 22,
+        "metrics": {
+          "abstention_rate": 0.0,
+          "auto_published_coverage": 1.0,
+          "auto_published_precision": 1.0,
+          "recall": 1.0,
+          "review_rate": 0.0
+        },
+        "predictions": 22
+      },
+      "RELIANCE": {
+        "counts": {
+          "correct_published": 40,
+          "publish": 40,
+          "spurious_published": 0
+        },
+        "errors": {
+          "spurious_prediction": 0
+        },
+        "gold": 40,
+        "metrics": {
+          "abstention_rate": 0.0,
+          "auto_published_coverage": 1.0,
+          "auto_published_precision": 1.0,
+          "recall": 1.0,
+          "review_rate": 0.0
+        },
+        "predictions": 40
+      },
+      "SUNPHARMA": {
+        "counts": {
+          "correct_published": 20,
+          "publish": 20,
+          "spurious_published": 0
+        },
+        "errors": {
+          "spurious_prediction": 0
+        },
+        "gold": 20,
+        "metrics": {
+          "abstention_rate": 0.0,
+          "auto_published_coverage": 1.0,
+          "auto_published_precision": 1.0,
+          "recall": 1.0,
+          "review_rate": 0.0
+        },
+        "predictions": 20
+      },
+      "TATASTEEL": {
+        "counts": {
+          "abstain": 4,
+          "correct_published": 18,
+          "publish": 18,
+          "spurious_published": 0
+        },
+        "errors": {
+          "spurious_prediction": 0
+        },
+        "gold": 22,
+        "metrics": {
+          "abstention_rate": 0.18181818181818182,
+          "auto_published_coverage": 0.8181818181818182,
+          "auto_published_precision": 1.0,
+          "recall": 0.8181818181818182,
+          "review_rate": 0.0
+        },
+        "predictions": 22
+      },
+      "TCS": {
+        "counts": {
+          "correct_published": 22,
+          "publish": 22,
+          "spurious_published": 0
+        },
+        "errors": {
+          "spurious_prediction": 0
+        },
+        "gold": 22,
+        "metrics": {
+          "abstention_rate": 0.0,
+          "auto_published_coverage": 1.0,
+          "auto_published_precision": 1.0,
+          "recall": 1.0,
+          "review_rate": 0.0
+        },
+        "predictions": 22
+      },
+      "ULTRACEMCO": {
+        "counts": {
+          "abstain": 10,
+          "correct_published": 10,
+          "publish": 10,
+          "spurious_published": 0
+        },
+        "errors": {
+          "spurious_prediction": 0
+        },
+        "gold": 20,
+        "metrics": {
+          "abstention_rate": 0.5,
+          "auto_published_coverage": 0.5,
+          "auto_published_precision": 1.0,
+          "recall": 0.5,
+          "review_rate": 0.0
+        },
+        "predictions": 20
+      }
+    },
+    "document": {
+      "0fab4bb6c9696c390acd89921c28c7dbbfd2c90611701a12dd52665ce21b8993": {
+        "counts": {
+          "correct_published": 22,
+          "publish": 22,
+          "spurious_published": 0
+        },
+        "errors": {
+          "spurious_prediction": 0
+        },
+        "gold": 22,
+        "metrics": {
+          "abstention_rate": 0.0,
+          "auto_published_coverage": 1.0,
+          "auto_published_precision": 1.0,
+          "recall": 1.0,
+          "review_rate": 0.0
+        },
+        "predictions": 22
+      },
+      "0fd4d2409fa868e981611968912ee28879723a1a0474706c087b36db812b7ec3": {
+        "counts": {
+          "correct_published": 20,
+          "publish": 20,
+          "spurious_published": 0
+        },
+        "errors": {
+          "spurious_prediction": 0
+        },
+        "gold": 20,
+        "metrics": {
+          "abstention_rate": 0.0,
+          "auto_published_coverage": 1.0,
+          "auto_published_precision": 1.0,
+          "recall": 1.0,
+          "review_rate": 0.0
+        },
+        "predictions": 20
+      },
+      "1d75d71df7bc81415d2a623641cea8dd9124c107692db5ac731e31a6d776ac45": {
+        "counts": {
+          "abstain": 4,
+          "correct_published": 16,
+          "publish": 16,
+          "spurious_published": 0
+        },
+        "errors": {
+          "spurious_prediction": 0
+        },
+        "gold": 20,
+        "metrics": {
+          "abstention_rate": 0.2,
+          "auto_published_coverage": 0.8,
+          "auto_published_precision": 1.0,
+          "recall": 0.8,
+          "review_rate": 0.0
+        },
+        "predictions": 20
+      },
+      "261d6717078b4661e2140cc5aa932202295b0a4bd65ad7dccf8168a0eaf048e8": {
+        "counts": {
+          "correct_published": 22,
+          "publish": 22,
+          "spurious_published": 0
+        },
+        "errors": {
+          "spurious_prediction": 0
+        },
+        "gold": 22,
+        "metrics": {
+          "abstention_rate": 0.0,
+          "auto_published_coverage": 1.0,
+          "auto_published_precision": 1.0,
+          "recall": 1.0,
+          "review_rate": 0.0
+        },
+        "predictions": 22
+      },
+      "2bcf3252f2267b8995120e1b55642e59287534286cc32f293f59553e1803660f": {
+        "counts": {
+          "correct_published": 22,
+          "publish": 22,
+          "spurious_published": 0
+        },
+        "errors": {
+          "spurious_prediction": 0
+        },
+        "gold": 22,
+        "metrics": {
+          "abstention_rate": 0.0,
+          "auto_published_coverage": 1.0,
+          "auto_published_precision": 1.0,
+          "recall": 1.0,
+          "review_rate": 0.0
+        },
+        "predictions": 22
+      },
+      "337f78973fbf9618b7e4a9b423cd1885c7d19f86bcf97154b556cc1d0974148c": {
+        "counts": {
+          "abstain": 18,
+          "spurious_published": 0
+        },
+        "errors": {
+          "spurious_prediction": 0
+        },
+        "gold": 18,
+        "metrics": {
+          "abstention_rate": 1.0,
+          "auto_published_coverage": 0.0,
+          "auto_published_precision": null,
+          "recall": 0.0,
+          "review_rate": 0.0
+        },
+        "predictions": 18
+      },
+      "589a0d9edae6a5ed72524d6a8391bbe48780123b61167c5789a4444cd86869a8": {
+        "counts": {
+          "correct_published": 20,
+          "publish": 20,
+          "spurious_published": 0
+        },
+        "errors": {
+          "spurious_prediction": 0
+        },
+        "gold": 20,
+        "metrics": {
+          "abstention_rate": 0.0,
+          "auto_published_coverage": 1.0,
+          "auto_published_precision": 1.0,
+          "recall": 1.0,
+          "review_rate": 0.0
+        },
+        "predictions": 20
+      },
+      "6b1f26139a9dd31775081b1eef43abbb7c14d8dd297fbe8df65bb6d47f1d1ff9": {
+        "counts": {
+          "correct_published": 20,
+          "publish": 20,
+          "spurious_published": 0
+        },
+        "errors": {
+          "spurious_prediction": 0
+        },
+        "gold": 20,
+        "metrics": {
+          "abstention_rate": 0.0,
+          "auto_published_coverage": 1.0,
+          "auto_published_precision": 1.0,
+          "recall": 1.0,
+          "review_rate": 0.0
+        },
+        "predictions": 20
+      },
+      "6c25945227f1812b45137aaffbba3cea51661bd695219b4be1baa281b8ce49af": {
+        "counts": {
+          "abstain": 4,
+          "correct_published": 18,
+          "publish": 18,
+          "spurious_published": 0
+        },
+        "errors": {
+          "spurious_prediction": 0
+        },
+        "gold": 22,
+        "metrics": {
+          "abstention_rate": 0.18181818181818182,
+          "auto_published_coverage": 0.8181818181818182,
+          "auto_published_precision": 1.0,
+          "recall": 0.8181818181818182,
+          "review_rate": 0.0
+        },
+        "predictions": 22
+      },
+      "6c409074cb28cf16ae17eb01b8ce7bbb8ed19efaa4d49395eb9773dc5f87822c": {
+        "counts": {
+          "abstain": 2,
+          "correct_published": 20,
+          "publish": 20,
+          "spurious_published": 0
+        },
+        "errors": {
+          "spurious_prediction": 0
+        },
+        "gold": 22,
+        "metrics": {
+          "abstention_rate": 0.09090909090909091,
+          "auto_published_coverage": 0.9090909090909091,
+          "auto_published_precision": 1.0,
+          "recall": 0.9090909090909091,
+          "review_rate": 0.0
+        },
+        "predictions": 22
+      },
+      "762e5d6f8a659fa4b3476eadf7c9f38669b57d8d9fd74866de44b6c4aae068e9": {
+        "counts": {
+          "correct_published": 22,
+          "publish": 22,
+          "spurious_published": 0
+        },
+        "errors": {
+          "spurious_prediction": 0
+        },
+        "gold": 22,
+        "metrics": {
+          "abstention_rate": 0.0,
+          "auto_published_coverage": 1.0,
+          "auto_published_precision": 1.0,
+          "recall": 1.0,
+          "review_rate": 0.0
+        },
+        "predictions": 22
+      },
+      "914f2f78b8969c727d5ea61eb023dc23ca01913e66ed9c64429b2406d9f5f1d2": {
+        "counts": {
+          "correct_published": 20,
+          "publish": 20,
+          "spurious_published": 0
+        },
+        "errors": {
+          "spurious_prediction": 0
+        },
+        "gold": 20,
+        "metrics": {
+          "abstention_rate": 0.0,
+          "auto_published_coverage": 1.0,
+          "auto_published_precision": 1.0,
+          "recall": 1.0,
+          "review_rate": 0.0
+        },
+        "predictions": 20
+      },
+      "944998b5645ff3000b1d46f91f905c49699723241815a33b2b504f31b4c98528": {
+        "counts": {
+          "abstain": 10,
+          "correct_published": 10,
+          "publish": 10,
+          "spurious_published": 0
+        },
+        "errors": {
+          "spurious_prediction": 0
+        },
+        "gold": 20,
+        "metrics": {
+          "abstention_rate": 0.5,
+          "auto_published_coverage": 0.5,
+          "auto_published_precision": 1.0,
+          "recall": 0.5,
+          "review_rate": 0.0
+        },
+        "predictions": 20
+      },
+      "aa187a45c53b3f8f6b7e54d720246fa97295920bb3e692085ad1369b554e765e": {
+        "counts": {
+          "correct_published": 8,
+          "publish": 8,
+          "spurious_published": 0
+        },
+        "errors": {
+          "spurious_prediction": 0
+        },
+        "gold": 8,
+        "metrics": {
+          "abstention_rate": 0.0,
+          "auto_published_coverage": 1.0,
+          "auto_published_precision": 1.0,
+          "recall": 1.0,
+          "review_rate": 0.0
+        },
+        "predictions": 8
+      },
+      "c9a47d5cfa27a80a49070e60f306f092819535e4023da7a398d7df592763fd06": {
+        "counts": {
+          "correct_published": 22,
+          "publish": 22,
+          "spurious_published": 0
+        },
+        "errors": {
+          "spurious_prediction": 0
+        },
+        "gold": 22,
+        "metrics": {
+          "abstention_rate": 0.0,
+          "auto_published_coverage": 1.0,
+          "auto_published_precision": 1.0,
+          "recall": 1.0,
+          "review_rate": 0.0
+        },
+        "predictions": 22
+      },
+      "e1e2a9cb6d42e0d15db78bed532f2c77a6956f12dc428da7b7db7aed1cc86d02": {
+        "counts": {
+          "abstain": 4,
+          "review": 40,
+          "spurious_published": 0
+        },
+        "errors": {
+          "spurious_prediction": 0
+        },
+        "gold": 44,
+        "metrics": {
+          "abstention_rate": 0.09090909090909091,
+          "auto_published_coverage": 0.0,
+          "auto_published_precision": null,
+          "recall": 0.0,
+          "review_rate": 0.9090909090909091
+        },
+        "predictions": 44
+      },
+      "e3ae9197774db11fc5152da67d77715569a3861ee56ae4c67c835624ca779b2a": {
+        "counts": {
+          "review": 22,
+          "spurious_published": 0
+        },
+        "errors": {
+          "spurious_prediction": 0
+        },
+        "gold": 22,
+        "metrics": {
+          "abstention_rate": 0.0,
+          "auto_published_coverage": 0.0,
+          "auto_published_precision": null,
+          "recall": 0.0,
+          "review_rate": 1.0
+        },
+        "predictions": 22
+      },
+      "f572c75144e5e94d236a07338241d1df8a1a0fd4bb2586bd4648ccaa16cf0874": {
+        "counts": {
+          "abstain": 40,
+          "spurious_published": 0
+        },
+        "errors": {
+          "spurious_prediction": 0
+        },
+        "gold": 40,
+        "metrics": {
+          "abstention_rate": 1.0,
+          "auto_published_coverage": 0.0,
+          "auto_published_precision": null,
+          "recall": 0.0,
+          "review_rate": 0.0
+        },
+        "predictions": 40
+      },
+      "f6f5ee3e258e49914088cab3a9abd7757ccc6f245cc86e4a07747fe4cc8364c8": {
+        "counts": {
+          "abstain": 1,
+          "review": 21,
+          "spurious_published": 0
+        },
+        "errors": {
+          "spurious_prediction": 0
+        },
+        "gold": 22,
+        "metrics": {
+          "abstention_rate": 0.045454545454545456,
+          "auto_published_coverage": 0.0,
+          "auto_published_precision": null,
+          "recall": 0.0,
+          "review_rate": 0.9545454545454546
+        },
+        "predictions": 22
+      }
+    },
+    "extraction_method": {
+      "abstain": {
+        "counts": {
+          "abstain": 43,
+          "spurious_published": 0
+        },
+        "errors": {
+          "spurious_prediction": 0
+        },
+        "gold": 43,
+        "metrics": {
+          "abstention_rate": 1.0,
+          "auto_published_coverage": 0.0,
+          "auto_published_precision": null,
+          "recall": 0.0,
+          "review_rate": 0.0
+        },
+        "predictions": 43
+      },
+      "deterministic_period_column": {
+        "counts": {
+          "correct_published": 64,
+          "publish": 64,
+          "review": 41,
+          "spurious_published": 0
+        },
+        "errors": {
+          "spurious_prediction": 0
+        },
+        "gold": 105,
+        "metrics": {
+          "abstention_rate": 0.0,
+          "auto_published_coverage": 0.6095238095238096,
+          "auto_published_precision": 1.0,
+          "recall": 0.6095238095238096,
+          "review_rate": 0.3904761904761905
+        },
+        "predictions": 105
+      },
+      "deterministic_quarter_column": {
+        "counts": {
+          "correct_published": 198,
+          "publish": 198,
+          "review": 42,
+          "spurious_published": 0
+        },
+        "errors": {
+          "spurious_prediction": 0
+        },
+        "gold": 240,
+        "metrics": {
+          "abstention_rate": 0.0,
+          "auto_published_coverage": 0.825,
+          "auto_published_precision": 1.0,
+          "recall": 0.825,
+          "review_rate": 0.175
+        },
+        "predictions": 240
+      },
+      "missing_parsed_document": {
+        "counts": {
+          "abstain": 40,
+          "spurious_published": 0
+        },
+        "errors": {
+          "spurious_prediction": 0
+        },
+        "gold": 40,
+        "metrics": {
+          "abstention_rate": 1.0,
+          "auto_published_coverage": 0.0,
+          "auto_published_precision": null,
+          "recall": 0.0,
+          "review_rate": 0.0
+        },
+        "predictions": 40
+      }
+    },
+    "fact_code": {
+      "depreciation_and_amortization": {
+        "counts": {
+          "abstain": 7,
+          "correct_published": 25,
+          "publish": 25,
+          "review": 8,
+          "spurious_published": 0
+        },
+        "errors": {
+          "spurious_prediction": 0
+        },
+        "gold": 40,
+        "metrics": {
+          "abstention_rate": 0.175,
+          "auto_published_coverage": 0.625,
+          "auto_published_precision": 1.0,
+          "recall": 0.625,
+          "review_rate": 0.2
+        },
+        "predictions": 40
+      },
+      "eps_basic": {
+        "counts": {
+          "abstain": 9,
+          "correct_published": 24,
+          "publish": 24,
+          "review": 8,
+          "spurious_published": 0
+        },
+        "errors": {
+          "spurious_prediction": 0
+        },
+        "gold": 41,
+        "metrics": {
+          "abstention_rate": 0.21951219512195122,
+          "auto_published_coverage": 0.5853658536585366,
+          "auto_published_precision": 1.0,
+          "recall": 0.5853658536585366,
+          "review_rate": 0.1951219512195122
+        },
+        "predictions": 41
+      },
+      "eps_diluted": {
+        "counts": {
+          "abstain": 9,
+          "correct_published": 24,
+          "publish": 24,
+          "review": 8,
+          "spurious_published": 0
+        },
+        "errors": {
+          "spurious_prediction": 0
+        },
+        "gold": 41,
+        "metrics": {
+          "abstention_rate": 0.21951219512195122,
+          "auto_published_coverage": 0.5853658536585366,
+          "auto_published_precision": 1.0,
+          "recall": 0.5853658536585366,
+          "review_rate": 0.1951219512195122
+        },
+        "predictions": 41
+      },
+      "finance_cost": {
+        "counts": {
+          "abstain": 7,
+          "correct_published": 25,
+          "publish": 25,
+          "review": 8,
+          "spurious_published": 0
+        },
+        "errors": {
+          "spurious_prediction": 0
+        },
+        "gold": 40,
+        "metrics": {
+          "abstention_rate": 0.175,
+          "auto_published_coverage": 0.625,
+          "auto_published_precision": 1.0,
+          "recall": 0.625,
+          "review_rate": 0.2
+        },
+        "predictions": 40
+      },
+      "other_income": {
+        "counts": {
+          "abstain": 7,
+          "correct_published": 25,
+          "publish": 25,
+          "review": 8,
+          "spurious_published": 0
+        },
+        "errors": {
+          "spurious_prediction": 0
+        },
+        "gold": 40,
+        "metrics": {
+          "abstention_rate": 0.175,
+          "auto_published_coverage": 0.625,
+          "auto_published_precision": 1.0,
+          "recall": 0.625,
+          "review_rate": 0.2
+        },
+        "predictions": 40
+      },
+      "pat": {
+        "counts": {
+          "abstain": 9,
+          "correct_published": 25,
+          "publish": 25,
+          "review": 8,
+          "spurious_published": 0
+        },
+        "errors": {
+          "spurious_prediction": 0
+        },
+        "gold": 42,
+        "metrics": {
+          "abstention_rate": 0.21428571428571427,
+          "auto_published_coverage": 0.5952380952380952,
+          "auto_published_precision": 1.0,
+          "recall": 0.5952380952380952,
+          "review_rate": 0.19047619047619047
+        },
+        "predictions": 42
+      },
+      "pbt": {
+        "counts": {
+          "abstain": 8,
+          "correct_published": 27,
+          "publish": 27,
+          "review": 7,
+          "spurious_published": 0
+        },
+        "errors": {
+          "spurious_prediction": 0
+        },
+        "gold": 42,
+        "metrics": {
+          "abstention_rate": 0.19047619047619047,
+          "auto_published_coverage": 0.6428571428571429,
+          "auto_published_precision": 1.0,
+          "recall": 0.6428571428571429,
+          "review_rate": 0.16666666666666666
+        },
+        "predictions": 42
+      },
+      "revenue_from_operations": {
+        "counts": {
+          "abstain": 5,
+          "correct_published": 27,
+          "publish": 27,
+          "review": 8,
+          "spurious_published": 0
+        },
+        "errors": {
+          "spurious_prediction": 0
+        },
+        "gold": 40,
+        "metrics": {
+          "abstention_rate": 0.125,
+          "auto_published_coverage": 0.675,
+          "auto_published_precision": 1.0,
+          "recall": 0.675,
+          "review_rate": 0.2
+        },
+        "predictions": 40
+      },
+      "tax_expense": {
+        "counts": {
+          "abstain": 7,
+          "correct_published": 13,
+          "publish": 13,
+          "review": 4,
+          "spurious_published": 0
+        },
+        "errors": {
+          "spurious_prediction": 0
+        },
+        "gold": 24,
+        "metrics": {
+          "abstention_rate": 0.2916666666666667,
+          "auto_published_coverage": 0.5416666666666666,
+          "auto_published_precision": 1.0,
+          "recall": 0.5416666666666666,
+          "review_rate": 0.16666666666666666
+        },
+        "predictions": 24
+      },
+      "total_expenses": {
+        "counts": {
+          "abstain": 7,
+          "correct_published": 23,
+          "publish": 23,
+          "review": 8,
+          "spurious_published": 0
+        },
+        "errors": {
+          "spurious_prediction": 0
+        },
+        "gold": 38,
+        "metrics": {
+          "abstention_rate": 0.18421052631578946,
+          "auto_published_coverage": 0.6052631578947368,
+          "auto_published_precision": 1.0,
+          "recall": 0.6052631578947368,
+          "review_rate": 0.21052631578947367
+        },
+        "predictions": 38
+      },
+      "total_income": {
+        "counts": {
+          "abstain": 8,
+          "correct_published": 24,
+          "publish": 24,
+          "review": 8,
+          "spurious_published": 0
+        },
+        "errors": {
+          "spurious_prediction": 0
+        },
+        "gold": 40,
+        "metrics": {
+          "abstention_rate": 0.2,
+          "auto_published_coverage": 0.6,
+          "auto_published_precision": 1.0,
+          "recall": 0.6,
+          "review_rate": 0.2
+        },
+        "predictions": 40
+      }
+    },
+    "pdf_difficulty": {
+      "difficult": {
+        "counts": {
+          "abstain": 81,
+          "correct_published": 170,
+          "publish": 170,
+          "review": 61,
+          "spurious_published": 0
+        },
+        "errors": {
+          "spurious_prediction": 0
+        },
+        "gold": 312,
+        "metrics": {
+          "abstention_rate": 0.25961538461538464,
+          "auto_published_coverage": 0.5448717948717948,
+          "auto_published_precision": 1.0,
+          "recall": 0.5448717948717948,
+          "review_rate": 0.1955128205128205
+        },
+        "predictions": 312
+      },
+      "standard": {
+        "counts": {
+          "abstain": 2,
+          "correct_published": 92,
+          "publish": 92,
+          "review": 22,
+          "spurious_published": 0
+        },
+        "errors": {
+          "spurious_prediction": 0
+        },
+        "gold": 116,
+        "metrics": {
+          "abstention_rate": 0.017241379310344827,
+          "auto_published_coverage": 0.7931034482758621,
+          "auto_published_precision": 1.0,
+          "recall": 0.7931034482758621,
+          "review_rate": 0.1896551724137931
+        },
+        "predictions": 116
+      }
+    },
+    "period_type": {
+      "half_year": {
+        "counts": {
+          "correct_published": 20,
+          "publish": 20,
+          "spurious_published": 0
+        },
+        "errors": {
+          "spurious_prediction": 0
+        },
+        "gold": 20,
+        "metrics": {
+          "abstention_rate": 0.0,
+          "auto_published_coverage": 1.0,
+          "auto_published_precision": 1.0,
+          "recall": 1.0,
+          "review_rate": 0.0
+        },
+        "predictions": 20
+      },
+      "nine_months": {
+        "counts": {
+          "abstain": 1,
+          "correct_published": 22,
+          "publish": 22,
+          "review": 21,
+          "spurious_published": 0
+        },
+        "errors": {
+          "spurious_prediction": 0
+        },
+        "gold": 44,
+        "metrics": {
+          "abstention_rate": 0.022727272727272728,
+          "auto_published_coverage": 0.5,
+          "auto_published_precision": 1.0,
+          "recall": 0.5,
+          "review_rate": 0.4772727272727273
+        },
+        "predictions": 44
+      },
+      "quarter": {
+        "counts": {
+          "abstain": 60,
+          "correct_published": 198,
+          "publish": 198,
+          "review": 42,
+          "spurious_published": 0
+        },
+        "errors": {
+          "spurious_prediction": 0
+        },
+        "gold": 300,
+        "metrics": {
+          "abstention_rate": 0.2,
+          "auto_published_coverage": 0.66,
+          "auto_published_precision": 1.0,
+          "recall": 0.66,
+          "review_rate": 0.14
+        },
+        "predictions": 300
+      },
+      "year": {
+        "counts": {
+          "abstain": 22,
+          "correct_published": 22,
+          "publish": 22,
+          "review": 20,
+          "spurious_published": 0
+        },
+        "errors": {
+          "spurious_prediction": 0
+        },
+        "gold": 64,
+        "metrics": {
+          "abstention_rate": 0.34375,
+          "auto_published_coverage": 0.34375,
+          "auto_published_precision": 1.0,
+          "recall": 0.34375,
+          "review_rate": 0.3125
+        },
+        "predictions": 64
+      }
+    }
+  },
+  "before_fix": {
+    "basis": {
+      "consolidated": {
+        "counts": {
+          "abstain": 68,
+          "correct_published": 124,
+          "incorrect_published": 23,
+          "missing": 4,
+          "publish": 147,
+          "spurious_published": 0
+        },
+        "errors": {
+          "spurious_prediction": 0,
+          "unsupported_evidence": 2,
+          "wrong_source_page": 1,
+          "wrong_value": 21
+        },
+        "gold": 215,
+        "metrics": {
+          "abstention_rate": 0.31627906976744186,
+          "auto_published_coverage": 0.6837209302325581,
+          "auto_published_precision": 0.8435374149659864,
+          "recall": 0.5767441860465117,
+          "review_rate": 0.0
+        },
+        "predictions": 211
+      },
+      "standalone": {
+        "counts": {
+          "abstain": 70,
+          "correct_published": 123,
+          "incorrect_published": 20,
+          "missing": 5,
+          "publish": 143,
+          "spurious_published": 0
+        },
+        "errors": {
+          "spurious_prediction": 0,
+          "wrong_source_page": 1,
+          "wrong_value": 20
+        },
+        "gold": 213,
+        "metrics": {
+          "abstention_rate": 0.3286384976525822,
+          "auto_published_coverage": 0.6713615023474179,
+          "auto_published_precision": 0.8601398601398601,
+          "recall": 0.5774647887323944,
+          "review_rate": 0.0
+        },
+        "predictions": 208
+      }
+    },
+    "company": {
+      "ASIANPAINT": {
+        "counts": {
+          "abstain": 21,
+          "incorrect_published": 1,
+          "publish": 1,
+          "spurious_published": 0
+        },
+        "errors": {
+          "spurious_prediction": 0,
+          "wrong_value": 1
+        },
+        "gold": 22,
+        "metrics": {
+          "abstention_rate": 0.9545454545454546,
+          "auto_published_coverage": 0.045454545454545456,
+          "auto_published_precision": 0.0,
+          "recall": 0.0,
+          "review_rate": 0.0
+        },
+        "predictions": 22
+      },
+      "BHARTIARTL": {
+        "counts": {
+          "abstain": 4,
+          "correct_published": 16,
+          "publish": 16,
+          "spurious_published": 0
+        },
+        "errors": {
+          "spurious_prediction": 0
+        },
+        "gold": 20,
+        "metrics": {
+          "abstention_rate": 0.2,
+          "auto_published_coverage": 0.8,
+          "auto_published_precision": 1.0,
+          "recall": 0.8,
+          "review_rate": 0.0
+        },
+        "predictions": 20
+      },
+      "DRREDDY": {
+        "counts": {
+          "correct_published": 4,
+          "incorrect_published": 16,
+          "publish": 20,
+          "spurious_published": 0
+        },
+        "errors": {
+          "spurious_prediction": 0,
+          "wrong_value": 16
+        },
+        "gold": 20,
+        "metrics": {
+          "abstention_rate": 0.0,
+          "auto_published_coverage": 1.0,
+          "auto_published_precision": 0.2,
+          "recall": 0.2,
+          "review_rate": 0.0
+        },
+        "predictions": 20
+      },
+      "HINDUNILVR": {
+        "counts": {
+          "abstain": 18,
+          "spurious_published": 0
+        },
+        "errors": {
+          "spurious_prediction": 0
+        },
+        "gold": 18,
+        "metrics": {
+          "abstention_rate": 1.0,
+          "auto_published_coverage": 0.0,
+          "auto_published_precision": null,
+          "recall": 0.0,
+          "review_rate": 0.0
+        },
+        "predictions": 18
+      },
+      "INFY": {
+        "counts": {
+          "abstain": 45,
+          "correct_published": 2,
+          "incorrect_published": 1,
+          "missing": 5,
+          "publish": 3,
+          "spurious_published": 0
+        },
+        "errors": {
+          "spurious_prediction": 0,
+          "wrong_value": 1
+        },
+        "gold": 48,
+        "metrics": {
+          "abstention_rate": 0.9375,
+          "auto_published_coverage": 0.0625,
+          "auto_published_precision": 0.6666666666666666,
+          "recall": 0.041666666666666664,
+          "review_rate": 0.0
+        },
+        "predictions": 43
+      },
+      "ITC": {
+        "counts": {
+          "abstain": 26,
+          "correct_published": 38,
+          "incorrect_published": 2,
+          "missing": 4,
+          "publish": 40,
+          "spurious_published": 0
+        },
+        "errors": {
+          "spurious_prediction": 0,
+          "wrong_value": 2
+        },
+        "gold": 66,
+        "metrics": {
+          "abstention_rate": 0.3939393939393939,
+          "auto_published_coverage": 0.6060606060606061,
+          "auto_published_precision": 0.95,
+          "recall": 0.5757575757575758,
+          "review_rate": 0.0
+        },
+        "predictions": 62
+      },
+      "KEC": {
+        "counts": {
+          "correct_published": 44,
+          "publish": 44,
+          "spurious_published": 0
+        },
+        "errors": {
+          "spurious_prediction": 0
+        },
+        "gold": 44,
+        "metrics": {
+          "abstention_rate": 0.0,
+          "auto_published_coverage": 1.0,
+          "auto_published_precision": 1.0,
+          "recall": 1.0,
+          "review_rate": 0.0
+        },
+        "predictions": 44
+      },
+      "LT": {
+        "counts": {
+          "correct_published": 44,
+          "publish": 44,
+          "spurious_published": 0
+        },
+        "errors": {
+          "spurious_prediction": 0
+        },
+        "gold": 44,
+        "metrics": {
+          "abstention_rate": 0.0,
+          "auto_published_coverage": 1.0,
+          "auto_published_precision": 1.0,
+          "recall": 1.0,
+          "review_rate": 0.0
+        },
+        "predictions": 44
+      },
+      "MARUTI": {
+        "counts": {
+          "correct_published": 4,
+          "incorrect_published": 18,
+          "publish": 22,
+          "spurious_published": 0
+        },
+        "errors": {
+          "spurious_prediction": 0,
+          "wrong_value": 18
+        },
+        "gold": 22,
+        "metrics": {
+          "abstention_rate": 0.0,
+          "auto_published_coverage": 1.0,
+          "auto_published_precision": 0.18181818181818182,
+          "recall": 0.18181818181818182,
+          "review_rate": 0.0
+        },
+        "predictions": 22
+      },
+      "RELIANCE": {
+        "counts": {
+          "correct_published": 40,
+          "publish": 40,
+          "spurious_published": 0
+        },
+        "errors": {
+          "spurious_prediction": 0
+        },
+        "gold": 40,
+        "metrics": {
+          "abstention_rate": 0.0,
+          "auto_published_coverage": 1.0,
+          "auto_published_precision": 1.0,
+          "recall": 1.0,
+          "review_rate": 0.0
+        },
+        "predictions": 40
+      },
+      "SUNPHARMA": {
+        "counts": {
+          "correct_published": 17,
+          "incorrect_published": 3,
+          "publish": 20,
+          "spurious_published": 0
+        },
+        "errors": {
+          "spurious_prediction": 0,
+          "unsupported_evidence": 2,
+          "wrong_value": 1
+        },
+        "gold": 20,
+        "metrics": {
+          "abstention_rate": 0.0,
+          "auto_published_coverage": 1.0,
+          "auto_published_precision": 0.85,
+          "recall": 0.85,
+          "review_rate": 0.0
+        },
+        "predictions": 20
+      },
+      "TATASTEEL": {
+        "counts": {
+          "abstain": 4,
+          "correct_published": 16,
+          "incorrect_published": 2,
+          "publish": 18,
+          "spurious_published": 0
+        },
+        "errors": {
+          "spurious_prediction": 0,
+          "wrong_source_page": 2,
+          "wrong_value": 2
+        },
+        "gold": 22,
+        "metrics": {
+          "abstention_rate": 0.18181818181818182,
+          "auto_published_coverage": 0.8181818181818182,
+          "auto_published_precision": 0.8888888888888888,
+          "recall": 0.7272727272727273,
+          "review_rate": 0.0
+        },
+        "predictions": 22
+      },
+      "TCS": {
+        "counts": {
+          "correct_published": 22,
+          "publish": 22,
+          "spurious_published": 0
+        },
+        "errors": {
+          "spurious_prediction": 0
+        },
+        "gold": 22,
+        "metrics": {
+          "abstention_rate": 0.0,
+          "auto_published_coverage": 1.0,
+          "auto_published_precision": 1.0,
+          "recall": 1.0,
+          "review_rate": 0.0
+        },
+        "predictions": 22
+      },
+      "ULTRACEMCO": {
+        "counts": {
+          "abstain": 20,
+          "spurious_published": 0
+        },
+        "errors": {
+          "spurious_prediction": 0
+        },
+        "gold": 20,
+        "metrics": {
+          "abstention_rate": 1.0,
+          "auto_published_coverage": 0.0,
+          "auto_published_precision": null,
+          "recall": 0.0,
+          "review_rate": 0.0
+        },
+        "predictions": 20
+      }
+    },
+    "document": {
+      "0fab4bb6c9696c390acd89921c28c7dbbfd2c90611701a12dd52665ce21b8993": {
+        "counts": {
+          "correct_published": 4,
+          "incorrect_published": 18,
+          "publish": 22,
+          "spurious_published": 0
+        },
+        "errors": {
+          "spurious_prediction": 0,
+          "wrong_value": 18
+        },
+        "gold": 22,
+        "metrics": {
+          "abstention_rate": 0.0,
+          "auto_published_coverage": 1.0,
+          "auto_published_precision": 0.18181818181818182,
+          "recall": 0.18181818181818182,
+          "review_rate": 0.0
+        },
+        "predictions": 22
+      },
+      "0fd4d2409fa868e981611968912ee28879723a1a0474706c087b36db812b7ec3": {
+        "counts": {
+          "correct_published": 20,
+          "publish": 20,
+          "spurious_published": 0
+        },
+        "errors": {
+          "spurious_prediction": 0
+        },
+        "gold": 20,
+        "metrics": {
+          "abstention_rate": 0.0,
+          "auto_published_coverage": 1.0,
+          "auto_published_precision": 1.0,
+          "recall": 1.0,
+          "review_rate": 0.0
+        },
+        "predictions": 20
+      },
+      "1d75d71df7bc81415d2a623641cea8dd9124c107692db5ac731e31a6d776ac45": {
+        "counts": {
+          "abstain": 4,
+          "correct_published": 16,
+          "publish": 16,
+          "spurious_published": 0
+        },
+        "errors": {
+          "spurious_prediction": 0
+        },
+        "gold": 20,
+        "metrics": {
+          "abstention_rate": 0.2,
+          "auto_published_coverage": 0.8,
+          "auto_published_precision": 1.0,
+          "recall": 0.8,
+          "review_rate": 0.0
+        },
+        "predictions": 20
+      },
+      "261d6717078b4661e2140cc5aa932202295b0a4bd65ad7dccf8168a0eaf048e8": {
+        "counts": {
+          "correct_published": 22,
+          "publish": 22,
+          "spurious_published": 0
+        },
+        "errors": {
+          "spurious_prediction": 0
+        },
+        "gold": 22,
+        "metrics": {
+          "abstention_rate": 0.0,
+          "auto_published_coverage": 1.0,
+          "auto_published_precision": 1.0,
+          "recall": 1.0,
+          "review_rate": 0.0
+        },
+        "predictions": 22
+      },
+      "2bcf3252f2267b8995120e1b55642e59287534286cc32f293f59553e1803660f": {
+        "counts": {
+          "correct_published": 22,
+          "publish": 22,
+          "spurious_published": 0
+        },
+        "errors": {
+          "spurious_prediction": 0
+        },
+        "gold": 22,
+        "metrics": {
+          "abstention_rate": 0.0,
+          "auto_published_coverage": 1.0,
+          "auto_published_precision": 1.0,
+          "recall": 1.0,
+          "review_rate": 0.0
+        },
+        "predictions": 22
+      },
+      "337f78973fbf9618b7e4a9b423cd1885c7d19f86bcf97154b556cc1d0974148c": {
+        "counts": {
+          "abstain": 18,
+          "spurious_published": 0
+        },
+        "errors": {
+          "spurious_prediction": 0
+        },
+        "gold": 18,
+        "metrics": {
+          "abstention_rate": 1.0,
+          "auto_published_coverage": 0.0,
+          "auto_published_precision": null,
+          "recall": 0.0,
+          "review_rate": 0.0
+        },
+        "predictions": 18
+      },
+      "589a0d9edae6a5ed72524d6a8391bbe48780123b61167c5789a4444cd86869a8": {
+        "counts": {
+          "correct_published": 20,
+          "publish": 20,
+          "spurious_published": 0
+        },
+        "errors": {
+          "spurious_prediction": 0
+        },
+        "gold": 20,
+        "metrics": {
+          "abstention_rate": 0.0,
+          "auto_published_coverage": 1.0,
+          "auto_published_precision": 1.0,
+          "recall": 1.0,
+          "review_rate": 0.0
+        },
+        "predictions": 20
+      },
+      "6b1f26139a9dd31775081b1eef43abbb7c14d8dd297fbe8df65bb6d47f1d1ff9": {
+        "counts": {
+          "correct_published": 17,
+          "incorrect_published": 3,
+          "publish": 20,
+          "spurious_published": 0
+        },
+        "errors": {
+          "spurious_prediction": 0,
+          "unsupported_evidence": 2,
+          "wrong_value": 1
+        },
+        "gold": 20,
+        "metrics": {
+          "abstention_rate": 0.0,
+          "auto_published_coverage": 1.0,
+          "auto_published_precision": 0.85,
+          "recall": 0.85,
+          "review_rate": 0.0
+        },
+        "predictions": 20
+      },
+      "6c25945227f1812b45137aaffbba3cea51661bd695219b4be1baa281b8ce49af": {
+        "counts": {
+          "abstain": 4,
+          "correct_published": 16,
+          "incorrect_published": 2,
+          "publish": 18,
+          "spurious_published": 0
+        },
+        "errors": {
+          "spurious_prediction": 0,
+          "wrong_source_page": 2,
+          "wrong_value": 2
+        },
+        "gold": 22,
+        "metrics": {
+          "abstention_rate": 0.18181818181818182,
+          "auto_published_coverage": 0.8181818181818182,
+          "auto_published_precision": 0.8888888888888888,
+          "recall": 0.7272727272727273,
+          "review_rate": 0.0
+        },
+        "predictions": 22
+      },
+      "6c409074cb28cf16ae17eb01b8ce7bbb8ed19efaa4d49395eb9773dc5f87822c": {
+        "counts": {
+          "abstain": 4,
+          "correct_published": 18,
+          "missing": 4,
+          "publish": 18,
+          "spurious_published": 0
+        },
+        "errors": {
+          "spurious_prediction": 0
+        },
+        "gold": 22,
+        "metrics": {
+          "abstention_rate": 0.18181818181818182,
+          "auto_published_coverage": 0.8181818181818182,
+          "auto_published_precision": 1.0,
+          "recall": 0.8181818181818182,
+          "review_rate": 0.0
+        },
+        "predictions": 18
+      },
+      "762e5d6f8a659fa4b3476eadf7c9f38669b57d8d9fd74866de44b6c4aae068e9": {
+        "counts": {
+          "abstain": 21,
+          "incorrect_published": 1,
+          "publish": 1,
+          "spurious_published": 0
+        },
+        "errors": {
+          "spurious_prediction": 0,
+          "wrong_value": 1
+        },
+        "gold": 22,
+        "metrics": {
+          "abstention_rate": 0.9545454545454546,
+          "auto_published_coverage": 0.045454545454545456,
+          "auto_published_precision": 0.0,
+          "recall": 0.0,
+          "review_rate": 0.0
+        },
+        "predictions": 22
+      },
+      "914f2f78b8969c727d5ea61eb023dc23ca01913e66ed9c64429b2406d9f5f1d2": {
+        "counts": {
+          "correct_published": 4,
+          "incorrect_published": 16,
+          "publish": 20,
+          "spurious_published": 0
+        },
+        "errors": {
+          "spurious_prediction": 0,
+          "wrong_value": 16
+        },
+        "gold": 20,
+        "metrics": {
+          "abstention_rate": 0.0,
+          "auto_published_coverage": 1.0,
+          "auto_published_precision": 0.2,
+          "recall": 0.2,
+          "review_rate": 0.0
+        },
+        "predictions": 20
+      },
+      "944998b5645ff3000b1d46f91f905c49699723241815a33b2b504f31b4c98528": {
+        "counts": {
+          "abstain": 20,
+          "spurious_published": 0
+        },
+        "errors": {
+          "spurious_prediction": 0
+        },
+        "gold": 20,
+        "metrics": {
+          "abstention_rate": 1.0,
+          "auto_published_coverage": 0.0,
+          "auto_published_precision": null,
+          "recall": 0.0,
+          "review_rate": 0.0
+        },
+        "predictions": 20
+      },
+      "aa187a45c53b3f8f6b7e54d720246fa97295920bb3e692085ad1369b554e765e": {
+        "counts": {
+          "abstain": 5,
+          "correct_published": 2,
+          "incorrect_published": 1,
+          "missing": 5,
+          "publish": 3,
+          "spurious_published": 0
+        },
+        "errors": {
+          "spurious_prediction": 0,
+          "wrong_value": 1
+        },
+        "gold": 8,
+        "metrics": {
+          "abstention_rate": 0.625,
+          "auto_published_coverage": 0.375,
+          "auto_published_precision": 0.6666666666666666,
+          "recall": 0.25,
+          "review_rate": 0.0
+        },
+        "predictions": 3
+      },
+      "c9a47d5cfa27a80a49070e60f306f092819535e4023da7a398d7df592763fd06": {
+        "counts": {
+          "correct_published": 22,
+          "publish": 22,
+          "spurious_published": 0
+        },
+        "errors": {
+          "spurious_prediction": 0
+        },
+        "gold": 22,
+        "metrics": {
+          "abstention_rate": 0.0,
+          "auto_published_coverage": 1.0,
+          "auto_published_precision": 1.0,
+          "recall": 1.0,
+          "review_rate": 0.0
+        },
+        "predictions": 22
+      },
+      "e1e2a9cb6d42e0d15db78bed532f2c77a6956f12dc428da7b7db7aed1cc86d02": {
+        "counts": {
+          "abstain": 22,
+          "correct_published": 20,
+          "incorrect_published": 2,
+          "publish": 22,
+          "spurious_published": 0
+        },
+        "errors": {
+          "spurious_prediction": 0,
+          "wrong_value": 2
+        },
+        "gold": 44,
+        "metrics": {
+          "abstention_rate": 0.5,
+          "auto_published_coverage": 0.5,
+          "auto_published_precision": 0.9090909090909091,
+          "recall": 0.45454545454545453,
+          "review_rate": 0.0
+        },
+        "predictions": 44
+      },
+      "e3ae9197774db11fc5152da67d77715569a3861ee56ae4c67c835624ca779b2a": {
+        "counts": {
+          "correct_published": 22,
+          "publish": 22,
+          "spurious_published": 0
+        },
+        "errors": {
+          "spurious_prediction": 0
+        },
+        "gold": 22,
+        "metrics": {
+          "abstention_rate": 0.0,
+          "auto_published_coverage": 1.0,
+          "auto_published_precision": 1.0,
+          "recall": 1.0,
+          "review_rate": 0.0
+        },
+        "predictions": 22
+      },
+      "f572c75144e5e94d236a07338241d1df8a1a0fd4bb2586bd4648ccaa16cf0874": {
+        "counts": {
+          "abstain": 40,
+          "spurious_published": 0
+        },
+        "errors": {
+          "spurious_prediction": 0
+        },
+        "gold": 40,
+        "metrics": {
+          "abstention_rate": 1.0,
+          "auto_published_coverage": 0.0,
+          "auto_published_precision": null,
+          "recall": 0.0,
+          "review_rate": 0.0
+        },
+        "predictions": 40
+      },
+      "f6f5ee3e258e49914088cab3a9abd7757ccc6f245cc86e4a07747fe4cc8364c8": {
+        "counts": {
+          "correct_published": 22,
+          "publish": 22,
+          "spurious_published": 0
+        },
+        "errors": {
+          "spurious_prediction": 0
+        },
+        "gold": 22,
+        "metrics": {
+          "abstention_rate": 0.0,
+          "auto_published_coverage": 1.0,
+          "auto_published_precision": 1.0,
+          "recall": 1.0,
+          "review_rate": 0.0
+        },
+        "predictions": 22
+      }
+    },
+    "extraction_method": {
+      "abstain": {
+        "counts": {
+          "abstain": 89,
+          "spurious_published": 0
+        },
+        "errors": {
+          "spurious_prediction": 0
+        },
+        "gold": 89,
+        "metrics": {
+          "abstention_rate": 1.0,
+          "auto_published_coverage": 0.0,
+          "auto_published_precision": null,
+          "recall": 0.0,
+          "review_rate": 0.0
+        },
+        "predictions": 89
+      },
+      "deterministic_period_column": {
+        "counts": {
+          "correct_published": 86,
+          "publish": 86,
+          "spurious_published": 0
+        },
+        "errors": {
+          "spurious_prediction": 0
+        },
+        "gold": 86,
+        "metrics": {
+          "abstention_rate": 0.0,
+          "auto_published_coverage": 1.0,
+          "auto_published_precision": 1.0,
+          "recall": 1.0,
+          "review_rate": 0.0
+        },
+        "predictions": 86
+      },
+      "deterministic_quarter_column": {
+        "counts": {
+          "correct_published": 141,
+          "incorrect_published": 42,
+          "publish": 183,
+          "spurious_published": 0
+        },
+        "errors": {
+          "spurious_prediction": 0,
+          "unsupported_evidence": 2,
+          "wrong_source_page": 2,
+          "wrong_value": 40
+        },
+        "gold": 183,
+        "metrics": {
+          "abstention_rate": 0.0,
+          "auto_published_coverage": 1.0,
+          "auto_published_precision": 0.7704918032786885,
+          "recall": 0.7704918032786885,
+          "review_rate": 0.0
+        },
+        "predictions": 183
+      },
+      "existing_extracted_values": {
+        "counts": {
+          "correct_published": 20,
+          "incorrect_published": 1,
+          "publish": 21,
+          "spurious_published": 0
+        },
+        "errors": {
+          "spurious_prediction": 0,
+          "wrong_value": 1
+        },
+        "gold": 21,
+        "metrics": {
+          "abstention_rate": 0.0,
+          "auto_published_coverage": 1.0,
+          "auto_published_precision": 0.9523809523809523,
+          "recall": 0.9523809523809523,
+          "review_rate": 0.0
+        },
+        "predictions": 21
+      },
+      "missing": {
+        "counts": {
+          "abstain": 9,
+          "missing": 9,
+          "spurious_published": 0
+        },
+        "errors": {
+          "spurious_prediction": 0
+        },
+        "gold": 9,
+        "metrics": {
+          "abstention_rate": 1.0,
+          "auto_published_coverage": 0.0,
+          "auto_published_precision": null,
+          "recall": 0.0,
+          "review_rate": 0.0
+        },
+        "predictions": 0
+      },
+      "missing_parsed_document": {
+        "counts": {
+          "abstain": 40,
+          "spurious_published": 0
+        },
+        "errors": {
+          "spurious_prediction": 0
+        },
+        "gold": 40,
+        "metrics": {
+          "abstention_rate": 1.0,
+          "auto_published_coverage": 0.0,
+          "auto_published_precision": null,
+          "recall": 0.0,
+          "review_rate": 0.0
+        },
+        "predictions": 40
+      }
+    },
+    "fact_code": {
+      "depreciation_and_amortization": {
+        "counts": {
+          "abstain": 12,
+          "correct_published": 24,
+          "incorrect_published": 4,
+          "publish": 28,
+          "spurious_published": 0
+        },
+        "errors": {
+          "spurious_prediction": 0,
+          "wrong_value": 4
+        },
+        "gold": 40,
+        "metrics": {
+          "abstention_rate": 0.3,
+          "auto_published_coverage": 0.7,
+          "auto_published_precision": 0.8571428571428571,
+          "recall": 0.6,
+          "review_rate": 0.0
+        },
+        "predictions": 40
+      },
+      "eps_basic": {
+        "counts": {
+          "abstain": 17,
+          "correct_published": 24,
+          "missing": 3,
+          "publish": 24,
+          "spurious_published": 0
+        },
+        "errors": {
+          "spurious_prediction": 0
+        },
+        "gold": 41,
+        "metrics": {
+          "abstention_rate": 0.4146341463414634,
+          "auto_published_coverage": 0.5853658536585366,
+          "auto_published_precision": 1.0,
+          "recall": 0.5853658536585366,
+          "review_rate": 0.0
+        },
+        "predictions": 38
+      },
+      "eps_diluted": {
+        "counts": {
+          "abstain": 17,
+          "correct_published": 24,
+          "missing": 3,
+          "publish": 24,
+          "spurious_published": 0
+        },
+        "errors": {
+          "spurious_prediction": 0
+        },
+        "gold": 41,
+        "metrics": {
+          "abstention_rate": 0.4146341463414634,
+          "auto_published_coverage": 0.5853658536585366,
+          "auto_published_precision": 1.0,
+          "recall": 0.5853658536585366,
+          "review_rate": 0.0
+        },
+        "predictions": 38
+      },
+      "finance_cost": {
+        "counts": {
+          "abstain": 12,
+          "correct_published": 24,
+          "incorrect_published": 4,
+          "publish": 28,
+          "spurious_published": 0
+        },
+        "errors": {
+          "spurious_prediction": 0,
+          "wrong_value": 4
+        },
+        "gold": 40,
+        "metrics": {
+          "abstention_rate": 0.3,
+          "auto_published_coverage": 0.7,
+          "auto_published_precision": 0.8571428571428571,
+          "recall": 0.6,
+          "review_rate": 0.0
+        },
+        "predictions": 40
+      },
+      "other_income": {
+        "counts": {
+          "abstain": 12,
+          "correct_published": 24,
+          "incorrect_published": 4,
+          "publish": 28,
+          "spurious_published": 0
+        },
+        "errors": {
+          "spurious_prediction": 0,
+          "wrong_value": 4
+        },
+        "gold": 40,
+        "metrics": {
+          "abstention_rate": 0.3,
+          "auto_published_coverage": 0.7,
+          "auto_published_precision": 0.8571428571428571,
+          "recall": 0.6,
+          "review_rate": 0.0
+        },
+        "predictions": 40
+      },
+      "pat": {
+        "counts": {
+          "abstain": 15,
+          "correct_published": 19,
+          "incorrect_published": 8,
+          "missing": 1,
+          "publish": 27,
+          "spurious_published": 0
+        },
+        "errors": {
+          "spurious_prediction": 0,
+          "wrong_source_page": 2,
+          "wrong_value": 8
+        },
+        "gold": 42,
+        "metrics": {
+          "abstention_rate": 0.35714285714285715,
+          "auto_published_coverage": 0.6428571428571429,
+          "auto_published_precision": 0.7037037037037037,
+          "recall": 0.4523809523809524,
+          "review_rate": 0.0
+        },
+        "predictions": 41
+      },
+      "pbt": {
+        "counts": {
+          "abstain": 13,
+          "correct_published": 25,
+          "incorrect_published": 4,
+          "missing": 1,
+          "publish": 29,
+          "spurious_published": 0
+        },
+        "errors": {
+          "spurious_prediction": 0,
+          "wrong_value": 4
+        },
+        "gold": 42,
+        "metrics": {
+          "abstention_rate": 0.30952380952380953,
+          "auto_published_coverage": 0.6904761904761905,
+          "auto_published_precision": 0.8620689655172413,
+          "recall": 0.5952380952380952,
+          "review_rate": 0.0
+        },
+        "predictions": 41
+      },
+      "revenue_from_operations": {
+        "counts": {
+          "abstain": 11,
+          "correct_published": 25,
+          "incorrect_published": 4,
+          "missing": 1,
+          "publish": 29,
+          "spurious_published": 0
+        },
+        "errors": {
+          "spurious_prediction": 0,
+          "wrong_value": 4
+        },
+        "gold": 40,
+        "metrics": {
+          "abstention_rate": 0.275,
+          "auto_published_coverage": 0.725,
+          "auto_published_precision": 0.8620689655172413,
+          "recall": 0.625,
+          "review_rate": 0.0
+        },
+        "predictions": 39
+      },
+      "tax_expense": {
+        "counts": {
+          "abstain": 4,
+          "correct_published": 15,
+          "incorrect_published": 5,
+          "publish": 20,
+          "spurious_published": 0
+        },
+        "errors": {
+          "spurious_prediction": 0,
+          "wrong_value": 5
+        },
+        "gold": 24,
+        "metrics": {
+          "abstention_rate": 0.16666666666666666,
+          "auto_published_coverage": 0.8333333333333334,
+          "auto_published_precision": 0.75,
+          "recall": 0.625,
+          "review_rate": 0.0
+        },
+        "predictions": 24
+      },
+      "total_expenses": {
+        "counts": {
+          "abstain": 12,
+          "correct_published": 21,
+          "incorrect_published": 5,
+          "publish": 26,
+          "spurious_published": 0
+        },
+        "errors": {
+          "spurious_prediction": 0,
+          "unsupported_evidence": 1,
+          "wrong_value": 4
+        },
+        "gold": 38,
+        "metrics": {
+          "abstention_rate": 0.3157894736842105,
+          "auto_published_coverage": 0.6842105263157895,
+          "auto_published_precision": 0.8076923076923077,
+          "recall": 0.5526315789473685,
+          "review_rate": 0.0
+        },
+        "predictions": 38
+      },
+      "total_income": {
+        "counts": {
+          "abstain": 13,
+          "correct_published": 22,
+          "incorrect_published": 5,
+          "publish": 27,
+          "spurious_published": 0
+        },
+        "errors": {
+          "spurious_prediction": 0,
+          "unsupported_evidence": 1,
+          "wrong_value": 4
+        },
+        "gold": 40,
+        "metrics": {
+          "abstention_rate": 0.325,
+          "auto_published_coverage": 0.675,
+          "auto_published_precision": 0.8148148148148148,
+          "recall": 0.55,
+          "review_rate": 0.0
+        },
+        "predictions": 40
+      }
+    },
+    "pdf_difficulty": {
+      "difficult": {
+        "counts": {
+          "abstain": 129,
+          "correct_published": 159,
+          "incorrect_published": 24,
+          "publish": 183,
+          "spurious_published": 0
+        },
+        "errors": {
+          "spurious_prediction": 0,
+          "unsupported_evidence": 2,
+          "wrong_source_page": 2,
+          "wrong_value": 22
+        },
+        "gold": 312,
+        "metrics": {
+          "abstention_rate": 0.41346153846153844,
+          "auto_published_coverage": 0.5865384615384616,
+          "auto_published_precision": 0.8688524590163934,
+          "recall": 0.5096153846153846,
+          "review_rate": 0.0
+        },
+        "predictions": 312
+      },
+      "standard": {
+        "counts": {
+          "abstain": 9,
+          "correct_published": 88,
+          "incorrect_published": 19,
+          "missing": 9,
+          "publish": 107,
+          "spurious_published": 0
+        },
+        "errors": {
+          "spurious_prediction": 0,
+          "wrong_value": 19
+        },
+        "gold": 116,
+        "metrics": {
+          "abstention_rate": 0.07758620689655173,
+          "auto_published_coverage": 0.9224137931034483,
+          "auto_published_precision": 0.822429906542056,
+          "recall": 0.7586206896551724,
+          "review_rate": 0.0
+        },
+        "predictions": 107
+      }
+    },
+    "period_type": {
+      "half_year": {
+        "counts": {
+          "correct_published": 20,
+          "publish": 20,
+          "spurious_published": 0
+        },
+        "errors": {
+          "spurious_prediction": 0
+        },
+        "gold": 20,
+        "metrics": {
+          "abstention_rate": 0.0,
+          "auto_published_coverage": 1.0,
+          "auto_published_precision": 1.0,
+          "recall": 1.0,
+          "review_rate": 0.0
+        },
+        "predictions": 20
+      },
+      "nine_months": {
+        "counts": {
+          "correct_published": 44,
+          "publish": 44,
+          "spurious_published": 0
+        },
+        "errors": {
+          "spurious_prediction": 0
+        },
+        "gold": 44,
+        "metrics": {
+          "abstention_rate": 0.0,
+          "auto_published_coverage": 1.0,
+          "auto_published_precision": 1.0,
+          "recall": 1.0,
+          "review_rate": 0.0
+        },
+        "predictions": 44
+      },
+      "quarter": {
+        "counts": {
+          "abstain": 96,
+          "correct_published": 161,
+          "incorrect_published": 43,
+          "missing": 9,
+          "publish": 204,
+          "spurious_published": 0
+        },
+        "errors": {
+          "spurious_prediction": 0,
+          "unsupported_evidence": 2,
+          "wrong_source_page": 2,
+          "wrong_value": 41
+        },
+        "gold": 300,
+        "metrics": {
+          "abstention_rate": 0.32,
+          "auto_published_coverage": 0.68,
+          "auto_published_precision": 0.7892156862745098,
+          "recall": 0.5366666666666666,
+          "review_rate": 0.0
+        },
+        "predictions": 291
+      },
+      "year": {
+        "counts": {
+          "abstain": 42,
+          "correct_published": 22,
+          "publish": 22,
+          "spurious_published": 0
+        },
+        "errors": {
+          "spurious_prediction": 0
+        },
+        "gold": 64,
+        "metrics": {
+          "abstention_rate": 0.65625,
+          "auto_published_coverage": 0.34375,
+          "auto_published_precision": 1.0,
+          "recall": 0.34375,
+          "review_rate": 0.0
+        },
+        "predictions": 64
+      }
+    }
+  },
+  "provisional": true
+}

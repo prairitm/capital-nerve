@@ -1,0 +1,325 @@
+{
+  "approved_gold_records": 44,
+  "counts": {
+    "abstain": 4,
+    "review": 40,
+    "spurious_published": 0
+  },
+  "details": [
+    {
+      "decision": "review",
+      "errors": [],
+      "label_id": "e1e2a9cb:revenue_from_operations:2025-03-31:standalone:quarter"
+    },
+    {
+      "decision": "review",
+      "errors": [],
+      "label_id": "e1e2a9cb:other_income:2025-03-31:standalone:quarter"
+    },
+    {
+      "decision": "review",
+      "errors": [],
+      "label_id": "e1e2a9cb:total_income:2025-03-31:standalone:quarter"
+    },
+    {
+      "decision": "review",
+      "errors": [],
+      "label_id": "e1e2a9cb:finance_cost:2025-03-31:standalone:quarter"
+    },
+    {
+      "decision": "review",
+      "errors": [],
+      "label_id": "e1e2a9cb:depreciation_and_amortization:2025-03-31:standalone:quarter"
+    },
+    {
+      "decision": "review",
+      "errors": [],
+      "label_id": "e1e2a9cb:total_expenses:2025-03-31:standalone:quarter"
+    },
+    {
+      "decision": "review",
+      "errors": [],
+      "label_id": "e1e2a9cb:pbt:2025-03-31:standalone:quarter"
+    },
+    {
+      "decision": "abstain",
+      "errors": [],
+      "label_id": "e1e2a9cb:tax_expense:2025-03-31:standalone:quarter"
+    },
+    {
+      "decision": "review",
+      "errors": [],
+      "label_id": "e1e2a9cb:pat:2025-03-31:standalone:quarter"
+    },
+    {
+      "decision": "review",
+      "errors": [],
+      "label_id": "e1e2a9cb:eps_basic:2025-03-31:standalone:quarter"
+    },
+    {
+      "decision": "review",
+      "errors": [],
+      "label_id": "e1e2a9cb:eps_diluted:2025-03-31:standalone:quarter"
+    },
+    {
+      "decision": "review",
+      "errors": [],
+      "label_id": "e1e2a9cb:revenue_from_operations:2025-03-31:standalone:year"
+    },
+    {
+      "decision": "review",
+      "errors": [],
+      "label_id": "e1e2a9cb:other_income:2025-03-31:standalone:year"
+    },
+    {
+      "decision": "review",
+      "errors": [],
+      "label_id": "e1e2a9cb:total_income:2025-03-31:standalone:year"
+    },
+    {
+      "decision": "review",
+      "errors": [],
+      "label_id": "e1e2a9cb:finance_cost:2025-03-31:standalone:year"
+    },
+    {
+      "decision": "review",
+      "errors": [],
+      "label_id": "e1e2a9cb:depreciation_and_amortization:2025-03-31:standalone:year"
+    },
+    {
+      "decision": "review",
+      "errors": [],
+      "label_id": "e1e2a9cb:total_expenses:2025-03-31:standalone:year"
+    },
+    {
+      "decision": "review",
+      "errors": [],
+      "label_id": "e1e2a9cb:pbt:2025-03-31:standalone:year"
+    },
+    {
+      "decision": "abstain",
+      "errors": [],
+      "label_id": "e1e2a9cb:tax_expense:2025-03-31:standalone:year"
+    },
+    {
+      "decision": "review",
+      "errors": [],
+      "label_id": "e1e2a9cb:pat:2025-03-31:standalone:year"
+    },
+    {
+      "decision": "review",
+      "errors": [],
+      "label_id": "e1e2a9cb:eps_basic:2025-03-31:standalone:year"
+    },
+    {
+      "decision": "review",
+      "errors": [],
+      "label_id": "e1e2a9cb:eps_diluted:2025-03-31:standalone:year"
+    },
+    {
+      "decision": "review",
+      "errors": [],
+      "label_id": "e1e2a9cb:revenue_from_operations:2025-03-31:consolidated:quarter"
+    },
+    {
+      "decision": "review",
+      "errors": [],
+      "label_id": "e1e2a9cb:other_income:2025-03-31:consolidated:quarter"
+    },
+    {
+      "decision": "review",
+      "errors": [],
+      "label_id": "e1e2a9cb:total_income:2025-03-31:consolidated:quarter"
+    },
+    {
+      "decision": "review",
+      "errors": [],
+      "label_id": "e1e2a9cb:finance_cost:2025-03-31:consolidated:quarter"
+    },
+    {
+      "decision": "review",
+      "errors": [],
+      "label_id": "e1e2a9cb:depreciation_and_amortization:2025-03-31:consolidated:quarter"
+    },
+    {
+      "decision": "review",
+      "errors": [],
+      "label_id": "e1e2a9cb:total_expenses:2025-03-31:consolidated:quarter"
+    },
+    {
+      "decision": "review",
+      "errors": [],
+      "label_id": "e1e2a9cb:pbt:2025-03-31:consolidated:quarter"
+    },
+    {
+      "decision": "abstain",
+      "errors": [],
+      "label_id": "e1e2a9cb:tax_expense:2025-03-31:consolidated:quarter"
+    },
+    {
+      "decision": "review",
+      "errors": [],
+      "label_id": "e1e2a9cb:pat:2025-03-31:consolidated:quarter"
+    },
+    {
+      "decision": "review",
+      "errors": [],
+      "label_id": "e1e2a9cb:eps_basic:2025-03-31:consolidated:quarter"
+    },
+    {
+      "decision": "review",
+      "errors": [],
+      "label_id": "e1e2a9cb:eps_diluted:2025-03-31:consolidated:quarter"
+    },
+    {
+      "decision": "review",
+      "errors": [],
+      "label_id": "e1e2a9cb:revenue_from_operations:2025-03-31:consolidated:year"
+    },
+    {
+      "decision": "review",
+      "errors": [],
+      "label_id": "e1e2a9cb:other_income:2025-03-31:consolidated:year"
+    },
+    {
+      "decision": "review",
+      "errors": [],
+      "label_id": "e1e2a9cb:total_income:2025-03-31:consolidated:year"
+    },
+    {
+      "decision": "review",
+      "errors": [],
+      "label_id": "e1e2a9cb:finance_cost:2025-03-31:consolidated:year"
+    },
+    {
+      "decision": "review",
+      "errors": [],
+      "label_id": "e1e2a9cb:depreciation_and_amortization:2025-03-31:consolidated:year"
+    },
+    {
+      "decision": "review",
+      "errors": [],
+      "label_id": "e1e2a9cb:total_expenses:2025-03-31:consolidated:year"
+    },
+    {
+      "decision": "review",
+      "errors": [],
+      "label_id": "e1e2a9cb:pbt:2025-03-31:consolidated:year"
+    },
+    {
+      "decision": "abstain",
+      "errors": [],
+      "label_id": "e1e2a9cb:tax_expense:2025-03-31:consolidated:year"
+    },
+    {
+      "decision": "review",
+      "errors": [],
+      "label_id": "e1e2a9cb:pat:2025-03-31:consolidated:year"
+    },
+    {
+      "decision": "review",
+      "errors": [],
+      "label_id": "e1e2a9cb:eps_basic:2025-03-31:consolidated:year"
+    },
+    {
+      "decision": "review",
+      "errors": [],
+      "label_id": "e1e2a9cb:eps_diluted:2025-03-31:consolidated:year"
+    }
+  ],
+  "errors": {
+    "spurious_prediction": 0
+  },
+  "ignored_unapproved_gold_records": 0,
+  "metrics": {
+    "abstention_rate": 0.09090909090909091,
+    "auto_published_coverage": 0.0,
+    "auto_published_precision": null,
+    "recall": 0.0,
+    "review_rate": 0.9090909090909091
+  },
+  "per_fact": {
+    "depreciation_and_amortization": {
+      "gold": 4,
+      "precision": null,
+      "recall": 0.0,
+      "review": 4
+    },
+    "eps_basic": {
+      "gold": 4,
+      "precision": null,
+      "recall": 0.0,
+      "review": 4
+    },
+    "eps_diluted": {
+      "gold": 4,
+      "precision": null,
+      "recall": 0.0,
+      "review": 4
+    },
+    "finance_cost": {
+      "gold": 4,
+      "precision": null,
+      "recall": 0.0,
+      "review": 4
+    },
+    "other_income": {
+      "gold": 4,
+      "precision": null,
+      "recall": 0.0,
+      "review": 4
+    },
+    "pat": {
+      "gold": 4,
+      "precision": null,
+      "recall": 0.0,
+      "review": 4
+    },
+    "pbt": {
+      "gold": 4,
+      "precision": null,
+      "recall": 0.0,
+      "review": 4
+    },
+    "revenue_from_operations": {
+      "gold": 4,
+      "precision": null,
+      "recall": 0.0,
+      "review": 4
+    },
+    "tax_expense": {
+      "abstain": 4,
+      "gold": 4,
+      "precision": null,
+      "recall": 0.0
+    },
+    "total_expenses": {
+      "gold": 4,
+      "precision": null,
+      "recall": 0.0,
+      "review": 4
+    },
+    "total_income": {
+      "gold": 4,
+      "precision": null,
+      "recall": 0.0,
+      "review": 4
+    }
+  },
+  "prediction_records": 44,
+  "provisional": true,
+  "release_gates": {
+    "approved_gold_only": false,
+    "has_approved_gold": true,
+    "has_published_predictions": false,
+    "passed": false,
+    "published_precision_100_percent": false,
+    "zero_invalid_evidence": true,
+    "zero_spurious_published": true,
+    "zero_unresolved_conflicts": true,
+    "zero_wrong_basis": true,
+    "zero_wrong_period": true,
+    "zero_wrong_unit": true
+  },
+  "spurious_label_ids": []
+}

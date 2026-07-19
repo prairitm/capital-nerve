@@ -1,0 +1,214 @@
+{
+  "approved_gold_records": 22,
+  "counts": {
+    "review": 22,
+    "spurious_published": 0
+  },
+  "details": [
+    {
+      "decision": "review",
+      "errors": [],
+      "label_id": "e3ae9197:revenue_from_operations:2025-09-30:consolidated:quarter"
+    },
+    {
+      "decision": "review",
+      "errors": [],
+      "label_id": "e3ae9197:other_income:2025-09-30:consolidated:quarter"
+    },
+    {
+      "decision": "review",
+      "errors": [],
+      "label_id": "e3ae9197:total_income:2025-09-30:consolidated:quarter"
+    },
+    {
+      "decision": "review",
+      "errors": [],
+      "label_id": "e3ae9197:finance_cost:2025-09-30:consolidated:quarter"
+    },
+    {
+      "decision": "review",
+      "errors": [],
+      "label_id": "e3ae9197:depreciation_and_amortization:2025-09-30:consolidated:quarter"
+    },
+    {
+      "decision": "review",
+      "errors": [],
+      "label_id": "e3ae9197:total_expenses:2025-09-30:consolidated:quarter"
+    },
+    {
+      "decision": "review",
+      "errors": [],
+      "label_id": "e3ae9197:pbt:2025-09-30:consolidated:quarter"
+    },
+    {
+      "decision": "review",
+      "errors": [],
+      "label_id": "e3ae9197:tax_expense:2025-09-30:consolidated:quarter"
+    },
+    {
+      "decision": "review",
+      "errors": [],
+      "label_id": "e3ae9197:pat:2025-09-30:consolidated:quarter"
+    },
+    {
+      "decision": "review",
+      "errors": [],
+      "label_id": "e3ae9197:eps_basic:2025-09-30:consolidated:quarter"
+    },
+    {
+      "decision": "review",
+      "errors": [],
+      "label_id": "e3ae9197:eps_diluted:2025-09-30:consolidated:quarter"
+    },
+    {
+      "decision": "review",
+      "errors": [],
+      "label_id": "e3ae9197:revenue_from_operations:2025-09-30:standalone:quarter"
+    },
+    {
+      "decision": "review",
+      "errors": [],
+      "label_id": "e3ae9197:other_income:2025-09-30:standalone:quarter"
+    },
+    {
+      "decision": "review",
+      "errors": [],
+      "label_id": "e3ae9197:total_income:2025-09-30:standalone:quarter"
+    },
+    {
+      "decision": "review",
+      "errors": [],
+      "label_id": "e3ae9197:finance_cost:2025-09-30:standalone:quarter"
+    },
+    {
+      "decision": "review",
+      "errors": [],
+      "label_id": "e3ae9197:depreciation_and_amortization:2025-09-30:standalone:quarter"
+    },
+    {
+      "decision": "review",
+      "errors": [],
+      "label_id": "e3ae9197:total_expenses:2025-09-30:standalone:quarter"
+    },
+    {
+      "decision": "review",
+      "errors": [],
+      "label_id": "e3ae9197:pbt:2025-09-30:standalone:quarter"
+    },
+    {
+      "decision": "review",
+      "errors": [],
+      "label_id": "e3ae9197:tax_expense:2025-09-30:standalone:quarter"
+    },
+    {
+      "decision": "review",
+      "errors": [],
+      "label_id": "e3ae9197:pat:2025-09-30:standalone:quarter"
+    },
+    {
+      "decision": "review",
+      "errors": [],
+      "label_id": "e3ae9197:eps_basic:2025-09-30:standalone:quarter"
+    },
+    {
+      "decision": "review",
+      "errors": [],
+      "label_id": "e3ae9197:eps_diluted:2025-09-30:standalone:quarter"
+    }
+  ],
+  "errors": {
+    "spurious_prediction": 0
+  },
+  "ignored_unapproved_gold_records": 0,
+  "metrics": {
+    "abstention_rate": 0.0,
+    "auto_published_coverage": 0.0,
+    "auto_published_precision": null,
+    "recall": 0.0,
+    "review_rate": 1.0
+  },
+  "per_fact": {
+    "depreciation_and_amortization": {
+      "gold": 2,
+      "precision": null,
+      "recall": 0.0,
+      "review": 2
+    },
+    "eps_basic": {
+      "gold": 2,
+      "precision": null,
+      "recall": 0.0,
+      "review": 2
+    },
+    "eps_diluted": {
+      "gold": 2,
+      "precision": null,
+      "recall": 0.0,
+      "review": 2
+    },
+    "finance_cost": {
+      "gold": 2,
+      "precision": null,
+      "recall": 0.0,
+      "review": 2
+    },
+    "other_income": {
+      "gold": 2,
+      "precision": null,
+      "recall": 0.0,
+      "review": 2
+    },
+    "pat": {
+      "gold": 2,
+      "precision": null,
+      "recall": 0.0,
+      "review": 2
+    },
+    "pbt": {
+      "gold": 2,
+      "precision": null,
+      "recall": 0.0,
+      "review": 2
+    },
+    "revenue_from_operations": {
+      "gold": 2,
+      "precision": null,
+      "recall": 0.0,
+      "review": 2
+    },
+    "tax_expense": {
+      "gold": 2,
+      "precision": null,
+      "recall": 0.0,
+      "review": 2
+    },
+    "total_expenses": {
+      "gold": 2,
+      "precision": null,
+      "recall": 0.0,
+      "review": 2
+    },
+    "total_income": {
+      "gold": 2,
+      "precision": null,
+      "recall": 0.0,
+      "review": 2
+    }
+  },
+  "prediction_records": 22,
+  "provisional": true,
+  "release_gates": {
+    "approved_gold_only": false,
+    "has_approved_gold": true,
+    "has_published_predictions": false,
+    "passed": false,
+    "published_precision_100_percent": false,
+    "zero_invalid_evidence": true,
+    "zero_spurious_published": true,
+    "zero_unresolved_conflicts": true,
+    "zero_wrong_basis": true,
+    "zero_wrong_period": true,
+    "zero_wrong_unit": true
+  },
+  "spurious_label_ids": []
+}

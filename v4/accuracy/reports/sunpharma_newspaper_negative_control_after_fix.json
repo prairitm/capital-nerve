@@ -1,0 +1,35 @@
+{
+  "approved_gold_records": 0,
+  "counts": {
+    "spurious_published": 0
+  },
+  "details": [],
+  "errors": {
+    "spurious_prediction": 0
+  },
+  "ignored_unapproved_gold_records": 0,
+  "metrics": {
+    "abstention_rate": null,
+    "auto_published_coverage": null,
+    "auto_published_precision": null,
+    "recall": null,
+    "review_rate": null
+  },
+  "per_fact": {},
+  "prediction_records": 0,
+  "provisional": true,
+  "release_gates": {
+    "approved_gold_only": false,
+    "has_approved_gold": false,
+    "has_published_predictions": false,
+    "passed": false,
+    "published_precision_100_percent": false,
+    "zero_invalid_evidence": true,
+    "zero_spurious_published": true,
+    "zero_unresolved_conflicts": true,
+    "zero_wrong_basis": true,
+    "zero_wrong_period": true,
+    "zero_wrong_unit": true
+  },
+  "spurious_label_ids": []
+}

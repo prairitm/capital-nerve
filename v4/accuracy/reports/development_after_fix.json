@@ -1,0 +1,2280 @@
+{
+  "approved_gold_records": 428,
+  "counts": {
+    "abstain": 83,
+    "correct_published": 262,
+    "publish": 262,
+    "review": 83,
+    "spurious_published": 0
+  },
+  "details": [
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "762e5d6f:revenue_from_operations:2025-06-30:standalone:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "762e5d6f:other_income:2025-06-30:standalone:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "762e5d6f:total_income:2025-06-30:standalone:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "762e5d6f:finance_cost:2025-06-30:standalone:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "762e5d6f:depreciation_and_amortization:2025-06-30:standalone:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "762e5d6f:total_expenses:2025-06-30:standalone:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "762e5d6f:pbt:2025-06-30:standalone:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "762e5d6f:tax_expense:2025-06-30:standalone:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "762e5d6f:pat:2025-06-30:standalone:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "762e5d6f:eps_basic:2025-06-30:standalone:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "762e5d6f:eps_diluted:2025-06-30:standalone:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "762e5d6f:revenue_from_operations:2025-06-30:consolidated:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "762e5d6f:other_income:2025-06-30:consolidated:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "762e5d6f:total_income:2025-06-30:consolidated:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "762e5d6f:finance_cost:2025-06-30:consolidated:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "762e5d6f:depreciation_and_amortization:2025-06-30:consolidated:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "762e5d6f:total_expenses:2025-06-30:consolidated:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "762e5d6f:pbt:2025-06-30:consolidated:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "762e5d6f:tax_expense:2025-06-30:consolidated:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "762e5d6f:pat:2025-06-30:consolidated:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "762e5d6f:eps_basic:2025-06-30:consolidated:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "762e5d6f:eps_diluted:2025-06-30:consolidated:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "1d75d71d:revenue_from_operations:2025-06-30:consolidated:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "1d75d71d:other_income:2025-06-30:consolidated:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "1d75d71d:total_income:2025-06-30:consolidated:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "1d75d71d:finance_cost:2025-06-30:consolidated:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "1d75d71d:depreciation_and_amortization:2025-06-30:consolidated:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "1d75d71d:pbt:2025-06-30:consolidated:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "1d75d71d:tax_expense:2025-06-30:consolidated:quarter"
+    },
+    {
+      "decision": "abstain",
+      "errors": [],
+      "label_id": "1d75d71d:pat:2025-06-30:consolidated:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "1d75d71d:eps_basic:2025-06-30:consolidated:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "1d75d71d:eps_diluted:2025-06-30:consolidated:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "1d75d71d:revenue_from_operations:2025-06-30:standalone:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "1d75d71d:other_income:2025-06-30:standalone:quarter"
+    },
+    {
+      "decision": "abstain",
+      "errors": [],
+      "label_id": "1d75d71d:total_income:2025-06-30:standalone:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "1d75d71d:finance_cost:2025-06-30:standalone:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "1d75d71d:depreciation_and_amortization:2025-06-30:standalone:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "1d75d71d:pbt:2025-06-30:standalone:quarter"
+    },
+    {
+      "decision": "abstain",
+      "errors": [],
+      "label_id": "1d75d71d:tax_expense:2025-06-30:standalone:quarter"
+    },
+    {
+      "decision": "abstain",
+      "errors": [],
+      "label_id": "1d75d71d:pat:2025-06-30:standalone:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "1d75d71d:eps_basic:2025-06-30:standalone:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "1d75d71d:eps_diluted:2025-06-30:standalone:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "914f2f78:revenue_from_operations:2025-06-30:consolidated:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "914f2f78:other_income:2025-06-30:consolidated:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "914f2f78:total_income:2025-06-30:consolidated:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "914f2f78:finance_cost:2025-06-30:consolidated:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "914f2f78:depreciation_and_amortization:2025-06-30:consolidated:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "914f2f78:total_expenses:2025-06-30:consolidated:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "914f2f78:pbt:2025-06-30:consolidated:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "914f2f78:pat:2025-06-30:consolidated:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "914f2f78:eps_basic:2025-06-30:consolidated:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "914f2f78:eps_diluted:2025-06-30:consolidated:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "914f2f78:revenue_from_operations:2025-06-30:standalone:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "914f2f78:other_income:2025-06-30:standalone:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "914f2f78:total_income:2025-06-30:standalone:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "914f2f78:finance_cost:2025-06-30:standalone:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "914f2f78:depreciation_and_amortization:2025-06-30:standalone:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "914f2f78:total_expenses:2025-06-30:standalone:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "914f2f78:pbt:2025-06-30:standalone:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "914f2f78:pat:2025-06-30:standalone:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "914f2f78:eps_basic:2025-06-30:standalone:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "914f2f78:eps_diluted:2025-06-30:standalone:quarter"
+    },
+    {
+      "decision": "abstain",
+      "errors": [],
+      "label_id": "337f7897:other_income:2025-06-30:consolidated:quarter"
+    },
+    {
+      "decision": "abstain",
+      "errors": [],
+      "label_id": "337f7897:total_income:2025-06-30:consolidated:quarter"
+    },
+    {
+      "decision": "abstain",
+      "errors": [],
+      "label_id": "337f7897:finance_cost:2025-06-30:consolidated:quarter"
+    },
+    {
+      "decision": "abstain",
+      "errors": [],
+      "label_id": "337f7897:depreciation_and_amortization:2025-06-30:consolidated:quarter"
+    },
+    {
+      "decision": "abstain",
+      "errors": [],
+      "label_id": "337f7897:total_expenses:2025-06-30:consolidated:quarter"
+    },
+    {
+      "decision": "abstain",
+      "errors": [],
+      "label_id": "337f7897:pbt:2025-06-30:consolidated:quarter"
+    },
+    {
+      "decision": "abstain",
+      "errors": [],
+      "label_id": "337f7897:pat:2025-06-30:consolidated:quarter"
+    },
+    {
+      "decision": "abstain",
+      "errors": [],
+      "label_id": "337f7897:eps_basic:2025-06-30:consolidated:quarter"
+    },
+    {
+      "decision": "abstain",
+      "errors": [],
+      "label_id": "337f7897:eps_diluted:2025-06-30:consolidated:quarter"
+    },
+    {
+      "decision": "abstain",
+      "errors": [],
+      "label_id": "337f7897:other_income:2025-06-30:standalone:quarter"
+    },
+    {
+      "decision": "abstain",
+      "errors": [],
+      "label_id": "337f7897:total_income:2025-06-30:standalone:quarter"
+    },
+    {
+      "decision": "abstain",
+      "errors": [],
+      "label_id": "337f7897:finance_cost:2025-06-30:standalone:quarter"
+    },
+    {
+      "decision": "abstain",
+      "errors": [],
+      "label_id": "337f7897:depreciation_and_amortization:2025-06-30:standalone:quarter"
+    },
+    {
+      "decision": "abstain",
+      "errors": [],
+      "label_id": "337f7897:total_expenses:2025-06-30:standalone:quarter"
+    },
+    {
+      "decision": "abstain",
+      "errors": [],
+      "label_id": "337f7897:pbt:2025-06-30:standalone:quarter"
+    },
+    {
+      "decision": "abstain",
+      "errors": [],
+      "label_id": "337f7897:pat:2025-06-30:standalone:quarter"
+    },
+    {
+      "decision": "abstain",
+      "errors": [],
+      "label_id": "337f7897:eps_basic:2025-06-30:standalone:quarter"
+    },
+    {
+      "decision": "abstain",
+      "errors": [],
+      "label_id": "337f7897:eps_diluted:2025-06-30:standalone:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "aa187a45:revenue_from_operations:2025-06-30:consolidated:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "aa187a45:pbt:2025-06-30:consolidated:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "aa187a45:pat:2025-06-30:consolidated:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "aa187a45:eps_basic:2025-06-30:consolidated:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "aa187a45:eps_diluted:2025-06-30:consolidated:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "aa187a45:revenue_from_operations:2025-06-30:standalone:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "aa187a45:pbt:2025-06-30:standalone:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "aa187a45:pat:2025-06-30:standalone:quarter"
+    },
+    {
+      "decision": "abstain",
+      "errors": [],
+      "label_id": "f572c751:revenue_from_operations:2025-03-31:consolidated:quarter"
+    },
+    {
+      "decision": "abstain",
+      "errors": [],
+      "label_id": "f572c751:other_income:2025-03-31:consolidated:quarter"
+    },
+    {
+      "decision": "abstain",
+      "errors": [],
+      "label_id": "f572c751:total_income:2025-03-31:consolidated:quarter"
+    },
+    {
+      "decision": "abstain",
+      "errors": [],
+      "label_id": "f572c751:depreciation_and_amortization:2025-03-31:consolidated:quarter"
+    },
+    {
+      "decision": "abstain",
+      "errors": [],
+      "label_id": "f572c751:finance_cost:2025-03-31:consolidated:quarter"
+    },
+    {
+      "decision": "abstain",
+      "errors": [],
+      "label_id": "f572c751:total_expenses:2025-03-31:consolidated:quarter"
+    },
+    {
+      "decision": "abstain",
+      "errors": [],
+      "label_id": "f572c751:pbt:2025-03-31:consolidated:quarter"
+    },
+    {
+      "decision": "abstain",
+      "errors": [],
+      "label_id": "f572c751:pat:2025-03-31:consolidated:quarter"
+    },
+    {
+      "decision": "abstain",
+      "errors": [],
+      "label_id": "f572c751:eps_basic:2025-03-31:consolidated:quarter"
+    },
+    {
+      "decision": "abstain",
+      "errors": [],
+      "label_id": "f572c751:eps_diluted:2025-03-31:consolidated:quarter"
+    },
+    {
+      "decision": "abstain",
+      "errors": [],
+      "label_id": "f572c751:revenue_from_operations:2025-03-31:consolidated:year"
+    },
+    {
+      "decision": "abstain",
+      "errors": [],
+      "label_id": "f572c751:other_income:2025-03-31:consolidated:year"
+    },
+    {
+      "decision": "abstain",
+      "errors": [],
+      "label_id": "f572c751:total_income:2025-03-31:consolidated:year"
+    },
+    {
+      "decision": "abstain",
+      "errors": [],
+      "label_id": "f572c751:depreciation_and_amortization:2025-03-31:consolidated:year"
+    },
+    {
+      "decision": "abstain",
+      "errors": [],
+      "label_id": "f572c751:finance_cost:2025-03-31:consolidated:year"
+    },
+    {
+      "decision": "abstain",
+      "errors": [],
+      "label_id": "f572c751:total_expenses:2025-03-31:consolidated:year"
+    },
+    {
+      "decision": "abstain",
+      "errors": [],
+      "label_id": "f572c751:pbt:2025-03-31:consolidated:year"
+    },
+    {
+      "decision": "abstain",
+      "errors": [],
+      "label_id": "f572c751:pat:2025-03-31:consolidated:year"
+    },
+    {
+      "decision": "abstain",
+      "errors": [],
+      "label_id": "f572c751:eps_basic:2025-03-31:consolidated:year"
+    },
+    {
+      "decision": "abstain",
+      "errors": [],
+      "label_id": "f572c751:eps_diluted:2025-03-31:consolidated:year"
+    },
+    {
+      "decision": "abstain",
+      "errors": [],
+      "label_id": "f572c751:revenue_from_operations:2025-03-31:standalone:quarter"
+    },
+    {
+      "decision": "abstain",
+      "errors": [],
+      "label_id": "f572c751:other_income:2025-03-31:standalone:quarter"
+    },
+    {
+      "decision": "abstain",
+      "errors": [],
+      "label_id": "f572c751:total_income:2025-03-31:standalone:quarter"
+    },
+    {
+      "decision": "abstain",
+      "errors": [],
+      "label_id": "f572c751:depreciation_and_amortization:2025-03-31:standalone:quarter"
+    },
+    {
+      "decision": "abstain",
+      "errors": [],
+      "label_id": "f572c751:finance_cost:2025-03-31:standalone:quarter"
+    },
+    {
+      "decision": "abstain",
+      "errors": [],
+      "label_id": "f572c751:total_expenses:2025-03-31:standalone:quarter"
+    },
+    {
+      "decision": "abstain",
+      "errors": [],
+      "label_id": "f572c751:pbt:2025-03-31:standalone:quarter"
+    },
+    {
+      "decision": "abstain",
+      "errors": [],
+      "label_id": "f572c751:pat:2025-03-31:standalone:quarter"
+    },
+    {
+      "decision": "abstain",
+      "errors": [],
+      "label_id": "f572c751:eps_basic:2025-03-31:standalone:quarter"
+    },
+    {
+      "decision": "abstain",
+      "errors": [],
+      "label_id": "f572c751:eps_diluted:2025-03-31:standalone:quarter"
+    },
+    {
+      "decision": "abstain",
+      "errors": [],
+      "label_id": "f572c751:revenue_from_operations:2025-03-31:standalone:year"
+    },
+    {
+      "decision": "abstain",
+      "errors": [],
+      "label_id": "f572c751:other_income:2025-03-31:standalone:year"
+    },
+    {
+      "decision": "abstain",
+      "errors": [],
+      "label_id": "f572c751:total_income:2025-03-31:standalone:year"
+    },
+    {
+      "decision": "abstain",
+      "errors": [],
+      "label_id": "f572c751:depreciation_and_amortization:2025-03-31:standalone:year"
+    },
+    {
+      "decision": "abstain",
+      "errors": [],
+      "label_id": "f572c751:finance_cost:2025-03-31:standalone:year"
+    },
+    {
+      "decision": "abstain",
+      "errors": [],
+      "label_id": "f572c751:total_expenses:2025-03-31:standalone:year"
+    },
+    {
+      "decision": "abstain",
+      "errors": [],
+      "label_id": "f572c751:pbt:2025-03-31:standalone:year"
+    },
+    {
+      "decision": "abstain",
+      "errors": [],
+      "label_id": "f572c751:pat:2025-03-31:standalone:year"
+    },
+    {
+      "decision": "abstain",
+      "errors": [],
+      "label_id": "f572c751:eps_basic:2025-03-31:standalone:year"
+    },
+    {
+      "decision": "abstain",
+      "errors": [],
+      "label_id": "f572c751:eps_diluted:2025-03-31:standalone:year"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "6c409074:revenue_from_operations:2025-06-30:standalone:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "6c409074:other_income:2025-06-30:standalone:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "6c409074:total_income:2025-06-30:standalone:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "6c409074:finance_cost:2025-06-30:standalone:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "6c409074:depreciation_and_amortization:2025-06-30:standalone:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "6c409074:total_expenses:2025-06-30:standalone:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "6c409074:pbt:2025-06-30:standalone:quarter"
+    },
+    {
+      "decision": "abstain",
+      "errors": [],
+      "label_id": "6c409074:tax_expense:2025-06-30:standalone:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "6c409074:pat:2025-06-30:standalone:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "6c409074:eps_basic:2025-06-30:standalone:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "6c409074:eps_diluted:2025-06-30:standalone:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "6c409074:revenue_from_operations:2025-06-30:consolidated:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "6c409074:other_income:2025-06-30:consolidated:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "6c409074:total_income:2025-06-30:consolidated:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "6c409074:finance_cost:2025-06-30:consolidated:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "6c409074:depreciation_and_amortization:2025-06-30:consolidated:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "6c409074:total_expenses:2025-06-30:consolidated:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "6c409074:pbt:2025-06-30:consolidated:quarter"
+    },
+    {
+      "decision": "abstain",
+      "errors": [],
+      "label_id": "6c409074:tax_expense:2025-06-30:consolidated:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "6c409074:pat:2025-06-30:consolidated:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "6c409074:eps_basic:2025-06-30:consolidated:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "6c409074:eps_diluted:2025-06-30:consolidated:quarter"
+    },
+    {
+      "decision": "review",
+      "errors": [],
+      "label_id": "e1e2a9cb:revenue_from_operations:2025-03-31:standalone:quarter"
+    },
+    {
+      "decision": "review",
+      "errors": [],
+      "label_id": "e1e2a9cb:other_income:2025-03-31:standalone:quarter"
+    },
+    {
+      "decision": "review",
+      "errors": [],
+      "label_id": "e1e2a9cb:total_income:2025-03-31:standalone:quarter"
+    },
+    {
+      "decision": "review",
+      "errors": [],
+      "label_id": "e1e2a9cb:finance_cost:2025-03-31:standalone:quarter"
+    },
+    {
+      "decision": "review",
+      "errors": [],
+      "label_id": "e1e2a9cb:depreciation_and_amortization:2025-03-31:standalone:quarter"
+    },
+    {
+      "decision": "review",
+      "errors": [],
+      "label_id": "e1e2a9cb:total_expenses:2025-03-31:standalone:quarter"
+    },
+    {
+      "decision": "review",
+      "errors": [],
+      "label_id": "e1e2a9cb:pbt:2025-03-31:standalone:quarter"
+    },
+    {
+      "decision": "abstain",
+      "errors": [],
+      "label_id": "e1e2a9cb:tax_expense:2025-03-31:standalone:quarter"
+    },
+    {
+      "decision": "review",
+      "errors": [],
+      "label_id": "e1e2a9cb:pat:2025-03-31:standalone:quarter"
+    },
+    {
+      "decision": "review",
+      "errors": [],
+      "label_id": "e1e2a9cb:eps_basic:2025-03-31:standalone:quarter"
+    },
+    {
+      "decision": "review",
+      "errors": [],
+      "label_id": "e1e2a9cb:eps_diluted:2025-03-31:standalone:quarter"
+    },
+    {
+      "decision": "review",
+      "errors": [],
+      "label_id": "e1e2a9cb:revenue_from_operations:2025-03-31:standalone:year"
+    },
+    {
+      "decision": "review",
+      "errors": [],
+      "label_id": "e1e2a9cb:other_income:2025-03-31:standalone:year"
+    },
+    {
+      "decision": "review",
+      "errors": [],
+      "label_id": "e1e2a9cb:total_income:2025-03-31:standalone:year"
+    },
+    {
+      "decision": "review",
+      "errors": [],
+      "label_id": "e1e2a9cb:finance_cost:2025-03-31:standalone:year"
+    },
+    {
+      "decision": "review",
+      "errors": [],
+      "label_id": "e1e2a9cb:depreciation_and_amortization:2025-03-31:standalone:year"
+    },
+    {
+      "decision": "review",
+      "errors": [],
+      "label_id": "e1e2a9cb:total_expenses:2025-03-31:standalone:year"
+    },
+    {
+      "decision": "review",
+      "errors": [],
+      "label_id": "e1e2a9cb:pbt:2025-03-31:standalone:year"
+    },
+    {
+      "decision": "abstain",
+      "errors": [],
+      "label_id": "e1e2a9cb:tax_expense:2025-03-31:standalone:year"
+    },
+    {
+      "decision": "review",
+      "errors": [],
+      "label_id": "e1e2a9cb:pat:2025-03-31:standalone:year"
+    },
+    {
+      "decision": "review",
+      "errors": [],
+      "label_id": "e1e2a9cb:eps_basic:2025-03-31:standalone:year"
+    },
+    {
+      "decision": "review",
+      "errors": [],
+      "label_id": "e1e2a9cb:eps_diluted:2025-03-31:standalone:year"
+    },
+    {
+      "decision": "review",
+      "errors": [],
+      "label_id": "e1e2a9cb:revenue_from_operations:2025-03-31:consolidated:quarter"
+    },
+    {
+      "decision": "review",
+      "errors": [],
+      "label_id": "e1e2a9cb:other_income:2025-03-31:consolidated:quarter"
+    },
+    {
+      "decision": "review",
+      "errors": [],
+      "label_id": "e1e2a9cb:total_income:2025-03-31:consolidated:quarter"
+    },
+    {
+      "decision": "review",
+      "errors": [],
+      "label_id": "e1e2a9cb:finance_cost:2025-03-31:consolidated:quarter"
+    },
+    {
+      "decision": "review",
+      "errors": [],
+      "label_id": "e1e2a9cb:depreciation_and_amortization:2025-03-31:consolidated:quarter"
+    },
+    {
+      "decision": "review",
+      "errors": [],
+      "label_id": "e1e2a9cb:total_expenses:2025-03-31:consolidated:quarter"
+    },
+    {
+      "decision": "review",
+      "errors": [],
+      "label_id": "e1e2a9cb:pbt:2025-03-31:consolidated:quarter"
+    },
+    {
+      "decision": "abstain",
+      "errors": [],
+      "label_id": "e1e2a9cb:tax_expense:2025-03-31:consolidated:quarter"
+    },
+    {
+      "decision": "review",
+      "errors": [],
+      "label_id": "e1e2a9cb:pat:2025-03-31:consolidated:quarter"
+    },
+    {
+      "decision": "review",
+      "errors": [],
+      "label_id": "e1e2a9cb:eps_basic:2025-03-31:consolidated:quarter"
+    },
+    {
+      "decision": "review",
+      "errors": [],
+      "label_id": "e1e2a9cb:eps_diluted:2025-03-31:consolidated:quarter"
+    },
+    {
+      "decision": "review",
+      "errors": [],
+      "label_id": "e1e2a9cb:revenue_from_operations:2025-03-31:consolidated:year"
+    },
+    {
+      "decision": "review",
+      "errors": [],
+      "label_id": "e1e2a9cb:other_income:2025-03-31:consolidated:year"
+    },
+    {
+      "decision": "review",
+      "errors": [],
+      "label_id": "e1e2a9cb:total_income:2025-03-31:consolidated:year"
+    },
+    {
+      "decision": "review",
+      "errors": [],
+      "label_id": "e1e2a9cb:finance_cost:2025-03-31:consolidated:year"
+    },
+    {
+      "decision": "review",
+      "errors": [],
+      "label_id": "e1e2a9cb:depreciation_and_amortization:2025-03-31:consolidated:year"
+    },
+    {
+      "decision": "review",
+      "errors": [],
+      "label_id": "e1e2a9cb:total_expenses:2025-03-31:consolidated:year"
+    },
+    {
+      "decision": "review",
+      "errors": [],
+      "label_id": "e1e2a9cb:pbt:2025-03-31:consolidated:year"
+    },
+    {
+      "decision": "abstain",
+      "errors": [],
+      "label_id": "e1e2a9cb:tax_expense:2025-03-31:consolidated:year"
+    },
+    {
+      "decision": "review",
+      "errors": [],
+      "label_id": "e1e2a9cb:pat:2025-03-31:consolidated:year"
+    },
+    {
+      "decision": "review",
+      "errors": [],
+      "label_id": "e1e2a9cb:eps_basic:2025-03-31:consolidated:year"
+    },
+    {
+      "decision": "review",
+      "errors": [],
+      "label_id": "e1e2a9cb:eps_diluted:2025-03-31:consolidated:year"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "261d6717:revenue_from_operations:2024-12-31:consolidated:nine_months"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "261d6717:other_income:2024-12-31:consolidated:nine_months"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "261d6717:total_income:2024-12-31:consolidated:nine_months"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "261d6717:finance_cost:2024-12-31:consolidated:nine_months"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "261d6717:depreciation_and_amortization:2024-12-31:consolidated:nine_months"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "261d6717:total_expenses:2024-12-31:consolidated:nine_months"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "261d6717:pbt:2024-12-31:consolidated:nine_months"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "261d6717:tax_expense:2024-12-31:consolidated:nine_months"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "261d6717:pat:2024-12-31:consolidated:nine_months"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "261d6717:eps_basic:2024-12-31:consolidated:nine_months"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "261d6717:eps_diluted:2024-12-31:consolidated:nine_months"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "261d6717:revenue_from_operations:2024-12-31:standalone:nine_months"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "261d6717:other_income:2024-12-31:standalone:nine_months"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "261d6717:total_income:2024-12-31:standalone:nine_months"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "261d6717:finance_cost:2024-12-31:standalone:nine_months"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "261d6717:depreciation_and_amortization:2024-12-31:standalone:nine_months"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "261d6717:total_expenses:2024-12-31:standalone:nine_months"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "261d6717:pbt:2024-12-31:standalone:nine_months"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "261d6717:tax_expense:2024-12-31:standalone:nine_months"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "261d6717:pat:2024-12-31:standalone:nine_months"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "261d6717:eps_basic:2024-12-31:standalone:nine_months"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "261d6717:eps_diluted:2024-12-31:standalone:nine_months"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "2bcf3252:revenue_from_operations:2024-03-31:consolidated:year"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "2bcf3252:other_income:2024-03-31:consolidated:year"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "2bcf3252:total_income:2024-03-31:consolidated:year"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "2bcf3252:finance_cost:2024-03-31:consolidated:year"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "2bcf3252:depreciation_and_amortization:2024-03-31:consolidated:year"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "2bcf3252:total_expenses:2024-03-31:consolidated:year"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "2bcf3252:pbt:2024-03-31:consolidated:year"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "2bcf3252:tax_expense:2024-03-31:consolidated:year"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "2bcf3252:pat:2024-03-31:consolidated:year"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "2bcf3252:eps_basic:2024-03-31:consolidated:year"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "2bcf3252:eps_diluted:2024-03-31:consolidated:year"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "2bcf3252:revenue_from_operations:2024-03-31:standalone:year"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "2bcf3252:other_income:2024-03-31:standalone:year"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "2bcf3252:total_income:2024-03-31:standalone:year"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "2bcf3252:finance_cost:2024-03-31:standalone:year"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "2bcf3252:depreciation_and_amortization:2024-03-31:standalone:year"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "2bcf3252:total_expenses:2024-03-31:standalone:year"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "2bcf3252:pbt:2024-03-31:standalone:year"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "2bcf3252:tax_expense:2024-03-31:standalone:year"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "2bcf3252:pat:2024-03-31:standalone:year"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "2bcf3252:eps_basic:2024-03-31:standalone:year"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "2bcf3252:eps_diluted:2024-03-31:standalone:year"
+    },
+    {
+      "decision": "review",
+      "errors": [],
+      "label_id": "f6f5ee3e:revenue_from_operations:2025-12-31:consolidated:nine_months"
+    },
+    {
+      "decision": "review",
+      "errors": [],
+      "label_id": "f6f5ee3e:other_income:2025-12-31:consolidated:nine_months"
+    },
+    {
+      "decision": "review",
+      "errors": [],
+      "label_id": "f6f5ee3e:total_income:2025-12-31:consolidated:nine_months"
+    },
+    {
+      "decision": "review",
+      "errors": [],
+      "label_id": "f6f5ee3e:finance_cost:2025-12-31:consolidated:nine_months"
+    },
+    {
+      "decision": "review",
+      "errors": [],
+      "label_id": "f6f5ee3e:depreciation_and_amortization:2025-12-31:consolidated:nine_months"
+    },
+    {
+      "decision": "review",
+      "errors": [],
+      "label_id": "f6f5ee3e:total_expenses:2025-12-31:consolidated:nine_months"
+    },
+    {
+      "decision": "abstain",
+      "errors": [],
+      "label_id": "f6f5ee3e:pbt:2025-12-31:consolidated:nine_months"
+    },
+    {
+      "decision": "review",
+      "errors": [],
+      "label_id": "f6f5ee3e:tax_expense:2025-12-31:consolidated:nine_months"
+    },
+    {
+      "decision": "review",
+      "errors": [],
+      "label_id": "f6f5ee3e:pat:2025-12-31:consolidated:nine_months"
+    },
+    {
+      "decision": "review",
+      "errors": [],
+      "label_id": "f6f5ee3e:eps_basic:2025-12-31:consolidated:nine_months"
+    },
+    {
+      "decision": "review",
+      "errors": [],
+      "label_id": "f6f5ee3e:eps_diluted:2025-12-31:consolidated:nine_months"
+    },
+    {
+      "decision": "review",
+      "errors": [],
+      "label_id": "f6f5ee3e:revenue_from_operations:2025-12-31:standalone:nine_months"
+    },
+    {
+      "decision": "review",
+      "errors": [],
+      "label_id": "f6f5ee3e:other_income:2025-12-31:standalone:nine_months"
+    },
+    {
+      "decision": "review",
+      "errors": [],
+      "label_id": "f6f5ee3e:total_income:2025-12-31:standalone:nine_months"
+    },
+    {
+      "decision": "review",
+      "errors": [],
+      "label_id": "f6f5ee3e:finance_cost:2025-12-31:standalone:nine_months"
+    },
+    {
+      "decision": "review",
+      "errors": [],
+      "label_id": "f6f5ee3e:depreciation_and_amortization:2025-12-31:standalone:nine_months"
+    },
+    {
+      "decision": "review",
+      "errors": [],
+      "label_id": "f6f5ee3e:total_expenses:2025-12-31:standalone:nine_months"
+    },
+    {
+      "decision": "review",
+      "errors": [],
+      "label_id": "f6f5ee3e:pbt:2025-12-31:standalone:nine_months"
+    },
+    {
+      "decision": "review",
+      "errors": [],
+      "label_id": "f6f5ee3e:tax_expense:2025-12-31:standalone:nine_months"
+    },
+    {
+      "decision": "review",
+      "errors": [],
+      "label_id": "f6f5ee3e:pat:2025-12-31:standalone:nine_months"
+    },
+    {
+      "decision": "review",
+      "errors": [],
+      "label_id": "f6f5ee3e:eps_basic:2025-12-31:standalone:nine_months"
+    },
+    {
+      "decision": "review",
+      "errors": [],
+      "label_id": "f6f5ee3e:eps_diluted:2025-12-31:standalone:nine_months"
+    },
+    {
+      "decision": "review",
+      "errors": [],
+      "label_id": "e3ae9197:revenue_from_operations:2025-09-30:consolidated:quarter"
+    },
+    {
+      "decision": "review",
+      "errors": [],
+      "label_id": "e3ae9197:other_income:2025-09-30:consolidated:quarter"
+    },
+    {
+      "decision": "review",
+      "errors": [],
+      "label_id": "e3ae9197:total_income:2025-09-30:consolidated:quarter"
+    },
+    {
+      "decision": "review",
+      "errors": [],
+      "label_id": "e3ae9197:finance_cost:2025-09-30:consolidated:quarter"
+    },
+    {
+      "decision": "review",
+      "errors": [],
+      "label_id": "e3ae9197:depreciation_and_amortization:2025-09-30:consolidated:quarter"
+    },
+    {
+      "decision": "review",
+      "errors": [],
+      "label_id": "e3ae9197:total_expenses:2025-09-30:consolidated:quarter"
+    },
+    {
+      "decision": "review",
+      "errors": [],
+      "label_id": "e3ae9197:pbt:2025-09-30:consolidated:quarter"
+    },
+    {
+      "decision": "review",
+      "errors": [],
+      "label_id": "e3ae9197:tax_expense:2025-09-30:consolidated:quarter"
+    },
+    {
+      "decision": "review",
+      "errors": [],
+      "label_id": "e3ae9197:pat:2025-09-30:consolidated:quarter"
+    },
+    {
+      "decision": "review",
+      "errors": [],
+      "label_id": "e3ae9197:eps_basic:2025-09-30:consolidated:quarter"
+    },
+    {
+      "decision": "review",
+      "errors": [],
+      "label_id": "e3ae9197:eps_diluted:2025-09-30:consolidated:quarter"
+    },
+    {
+      "decision": "review",
+      "errors": [],
+      "label_id": "e3ae9197:revenue_from_operations:2025-09-30:standalone:quarter"
+    },
+    {
+      "decision": "review",
+      "errors": [],
+      "label_id": "e3ae9197:other_income:2025-09-30:standalone:quarter"
+    },
+    {
+      "decision": "review",
+      "errors": [],
+      "label_id": "e3ae9197:total_income:2025-09-30:standalone:quarter"
+    },
+    {
+      "decision": "review",
+      "errors": [],
+      "label_id": "e3ae9197:finance_cost:2025-09-30:standalone:quarter"
+    },
+    {
+      "decision": "review",
+      "errors": [],
+      "label_id": "e3ae9197:depreciation_and_amortization:2025-09-30:standalone:quarter"
+    },
+    {
+      "decision": "review",
+      "errors": [],
+      "label_id": "e3ae9197:total_expenses:2025-09-30:standalone:quarter"
+    },
+    {
+      "decision": "review",
+      "errors": [],
+      "label_id": "e3ae9197:pbt:2025-09-30:standalone:quarter"
+    },
+    {
+      "decision": "review",
+      "errors": [],
+      "label_id": "e3ae9197:tax_expense:2025-09-30:standalone:quarter"
+    },
+    {
+      "decision": "review",
+      "errors": [],
+      "label_id": "e3ae9197:pat:2025-09-30:standalone:quarter"
+    },
+    {
+      "decision": "review",
+      "errors": [],
+      "label_id": "e3ae9197:eps_basic:2025-09-30:standalone:quarter"
+    },
+    {
+      "decision": "review",
+      "errors": [],
+      "label_id": "e3ae9197:eps_diluted:2025-09-30:standalone:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "0fab4bb6:revenue_from_operations:2025-06-30:standalone:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "0fab4bb6:other_income:2025-06-30:standalone:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "0fab4bb6:total_income:2025-06-30:standalone:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "0fab4bb6:finance_cost:2025-06-30:standalone:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "0fab4bb6:depreciation_and_amortization:2025-06-30:standalone:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "0fab4bb6:total_expenses:2025-06-30:standalone:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "0fab4bb6:pbt:2025-06-30:standalone:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "0fab4bb6:tax_expense:2025-06-30:standalone:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "0fab4bb6:pat:2025-06-30:standalone:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "0fab4bb6:eps_basic:2025-06-30:standalone:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "0fab4bb6:eps_diluted:2025-06-30:standalone:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "0fab4bb6:revenue_from_operations:2025-06-30:consolidated:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "0fab4bb6:other_income:2025-06-30:consolidated:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "0fab4bb6:total_income:2025-06-30:consolidated:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "0fab4bb6:finance_cost:2025-06-30:consolidated:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "0fab4bb6:depreciation_and_amortization:2025-06-30:consolidated:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "0fab4bb6:total_expenses:2025-06-30:consolidated:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "0fab4bb6:pbt:2025-06-30:consolidated:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "0fab4bb6:tax_expense:2025-06-30:consolidated:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "0fab4bb6:pat:2025-06-30:consolidated:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "0fab4bb6:eps_basic:2025-06-30:consolidated:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "0fab4bb6:eps_diluted:2025-06-30:consolidated:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "0fd4d240:revenue_from_operations:2025-09-30:consolidated:half_year"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "0fd4d240:other_income:2025-09-30:consolidated:half_year"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "0fd4d240:total_income:2025-09-30:consolidated:half_year"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "0fd4d240:finance_cost:2025-09-30:consolidated:half_year"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "0fd4d240:depreciation_and_amortization:2025-09-30:consolidated:half_year"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "0fd4d240:total_expenses:2025-09-30:consolidated:half_year"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "0fd4d240:pbt:2025-09-30:consolidated:half_year"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "0fd4d240:pat:2025-09-30:consolidated:half_year"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "0fd4d240:eps_basic:2025-09-30:consolidated:half_year"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "0fd4d240:eps_diluted:2025-09-30:consolidated:half_year"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "0fd4d240:revenue_from_operations:2025-09-30:standalone:half_year"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "0fd4d240:other_income:2025-09-30:standalone:half_year"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "0fd4d240:total_income:2025-09-30:standalone:half_year"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "0fd4d240:finance_cost:2025-09-30:standalone:half_year"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "0fd4d240:depreciation_and_amortization:2025-09-30:standalone:half_year"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "0fd4d240:total_expenses:2025-09-30:standalone:half_year"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "0fd4d240:pbt:2025-09-30:standalone:half_year"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "0fd4d240:pat:2025-09-30:standalone:half_year"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "0fd4d240:eps_basic:2025-09-30:standalone:half_year"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "0fd4d240:eps_diluted:2025-09-30:standalone:half_year"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "589a0d9e:revenue_from_operations:2025-06-30:consolidated:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "589a0d9e:other_income:2025-06-30:consolidated:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "589a0d9e:total_income:2025-06-30:consolidated:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "589a0d9e:finance_cost:2025-06-30:consolidated:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "589a0d9e:depreciation_and_amortization:2025-06-30:consolidated:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "589a0d9e:total_expenses:2025-06-30:consolidated:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "589a0d9e:pbt:2025-06-30:consolidated:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "589a0d9e:pat:2025-06-30:consolidated:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "589a0d9e:eps_basic:2025-06-30:consolidated:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "589a0d9e:eps_diluted:2025-06-30:consolidated:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "589a0d9e:revenue_from_operations:2025-06-30:standalone:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "589a0d9e:other_income:2025-06-30:standalone:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "589a0d9e:total_income:2025-06-30:standalone:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "589a0d9e:finance_cost:2025-06-30:standalone:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "589a0d9e:depreciation_and_amortization:2025-06-30:standalone:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "589a0d9e:total_expenses:2025-06-30:standalone:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "589a0d9e:pbt:2025-06-30:standalone:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "589a0d9e:pat:2025-06-30:standalone:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "589a0d9e:eps_basic:2025-06-30:standalone:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "589a0d9e:eps_diluted:2025-06-30:standalone:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "6b1f2613:revenue_from_operations:2025-06-30:standalone:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "6b1f2613:other_income:2025-06-30:standalone:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "6b1f2613:total_income:2025-06-30:standalone:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "6b1f2613:finance_cost:2025-06-30:standalone:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "6b1f2613:depreciation_and_amortization:2025-06-30:standalone:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "6b1f2613:total_expenses:2025-06-30:standalone:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "6b1f2613:pbt:2025-06-30:standalone:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "6b1f2613:pat:2025-06-30:standalone:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "6b1f2613:eps_basic:2025-06-30:standalone:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "6b1f2613:eps_diluted:2025-06-30:standalone:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "6b1f2613:revenue_from_operations:2025-06-30:consolidated:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "6b1f2613:other_income:2025-06-30:consolidated:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "6b1f2613:total_income:2025-06-30:consolidated:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "6b1f2613:finance_cost:2025-06-30:consolidated:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "6b1f2613:depreciation_and_amortization:2025-06-30:consolidated:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "6b1f2613:total_expenses:2025-06-30:consolidated:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "6b1f2613:pbt:2025-06-30:consolidated:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "6b1f2613:pat:2025-06-30:consolidated:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "6b1f2613:eps_basic:2025-06-30:consolidated:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "6b1f2613:eps_diluted:2025-06-30:consolidated:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "6c259452:revenue_from_operations:2025-06-30:standalone:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "6c259452:other_income:2025-06-30:standalone:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "6c259452:total_income:2025-06-30:standalone:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "6c259452:finance_cost:2025-06-30:standalone:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "6c259452:depreciation_and_amortization:2025-06-30:standalone:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "6c259452:total_expenses:2025-06-30:standalone:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "6c259452:pbt:2025-06-30:standalone:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "6c259452:tax_expense:2025-06-30:standalone:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "6c259452:pat:2025-06-30:standalone:quarter"
+    },
+    {
+      "decision": "abstain",
+      "errors": [],
+      "label_id": "6c259452:eps_basic:2025-06-30:standalone:quarter"
+    },
+    {
+      "decision": "abstain",
+      "errors": [],
+      "label_id": "6c259452:eps_diluted:2025-06-30:standalone:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "6c259452:revenue_from_operations:2025-06-30:consolidated:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "6c259452:other_income:2025-06-30:consolidated:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "6c259452:total_income:2025-06-30:consolidated:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "6c259452:finance_cost:2025-06-30:consolidated:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "6c259452:depreciation_and_amortization:2025-06-30:consolidated:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "6c259452:total_expenses:2025-06-30:consolidated:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "6c259452:pbt:2025-06-30:consolidated:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "6c259452:tax_expense:2025-06-30:consolidated:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "6c259452:pat:2025-06-30:consolidated:quarter"
+    },
+    {
+      "decision": "abstain",
+      "errors": [],
+      "label_id": "6c259452:eps_basic:2025-06-30:consolidated:quarter"
+    },
+    {
+      "decision": "abstain",
+      "errors": [],
+      "label_id": "6c259452:eps_diluted:2025-06-30:consolidated:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "c9a47d5c:revenue_from_operations:2026-06-30:consolidated:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "c9a47d5c:other_income:2026-06-30:consolidated:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "c9a47d5c:total_income:2026-06-30:consolidated:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "c9a47d5c:finance_cost:2026-06-30:consolidated:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "c9a47d5c:depreciation_and_amortization:2026-06-30:consolidated:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "c9a47d5c:total_expenses:2026-06-30:consolidated:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "c9a47d5c:pbt:2026-06-30:consolidated:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "c9a47d5c:tax_expense:2026-06-30:consolidated:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "c9a47d5c:pat:2026-06-30:consolidated:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "c9a47d5c:eps_basic:2026-06-30:consolidated:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "c9a47d5c:eps_diluted:2026-06-30:consolidated:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "c9a47d5c:revenue_from_operations:2026-06-30:standalone:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "c9a47d5c:other_income:2026-06-30:standalone:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "c9a47d5c:total_income:2026-06-30:standalone:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "c9a47d5c:finance_cost:2026-06-30:standalone:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "c9a47d5c:depreciation_and_amortization:2026-06-30:standalone:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "c9a47d5c:total_expenses:2026-06-30:standalone:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "c9a47d5c:pbt:2026-06-30:standalone:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "c9a47d5c:tax_expense:2026-06-30:standalone:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "c9a47d5c:pat:2026-06-30:standalone:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "c9a47d5c:eps_basic:2026-06-30:standalone:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "c9a47d5c:eps_diluted:2026-06-30:standalone:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "944998b5:revenue_from_operations:2025-06-30:consolidated:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "944998b5:other_income:2025-06-30:consolidated:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "944998b5:total_income:2025-06-30:consolidated:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "944998b5:finance_cost:2025-06-30:consolidated:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "944998b5:depreciation_and_amortization:2025-06-30:consolidated:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "944998b5:total_expenses:2025-06-30:consolidated:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "944998b5:pbt:2025-06-30:consolidated:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "944998b5:pat:2025-06-30:consolidated:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "944998b5:eps_basic:2025-06-30:consolidated:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "944998b5:eps_diluted:2025-06-30:consolidated:quarter"
+    },
+    {
+      "decision": "abstain",
+      "errors": [],
+      "label_id": "944998b5:revenue_from_operations:2025-06-30:standalone:quarter"
+    },
+    {
+      "decision": "abstain",
+      "errors": [],
+      "label_id": "944998b5:other_income:2025-06-30:standalone:quarter"
+    },
+    {
+      "decision": "abstain",
+      "errors": [],
+      "label_id": "944998b5:total_income:2025-06-30:standalone:quarter"
+    },
+    {
+      "decision": "abstain",
+      "errors": [],
+      "label_id": "944998b5:finance_cost:2025-06-30:standalone:quarter"
+    },
+    {
+      "decision": "abstain",
+      "errors": [],
+      "label_id": "944998b5:depreciation_and_amortization:2025-06-30:standalone:quarter"
+    },
+    {
+      "decision": "abstain",
+      "errors": [],
+      "label_id": "944998b5:total_expenses:2025-06-30:standalone:quarter"
+    },
+    {
+      "decision": "abstain",
+      "errors": [],
+      "label_id": "944998b5:pbt:2025-06-30:standalone:quarter"
+    },
+    {
+      "decision": "abstain",
+      "errors": [],
+      "label_id": "944998b5:pat:2025-06-30:standalone:quarter"
+    },
+    {
+      "decision": "abstain",
+      "errors": [],
+      "label_id": "944998b5:eps_basic:2025-06-30:standalone:quarter"
+    },
+    {
+      "decision": "abstain",
+      "errors": [],
+      "label_id": "944998b5:eps_diluted:2025-06-30:standalone:quarter"
+    }
+  ],
+  "errors": {
+    "spurious_prediction": 0
+  },
+  "ignored_unapproved_gold_records": 0,
+  "metrics": {
+    "abstention_rate": 0.1939252336448598,
+    "auto_published_coverage": 0.6121495327102804,
+    "auto_published_precision": 1.0,
+    "recall": 0.6121495327102804,
+    "review_rate": 0.1939252336448598
+  },
+  "per_fact": {
+    "depreciation_and_amortization": {
+      "abstain": 7,
+      "correct_published": 25,
+      "gold": 40,
+      "precision": 1.0,
+      "publish": 25,
+      "recall": 0.625,
+      "review": 8
+    },
+    "eps_basic": {
+      "abstain": 9,
+      "correct_published": 24,
+      "gold": 41,
+      "precision": 1.0,
+      "publish": 24,
+      "recall": 0.5853658536585366,
+      "review": 8
+    },
+    "eps_diluted": {
+      "abstain": 9,
+      "correct_published": 24,
+      "gold": 41,
+      "precision": 1.0,
+      "publish": 24,
+      "recall": 0.5853658536585366,
+      "review": 8
+    },
+    "finance_cost": {
+      "abstain": 7,
+      "correct_published": 25,
+      "gold": 40,
+      "precision": 1.0,
+      "publish": 25,
+      "recall": 0.625,
+      "review": 8
+    },
+    "other_income": {
+      "abstain": 7,
+      "correct_published": 25,
+      "gold": 40,
+      "precision": 1.0,
+      "publish": 25,
+      "recall": 0.625,
+      "review": 8
+    },
+    "pat": {
+      "abstain": 9,
+      "correct_published": 25,
+      "gold": 42,
+      "precision": 1.0,
+      "publish": 25,
+      "recall": 0.5952380952380952,
+      "review": 8
+    },
+    "pbt": {
+      "abstain": 8,
+      "correct_published": 27,
+      "gold": 42,
+      "precision": 1.0,
+      "publish": 27,
+      "recall": 0.6428571428571429,
+      "review": 7
+    },
+    "revenue_from_operations": {
+      "abstain": 5,
+      "correct_published": 27,
+      "gold": 40,
+      "precision": 1.0,
+      "publish": 27,
+      "recall": 0.675,
+      "review": 8
+    },
+    "tax_expense": {
+      "abstain": 7,
+      "correct_published": 13,
+      "gold": 24,
+      "precision": 1.0,
+      "publish": 13,
+      "recall": 0.5416666666666666,
+      "review": 4
+    },
+    "total_expenses": {
+      "abstain": 7,
+      "correct_published": 23,
+      "gold": 38,
+      "precision": 1.0,
+      "publish": 23,
+      "recall": 0.6052631578947368,
+      "review": 8
+    },
+    "total_income": {
+      "abstain": 8,
+      "correct_published": 24,
+      "gold": 40,
+      "precision": 1.0,
+      "publish": 24,
+      "recall": 0.6,
+      "review": 8
+    }
+  },
+  "prediction_records": 428,
+  "provisional": true,
+  "release_gates": {
+    "approved_gold_only": false,
+    "has_approved_gold": true,
+    "has_published_predictions": true,
+    "passed": false,
+    "published_precision_100_percent": true,
+    "zero_invalid_evidence": true,
+    "zero_spurious_published": true,
+    "zero_unresolved_conflicts": true,
+    "zero_wrong_basis": true,
+    "zero_wrong_period": true,
+    "zero_wrong_unit": true
+  },
+  "spurious_label_ids": []
+}

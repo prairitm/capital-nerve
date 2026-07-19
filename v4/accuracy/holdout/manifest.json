@@ -1,0 +1,99 @@
+{
+  "holdout_version": "0.1-locked",
+  "status": "locked_pending_independent_labeler",
+  "release_evaluation_required": true,
+  "development_replay_included": false,
+  "routine_results_present": false,
+  "labels_directory": "accuracy/holdout/gold/",
+  "labels_status": "not_created",
+  "approval_requirement": "Every label must be independently human-approved before release evaluation.",
+  "blocker": "This agent created the development labels and extraction fixes; holdout retrieval, labeling, and approval must be performed independently.",
+  "candidates": [
+    {
+      "holdout_id": "WIPRO-2025-Q2",
+      "company_symbol": "WIPRO",
+      "reporting_period_candidate": "2025-09-30",
+      "sector": "IT services",
+      "document_id": null,
+      "source_url": null
+    },
+    {
+      "holdout_id": "TECHM-2025-Q2",
+      "company_symbol": "TECHM",
+      "reporting_period_candidate": "2025-09-30",
+      "sector": "IT services",
+      "document_id": null,
+      "source_url": null
+    },
+    {
+      "holdout_id": "CIPLA-2025-Q2",
+      "company_symbol": "CIPLA",
+      "reporting_period_candidate": "2025-09-30",
+      "sector": "pharmaceuticals",
+      "document_id": null,
+      "source_url": null
+    },
+    {
+      "holdout_id": "M&M-2025-Q2",
+      "company_symbol": "M&M",
+      "reporting_period_candidate": "2025-09-30",
+      "sector": "automotive",
+      "document_id": null,
+      "source_url": null
+    },
+    {
+      "holdout_id": "NESTLEIND-2025-Q2",
+      "company_symbol": "NESTLEIND",
+      "reporting_period_candidate": "2025-09-30",
+      "sector": "consumer staples",
+      "document_id": null,
+      "source_url": null
+    },
+    {
+      "holdout_id": "GRASIM-2025-Q2",
+      "company_symbol": "GRASIM",
+      "reporting_period_candidate": "2025-09-30",
+      "sector": "diversified materials",
+      "document_id": null,
+      "source_url": null
+    },
+    {
+      "holdout_id": "JSWSTEEL-2025-Q2",
+      "company_symbol": "JSWSTEEL",
+      "reporting_period_candidate": "2025-09-30",
+      "sector": "steel",
+      "document_id": null,
+      "source_url": null
+    },
+    {
+      "holdout_id": "NTPC-2025-Q2",
+      "company_symbol": "NTPC",
+      "reporting_period_candidate": "2025-09-30",
+      "sector": "power generation",
+      "document_id": null,
+      "source_url": null
+    },
+    {
+      "holdout_id": "POWERGRID-2025-Q2",
+      "company_symbol": "POWERGRID",
+      "reporting_period_candidate": "2025-09-30",
+      "sector": "power transmission",
+      "document_id": null,
+      "source_url": null
+    },
+    {
+      "holdout_id": "PIDILITIND-2025-Q2",
+      "company_symbol": "PIDILITIND",
+      "reporting_period_candidate": "2025-09-30",
+      "sector": "specialty chemicals",
+      "document_id": null,
+      "source_url": null
+    }
+  ],
+  "constraints": {
+    "not_used_for_parser_debugging": true,
+    "difficult_pdfs_required": true,
+    "no_code_changes_before_formal_result": true,
+    "labels_separate_from_development": true
+  }
+}
