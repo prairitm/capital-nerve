@@ -70,6 +70,21 @@ describe("role-aware access", () => {
     expect(screen.queryByText("temporary-password-1234")).not.toBeInTheDocument();
   });
 
+  it("shows administrators the fact review queue", async () => {
+    const admin = { ...baseUser, id: "admin-1", email: "admin@example.com", role: "ADMIN" as const };
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.includes("/auth/me")) return json(admin);
+      if (url.includes("/admin/reviews/summary")) return json({ open: 0, approved: 0, rejected: 0, total: 0 });
+      if (url.includes("/admin/reviews")) return json({ items: [], count: 0 });
+      return json({ detail: "Not found" }, 404);
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    renderApp("/admin/reviews");
+    expect(await screen.findByRole("heading", { name: "Fact review queue" })).toBeInTheDocument();
+    expect(screen.getByText("No facts need review")).toBeInTheDocument();
+  });
+
   it("sends an idempotent watchlist mutation and refreshes related data", async () => {
     const fetchMock = vi.fn(async (_input: RequestInfo | URL, _init?: RequestInit) => json({ watchlist_status: true, added: true }));
     vi.stubGlobal("fetch", fetchMock);
