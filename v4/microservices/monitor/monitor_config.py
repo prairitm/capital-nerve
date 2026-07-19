@@ -23,6 +23,19 @@ class Settings:
         self.max_attempts = int(os.getenv("MONITOR_MAX_ATTEMPTS", "5"))
         self.pipeline_version = os.getenv("MONITOR_PIPELINE_VERSION", "v4-1")
         self.flow_timeout_seconds = float(os.getenv("MONITOR_FLOW_TIMEOUT_SECONDS", "1800"))
+        self.smtp_host = os.getenv("V4_SMTP_HOST", "smtp.gmail.com")
+        self.smtp_port = int(os.getenv("V4_SMTP_PORT", "587"))
+        self.smtp_username = os.getenv("V4_SMTP_USERNAME", "capitalnerve@gmail.com")
+        self.smtp_password = os.getenv("V4_SMTP_PASSWORD", "").replace(" ", "")
+        self.email_from_address = os.getenv("V4_EMAIL_FROM_ADDRESS", "capitalnerve@gmail.com")
+        self.email_from_name = os.getenv("V4_EMAIL_FROM_NAME", "CapitalNerve")
+        self.public_app_url = os.getenv(
+            "V4_PUBLIC_APP_URL", "https://capital-nerve.taildeaa7c.ts.net"
+        ).rstrip("/")
+        self.email_max_attempts = int(os.getenv("V4_EMAIL_MAX_ATTEMPTS", "5"))
+        self.email_lease_seconds = int(os.getenv("V4_EMAIL_LEASE_SECONDS", "120"))
+        self.email_worker_interval_seconds = float(os.getenv("V4_EMAIL_WORKER_INTERVAL_SECONDS", "2"))
+        self.smtp_timeout_seconds = float(os.getenv("V4_SMTP_TIMEOUT_SECONDS", "30"))
         self.service_urls = {
             "company": os.getenv("MONITOR_COMPANY_URL", "http://127.0.0.1:8020"),
             "event": os.getenv("MONITOR_EVENT_URL", "http://127.0.0.1:8021"),

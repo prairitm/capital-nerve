@@ -1,5 +1,5 @@
 import { Outlet, NavLink, useNavigate, useLocation, Link } from "react-router-dom";
-import { LayoutDashboard, Building2, Activity, Database, Heart, Users, KeyRound, LogOut } from "lucide-react";
+import { LayoutDashboard, Building2, Activity, Database, Heart, Users, KeyRound, LogOut, UserRound } from "lucide-react";
 import clsx from "clsx";
 import { useAuth } from "@/auth/AuthContext";
 
@@ -55,7 +55,7 @@ export function AppShell() {
           <div className="mt-1 text-[11px] text-ink-soft">Company intelligence workspace</div>
         </div>
         <div className="mx-2 mt-3 rounded-xl border border-line/60 bg-surface/50 p-3">
-          <div className="truncate text-xs font-medium text-ink">{user?.full_name || user?.email}</div>
+          <Link to="/profile" className="focus-ring block truncate rounded text-xs font-medium text-ink hover:text-brand-soft">{user?.full_name || user?.email}</Link>
           <div className="mt-0.5 flex items-center justify-between gap-2"><span className="truncate text-[11px] text-ink-soft">{user?.role === "ADMIN" ? "Administrator" : "Member"}</span><div className="flex"><Link to="/change-password" className="focus-ring grid size-7 place-items-center rounded-lg text-ink-soft hover:bg-surface-2 hover:text-ink" title="Change password"><KeyRound size={14} /></Link><button type="button" onClick={() => void signOut()} className="focus-ring grid size-7 place-items-center rounded-lg text-ink-soft hover:bg-surface-2 hover:text-ink" title="Sign out"><LogOut size={14} /></button></div></div>
         </div>
       </aside>
@@ -72,7 +72,7 @@ export function AppShell() {
               <Logo small />
               <span className="text-sm font-semibold">CapitalNerve</span>
             </button>
-            <div className="ml-auto flex items-center gap-1"><Link to="/change-password" className="focus-ring grid size-9 place-items-center rounded-xl text-ink-mute hover:bg-surface" aria-label="Change password"><KeyRound size={17} /></Link><button type="button" onClick={() => void signOut()} className="focus-ring grid size-9 place-items-center rounded-xl text-ink-mute hover:bg-surface" aria-label="Sign out"><LogOut size={17} /></button></div>
+            <div className="ml-auto flex items-center gap-1"><Link to="/profile" className="focus-ring grid size-9 place-items-center rounded-xl text-ink-mute hover:bg-surface" aria-label="Profile"><UserRound size={17} /></Link><Link to="/change-password" className="focus-ring grid size-9 place-items-center rounded-xl text-ink-mute hover:bg-surface" aria-label="Change password"><KeyRound size={17} /></Link><button type="button" onClick={() => void signOut()} className="focus-ring grid size-9 place-items-center rounded-xl text-ink-mute hover:bg-surface" aria-label="Sign out"><LogOut size={17} /></button></div>
           </div>
         </header>
 

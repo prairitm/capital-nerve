@@ -87,9 +87,30 @@ default database is `v4/data/capital_nerve_app.db` and is ignored by git.
 | `V4_NSE_REFRESH_HOURS` | `24` | Maximum age of the cached NSE directory |
 | `V4_NSE_REQUEST_TIMEOUT_SECONDS` | `30` | Timeout for directory downloads and company registration |
 | `V4_NSE_REFRESH_ON_STARTUP` | `true` | Refresh the directory at backend startup when it is stale |
+| `V4_PUBLIC_APP_URL` | `https://capital-nerve.taildeaa7c.ts.net` | Public origin used in notification links |
+| `V4_SMTP_HOST` | `smtp.gmail.com` | SMTP server for watchlist email |
+| `V4_SMTP_PORT` | `587` | STARTTLS SMTP port |
+| `V4_SMTP_USERNAME` | `capitalnerve@gmail.com` | Gmail SMTP account |
+| `V4_SMTP_PASSWORD` | unset | Gmail App Password; email delivery stays disabled without it |
+| `V4_EMAIL_FROM_ADDRESS` | `capitalnerve@gmail.com` | Email From address |
+| `V4_EMAIL_FROM_NAME` | `CapitalNerve` | Email From display name |
 
 Production deployments must set `V4_COOKIE_SECURE=true`, serve the frontend and
 API over HTTPS, and restrict `V4_CORS_ORIGINS` to the deployed frontend origin.
+
+## Watchlist email notifications
+
+Users can opt in from **Profile** and choose which supported filing types should
+generate email. A filing is queued for email only after the full pipeline has
+completed, and delivery is retried independently from extraction. Custom
+notification addresses must be verified; the account login email is trusted by
+default. Removing a company or disabling alerts cancels unsent watchlist mail.
+
+Delivery uses Gmail SMTP with STARTTLS. Enable two-step verification on
+`capitalnerve@gmail.com`, create a Gmail App Password, and expose it only as
+`V4_SMTP_PASSWORD`. The Raspberry Pi installer prompts for this secret without
+echoing it and writes it to the protected service environment. Use **Send test
+email** on Profile after deployment to verify delivery.
 
 ## NSE company search
 

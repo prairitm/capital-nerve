@@ -22,6 +22,18 @@ export interface TemporaryCredentialResponse {
   temporary_password: string;
 }
 
+export interface Profile {
+  full_name: string | null;
+  login_email: string;
+  notification_email: string;
+  email_enabled: boolean;
+  email_verified: boolean;
+  verification_required: boolean;
+  financial_results_enabled: boolean;
+  investor_presentations_enabled: boolean;
+  earnings_calls_enabled: boolean;
+}
+
 export interface Company {
   id: string;
   name: string | null;

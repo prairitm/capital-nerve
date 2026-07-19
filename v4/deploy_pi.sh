@@ -112,6 +112,7 @@ write_configuration() {
   local admin_password="$2"
   local openai_key="$3"
   local public_origin="$4"
+  local smtp_password="$5"
   local app_tmp
   local openai_tmp
 
@@ -129,6 +130,13 @@ write_configuration() {
     echo "VALUES_SERVICE_PARSE_MAX_WORKERS=1"
     echo "VALUES_SERVICE_EXTRACTION_MAX_WORKERS=1"
     echo "MONITOR_POLL_INTERVAL_SECONDS=120"
+    echo "V4_SMTP_HOST=smtp.gmail.com"
+    echo "V4_SMTP_PORT=587"
+    echo "V4_SMTP_USERNAME=capitalnerve@gmail.com"
+    echo "V4_EMAIL_FROM_ADDRESS=capitalnerve@gmail.com"
+    echo "V4_EMAIL_FROM_NAME=CapitalNerve"
+    echo "V4_PUBLIC_APP_URL=${public_origin}"
+    printf 'V4_SMTP_PASSWORD=%s\n' "$(systemd_quote "${smtp_password}")"
     printf 'V4_ADMIN_EMAIL=%s\n' "$(systemd_quote "${admin_email}")"
     printf 'V4_ADMIN_PASSWORD=%s\n' "$(systemd_quote "${admin_password}")"
   } >"${app_tmp}"
@@ -273,6 +281,7 @@ main() {
   local admin_password
   local admin_password_confirm
   local openai_key
+  local smtp_password="${V4_SMTP_PASSWORD:-}"
   read -r -p "Initial administrator email: " admin_email
   [[ "${admin_email}" == *@*.* ]] || die "Enter a valid administrator email address."
   prompt_secret "Initial administrator password (minimum 12 characters)" admin_password
@@ -281,6 +290,10 @@ main() {
   [[ "${admin_password}" == "${admin_password_confirm}" ]] || die "The passwords do not match."
   prompt_secret "OpenAI API key" openai_key
   [[ "${openai_key}" != *'='* ]] || die "The OpenAI key contains an unexpected '=' character."
+  if [[ -z "${smtp_password}" ]]; then
+    prompt_secret "Gmail App Password for capitalnerve@gmail.com" smtp_password
+  fi
+  [[ "${smtp_password}" != *$'\n'* && "${smtp_password}" != *$'\r'* ]] || die "The Gmail App Password cannot contain a newline."
 
   info "Installing operating-system packages"
   sudo apt-get update
@@ -324,7 +337,7 @@ main() {
   sudo find "${WEB_ROOT}" -type f -exec chmod 644 {} +
 
   info "Writing protected production configuration"
-  write_configuration "${admin_email}" "${admin_password}" "${openai_key}" "${public_origin}"
+  write_configuration "${admin_email}" "${admin_password}" "${openai_key}" "${public_origin}" "${smtp_password}"
   chmod +x "${V4_DIR}/deploy/run_service.sh"
   install_systemd_units
   install_caddy_config

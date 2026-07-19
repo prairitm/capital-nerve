@@ -129,4 +129,42 @@ describe("role-aware access", () => {
     );
     expect(input).toHaveFocus();
   });
+
+  it("loads and saves watchlist email preferences from Profile", async () => {
+    const profile = {
+      full_name: "Member User",
+      login_email: "member@example.com",
+      notification_email: "member@example.com",
+      email_enabled: false,
+      email_verified: true,
+      verification_required: false,
+      financial_results_enabled: true,
+      investor_presentations_enabled: true,
+      earnings_calls_enabled: true,
+    };
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      if (url.includes("/auth/me")) return json(baseUser);
+      if (url.includes("/api/profile") && init?.method === "PATCH") {
+        return json({ ...profile, email_enabled: true });
+      }
+      if (url.includes("/api/profile")) return json(profile);
+      return json({ detail: "Not found" }, 404);
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    renderApp("/profile");
+    expect(await screen.findByRole("heading", { name: "Profile and email alerts" })).toBeInTheDocument();
+    fireEvent.click(screen.getByLabelText("Enabled"));
+    fireEvent.click(screen.getByRole("button", { name: "Save changes" }));
+    await waitFor(() => expect(fetchMock.mock.calls.some(([, options]) => options?.method === "PATCH")).toBe(true));
+    const patchCall = fetchMock.mock.calls.find(([, options]) => options?.method === "PATCH");
+    expect(JSON.parse(String(patchCall?.[1]?.body)).email_enabled).toBe(true);
+    expect(await screen.findByText("Profile saved.")).toBeInTheDocument();
+  });
+
+  it("shows a public notification result without requiring login", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => json({ detail: "Not authenticated" }, 401)));
+    renderApp("/notifications/verified");
+    expect(await screen.findByRole("heading", { name: "Email verified" })).toBeInTheDocument();
+  });
 });

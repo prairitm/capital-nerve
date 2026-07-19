@@ -12,12 +12,19 @@ from run import request_json, run_exact_document_flow
 
 from .monitor_config import Settings
 from .monitor_db import (
+    cancel_email,
+    claim_email,
     claim_due_company,
     claim_job,
     complete_job,
+    complete_job_and_enqueue_notifications,
+    complete_email,
+    email_counts,
+    email_delivery_allowed,
     enqueue_job,
     ensure_watch_states,
     fail_job,
+    fail_email,
     fail_poll,
     finish_poll,
     heartbeat_job,
@@ -27,6 +34,7 @@ from .monitor_db import (
     utc_iso,
     utc_now,
 )
+from .notifications import PermanentNotificationError, send_email
 
 
 logger = logging.getLogger(__name__)
@@ -74,6 +82,7 @@ class MonitorRuntime:
         self.threads = [
             threading.Thread(target=self._poll_loop, name="filing-poller", daemon=True),
             threading.Thread(target=self._worker_loop, name="filing-worker", daemon=True),
+            threading.Thread(target=self._notification_loop, name="email-worker", daemon=True),
         ]
         for thread in self.threads:
             thread.start()
@@ -89,6 +98,8 @@ class MonitorRuntime:
             "worker_id": self.worker_id,
             "last_poll_at": self.last_poll_at,
             "jobs": job_counts(self.settings.app_db_path),
+            "emails": email_counts(self.settings.app_db_path),
+            "smtp_configured": bool(self.settings.smtp_password),
             "app_db_path": str(self.settings.app_db_path),
         }
 
@@ -226,8 +237,13 @@ class MonitorRuntime:
                 title=job.get("title"),
                 resolved_callback=reserve,
             )
-            complete_job(self.settings.app_db_path, job["id"], result["canonical_event_id"])
-            logger.info("Pipeline job %s succeeded", job["id"])
+            queued = complete_job_and_enqueue_notifications(
+                self.settings.app_db_path,
+                job["id"],
+                result["canonical_event_id"],
+                max_attempts=self.settings.email_max_attempts,
+            )
+            logger.info("Pipeline job %s succeeded; queued %s email(s)", job["id"], queued)
         except CanonicalJobAlreadyQueued as exc:
             complete_job(self.settings.app_db_path, job["id"], str(exc))
             logger.info("Pipeline job %s is a canonical duplicate", job["id"])
@@ -252,4 +268,34 @@ class MonitorRuntime:
                 self._run_job(job)
             except Exception:
                 logger.exception("Monitor worker loop error")
+                self.stop_event.wait(5)
+
+    def _notification_loop(self) -> None:
+        while not self.stop_event.is_set():
+            try:
+                item = claim_email(
+                    self.settings.app_db_path,
+                    self.worker_id,
+                    self.settings.email_lease_seconds,
+                )
+                if item is None:
+                    self.stop_event.wait(self.settings.email_worker_interval_seconds)
+                    continue
+                allowed, reason = email_delivery_allowed(self.settings.app_db_path, item)
+                if not allowed:
+                    cancel_email(self.settings.app_db_path, item["id"], reason or "Delivery cancelled")
+                    continue
+                try:
+                    provider_id = send_email(self.settings, item)
+                except PermanentNotificationError as exc:
+                    logger.error("Email %s permanently failed: %s", item["id"], exc)
+                    fail_email(self.settings.app_db_path, item, str(exc), permanent=True)
+                except Exception as exc:
+                    logger.exception("Email %s failed", item["id"])
+                    fail_email(self.settings.app_db_path, item, str(exc))
+                else:
+                    complete_email(self.settings.app_db_path, item["id"], provider_id)
+                    logger.info("Email %s sent", item["id"])
+            except Exception:
+                logger.exception("Notification worker loop error")
                 self.stop_event.wait(5)

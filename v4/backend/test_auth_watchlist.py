@@ -344,7 +344,7 @@ class AuthWatchlistApiTest(unittest.TestCase):
             versions = conn.execute("SELECT COUNT(*) AS count FROM schema_migrations").fetchone()[
                 "count"
             ]
-        self.assertEqual(3, versions)
+        self.assertEqual(4, versions)
         settings.admin_email = "bootstrap@example.com"
         settings.admin_password = "BootstrapPassword123!"
         bootstrap_admin()
@@ -369,6 +369,64 @@ class AuthWatchlistApiTest(unittest.TestCase):
                 "SELECT COUNT(*) AS count FROM sessions WHERE user_id = ?", (self.member_id,)
             ).fetchone()["count"]
         self.assertEqual(0, count)
+
+    def test_profile_email_verification_test_and_unsubscribe(self):
+        self._login()
+        initial = self.client.get("/profile")
+        self.assertEqual(200, initial.status_code, initial.text)
+        self.assertEqual("member@example.com", initial.json()["notification_email"])
+        self.assertTrue(initial.json()["email_verified"])
+        self.assertFalse(initial.json()["email_enabled"])
+
+        updated = self.client.patch(
+            "/profile",
+            json={
+                "full_name": "Updated Member",
+                "notification_email": "alerts@example.com",
+                "email_enabled": True,
+                "financial_results_enabled": True,
+                "investor_presentations_enabled": False,
+                "earnings_calls_enabled": True,
+            },
+        )
+        self.assertEqual(200, updated.status_code, updated.text)
+        self.assertTrue(updated.json()["verification_required"])
+        self.assertFalse(updated.json()["email_verified"])
+        self.assertEqual(409, self.client.post("/profile/test-email").status_code)
+        with get_app_conn() as conn:
+            verification = conn.execute(
+                "SELECT * FROM email_outbox WHERE message_kind = 'verify_email'"
+            ).fetchone()
+        self.assertEqual("alerts@example.com", verification["recipient_email"])
+
+        verified = self.client.get(
+            "/notifications/verify",
+            params={"token": verification["action_token"]},
+            follow_redirects=False,
+        )
+        self.assertEqual(303, verified.status_code)
+        self.assertTrue(self.client.get("/profile").json()["email_verified"])
+        self.assertEqual(202, self.client.post("/profile/test-email").status_code)
+
+        raw_token = "unsubscribe-token-that-is-long-enough"
+        with get_app_conn() as conn:
+            conn.execute(
+                """
+                INSERT INTO notification_action_tokens(
+                    id, token_hash, action, user_id, email, created_at
+                ) VALUES (?, ?, 'unsubscribe', ?, ?, ?)
+                """,
+                (
+                    str(uuid.uuid4()), hashlib.sha256(raw_token.encode()).hexdigest(),
+                    self.member_id, "alerts@example.com", utc_iso(),
+                ),
+            )
+            conn.commit()
+        response = self.client.get(
+            "/notifications/unsubscribe", params={"token": raw_token}, follow_redirects=False
+        )
+        self.assertEqual(303, response.status_code)
+        self.assertFalse(self.client.get("/profile").json()["email_enabled"])
 
 
 if __name__ == "__main__":

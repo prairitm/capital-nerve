@@ -14,6 +14,8 @@ import { EventDetail } from "@/pages/EventDetail";
 import { Signals } from "@/pages/Signals";
 import { SignalDetail } from "@/pages/SignalDetail";
 import { DocumentPage } from "@/pages/DocumentPage";
+import { Profile } from "@/pages/Profile";
+import { NotificationResult } from "@/pages/NotificationResult";
 
 function RequireAuth({ children, allowPasswordChange = false }: { children: JSX.Element; allowPasswordChange?: boolean }) {
   const { user, loading } = useAuth();
@@ -35,9 +37,11 @@ export default function App() {
     <Routes>
       <Route path="/login" element={<Login />} />
       <Route path="/change-password" element={<RequireAuth allowPasswordChange><ChangePassword /></RequireAuth>} />
+      <Route path="/notifications/:result" element={<NotificationResult />} />
       <Route element={<RequireAuth><AppShell /></RequireAuth>}>
         <Route path="/" element={<HomeFeed />} />
         <Route path="/watchlist" element={<Watchlist />} />
+        <Route path="/profile" element={<Profile />} />
         <Route path="/companies" element={<Companies />} />
         <Route path="/company/:ticker" element={<Company />} />
         <Route path="/company/:ticker/events" element={<CompanyEvents />} />
