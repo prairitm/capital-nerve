@@ -616,6 +616,12 @@ def run_flow(args: argparse.Namespace) -> dict[str, Any]:
         log_microservice_details(step, response, detail_limit=args.detail_limit)
         logging.debug("Full step %s response:\n%s", step.number, json.dumps(response, indent=2))
 
+        # The caller-owned document queue is consumed by Step 3. Steps 1 and 2
+        # return service-owned next parameters, so carry the queue explicitly
+        # until document resolution has received it.
+        if step.number < 3 and params.get("documents"):
+            next_params["documents"] = params["documents"]
+
         params = next_params
         final_response = response
 
