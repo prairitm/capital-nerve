@@ -8,7 +8,10 @@ from pathlib import Path
 
 from run_admin_watchlist_history import (
     BatchError,
+    Company,
+    build_run_command,
     completed_quarters,
+    parse_args,
     resolve_admin,
     resolve_companies,
     watchlist_company_ids,
@@ -29,6 +32,28 @@ class QuarterWindowTests(unittest.TestCase):
     def test_includes_quarter_on_its_last_day(self) -> None:
         window = completed_quarters(date(2026, 6, 30), 1)[0]
         self.assertEqual("2026 Q2", window.label)
+
+
+class CommandTests(unittest.TestCase):
+    def test_runs_all_event_types_by_default(self) -> None:
+        args = parse_args(["--dry-run"])
+        company = Company("company-a", "AAA", "Company A")
+        window = completed_quarters(date(2026, 7, 19), 1)[0]
+
+        command = build_run_command(args, company, window)
+
+        self.assertIn("--all-event-types", command)
+        self.assertNotIn("--event-type", command)
+
+    def test_event_type_can_limit_the_run(self) -> None:
+        args = parse_args(["--event-type", "Financial Results", "--dry-run"])
+        company = Company("company-a", "AAA", "Company A")
+        window = completed_quarters(date(2026, 7, 19), 1)[0]
+
+        command = build_run_command(args, company, window)
+
+        self.assertNotIn("--all-event-types", command)
+        self.assertEqual("Financial Results", command[command.index("--event-type") + 1])
 
 
 class WatchlistResolutionTests(unittest.TestCase):
