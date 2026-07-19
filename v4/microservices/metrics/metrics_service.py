@@ -172,15 +172,16 @@ def load_facts(
         resolved_rows = conn.execute(
             """
             SELECT resolved_fact_id, fact_code, resolved_value, unit,
-                   resolution_status, confidence
+                   resolution_status, confidence, basis
             FROM resolved_facts
             WHERE company_id = ? AND event_id = ?
+            ORDER BY CASE basis WHEN 'consolidated' THEN 0 ELSE 1 END
             """,
             (company_id, event_id),
         ).fetchall()
         resolved: dict[str, dict[str, Any]] = {}
         for row in resolved_rows:
-            if row["resolved_value"] is None or row["resolution_status"] == "conflict_needs_review":
+            if row["resolved_value"] is None or row["resolution_status"] != "resolved":
                 continue
             resolved.setdefault(
                 row["fact_code"],

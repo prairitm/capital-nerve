@@ -22,6 +22,82 @@ export interface TemporaryCredentialResponse {
   temporary_password: string;
 }
 
+export type ReviewQueueStatus = "open" | "approved" | "rejected";
+
+export interface FactReviewCandidate {
+  observation_id: string;
+  document_id: string | null;
+  fact_code: string;
+  value: number | null;
+  value_text: string | null;
+  unit: string | null;
+  period: string | null;
+  period_type: string | null;
+  basis: string | null;
+  source_page: number | null;
+  source_text: string | null;
+  extraction_method: string | null;
+  confidence: number | null;
+}
+
+export interface FactReviewDecision {
+  resolved_fact_id: string;
+  decision: "approved" | "rejected";
+  selected_observation_id: string | null;
+  reviewer_note: string | null;
+  reviewed_by: string;
+  reviewed_at: string;
+  updated_at: string;
+  application_status: "pending" | "applied" | "failed" | "not_applicable";
+  applied_at: string | null;
+  applied_by: string | null;
+  application_error: string | null;
+  recompute_status: "pending" | "succeeded" | "failed" | "not_applicable";
+  recomputed_at: string | null;
+  recompute_error: string | null;
+  reviewer_email: string | null;
+  reviewer_name: string | null;
+}
+
+export interface FactReviewItem {
+  resolved_fact_id: string;
+  company_id: string;
+  company_name: string | null;
+  company_symbol: string | null;
+  event_id: string;
+  event_date: string | null;
+  event_title: string | null;
+  fact_code: string;
+  fact_name: string | null;
+  resolved_value: number | null;
+  resolved_value_text: string | null;
+  unit: string | null;
+  basis: string | null;
+  period: string | null;
+  period_type: string | null;
+  confidence: number | null;
+  selected_observation_id: string | null;
+  document_id: string | null;
+  document_title: string | null;
+  source_page: number | null;
+  source_text: string | null;
+  queue_status: ReviewQueueStatus;
+  decision: FactReviewDecision | null;
+  candidates: FactReviewCandidate[];
+}
+
+export interface FactReviewResponse {
+  items: FactReviewItem[];
+  count: number;
+}
+
+export interface FactReviewSummary {
+  open: number;
+  approved: number;
+  rejected: number;
+  total: number;
+}
+
 export interface Profile {
   full_name: string | null;
   login_email: string;

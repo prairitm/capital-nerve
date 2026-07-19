@@ -1,5 +1,5 @@
 import { Outlet, NavLink, useNavigate, useLocation, Link } from "react-router-dom";
-import { LayoutDashboard, Building2, Activity, Database, Heart, Users, KeyRound, LogOut, UserRound } from "lucide-react";
+import { LayoutDashboard, Building2, Activity, ClipboardCheck, Database, Heart, Users, KeyRound, LogOut, UserRound } from "lucide-react";
 import clsx from "clsx";
 import { useAuth } from "@/auth/AuthContext";
 
@@ -14,7 +14,13 @@ export function AppShell() {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, logout } = useAuth();
-  const nav = user?.role === "ADMIN" ? [...NAV, { to: "/admin/users", label: "Users", icon: Users }] : NAV;
+  const nav = user?.role === "ADMIN"
+    ? [
+        ...NAV,
+        { to: "/admin/reviews", label: "Reviews", icon: ClipboardCheck },
+        { to: "/admin/users", label: "Users", icon: Users },
+      ]
+    : NAV;
   const signOut = async () => { await logout(); navigate("/login", { replace: true }); };
 
   return (
