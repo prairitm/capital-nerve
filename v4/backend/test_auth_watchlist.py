@@ -62,16 +62,31 @@ class AuthWatchlistApiTest(unittest.TestCase):
                 event_date TEXT, fiscal_year INTEGER, fiscal_quarter INTEGER,
                 title TEXT, source_url TEXT, document_id TEXT, status TEXT
             );
+            CREATE TABLE signals (
+                signal_id TEXT PRIMARY KEY, company_id TEXT, event_id TEXT,
+                signal_code TEXT, severity TEXT, direction TEXT,
+                supporting_metric_ids TEXT, supporting_fact_ids TEXT
+            );
             CREATE TABLE documents (
                 id TEXT PRIMARY KEY, company_id TEXT, source_url TEXT,
                 storage_path TEXT, sha256 TEXT, title TEXT,
                 document_kind TEXT, file_size INTEGER, status TEXT,
                 error_message TEXT, ingested_at TEXT
             );
-            CREATE TABLE signals (
-                signal_id TEXT PRIMARY KEY, company_id TEXT, event_id TEXT,
-                signal_code TEXT, severity TEXT, direction TEXT,
-                supporting_metric_ids TEXT, supporting_fact_ids TEXT
+            CREATE TABLE fact_definitions (fact_code TEXT PRIMARY KEY, fact_name TEXT);
+            CREATE TABLE fact_observations (
+                observation_id TEXT PRIMARY KEY, company_id TEXT, event_id TEXT,
+                document_id TEXT, fact_code TEXT, value REAL, value_text TEXT,
+                unit TEXT, period TEXT, period_type TEXT, basis TEXT,
+                source_page INTEGER, source_text TEXT, extraction_method TEXT,
+                confidence REAL
+            );
+            CREATE TABLE resolved_facts (
+                resolved_fact_id TEXT PRIMARY KEY, company_id TEXT, event_id TEXT,
+                fact_code TEXT, resolved_value REAL, resolved_value_text TEXT,
+                unit TEXT, period TEXT, period_type TEXT, basis TEXT,
+                selected_observation_id TEXT, resolution_status TEXT,
+                confidence REAL
             );
             INSERT INTO companies VALUES
                 ('alpha-id', 'Alpha Ltd', 'ALPHA', 'NSE', 'Technology', 'Software', NULL),
@@ -81,13 +96,25 @@ class AuthWatchlistApiTest(unittest.TestCase):
                  'Results', NULL, 'document-1', 'processed'),
                 ('event-2', 'beta-id', 'Investor Presentation', '2026-05-11', 2025, 4,
                  'Presentation', NULL, 'document-2', 'processed');
-            INSERT INTO documents VALUES
-                ('document-1', 'alpha-id', NULL, '/tmp/alpha.pdf', 'sha-alpha',
-                 'Results', 'financial_result', 100, 'processed', NULL, '2026-05-10'),
-                ('document-2', 'beta-id', NULL, '/tmp/beta.pdf', 'sha-beta',
-                 'Presentation', 'investor_presentation', 100, 'processed', NULL, '2026-05-11');
             INSERT INTO signals VALUES
                 ('signal-1', 'alpha-id', 'event-1', 'revenue_growth', 'HIGH', 'POSITIVE', '[]', '[]');
+            INSERT INTO documents VALUES
+                ('document-1', 'alpha-id', NULL, '/tmp/alpha.pdf', 'sha-alpha',
+                 'Results filing', 'financial_result', 100, 'processed', NULL, '2026-05-10'),
+                ('document-2', 'beta-id', NULL, '/tmp/beta.pdf', 'sha-beta',
+                 'Presentation', 'investor_presentation', 100, 'processed', NULL, '2026-05-11');
+            INSERT INTO fact_definitions VALUES ('revenue_from_operations', 'Revenue from operations');
+            INSERT INTO fact_observations VALUES
+                ('obs-a', 'alpha-id', 'event-1', 'document-1', 'revenue_from_operations',
+                 1234.5, NULL, 'crore', '2026-03-31', 'year', 'consolidated', 7,
+                 'Revenue from operations | 1,234.50', 'deterministic_period_column', 0.92),
+                ('obs-b', 'alpha-id', 'event-1', 'document-1', 'revenue_from_operations',
+                 999.0, NULL, 'crore', '2026-03-31', 'year', 'consolidated', 12,
+                 'Revenue from operations | 999.00', 'llm_financial_result', 0.90);
+            INSERT INTO resolved_facts VALUES
+                ('review-1', 'alpha-id', 'event-1', 'revenue_from_operations',
+                 1234.5, NULL, 'crore', '2026-03-31', 'year', 'consolidated',
+                 'obs-a', 'review_required', 0.92);
             """
         )
         conn.close()
@@ -186,6 +213,37 @@ class AuthWatchlistApiTest(unittest.TestCase):
         )
         self.assertEqual(400, self_change.status_code)
         self.assertEqual("self_admin_change", self_change.json()["detail"]["code"])
+
+    def test_admin_review_queue_is_role_protected_and_audited(self):
+        self._login()
+        self.assertEqual(403, self.client.get("/admin/reviews").status_code)
+        self.client.post("/auth/logout")
+        self._login("admin@example.com", "AdminPassword123!")
+        summary = self.client.get("/admin/reviews/summary")
+        self.assertEqual(200, summary.status_code, summary.text)
+        self.assertEqual({"open": 1, "approved": 0, "rejected": 0, "total": 1}, summary.json())
+        queue = self.client.get("/admin/reviews").json()
+        self.assertEqual(1, queue["count"])
+        self.assertEqual(["obs-a", "obs-b"], [row["observation_id"] for row in queue["items"][0]["candidates"]])
+        approved = self.client.post(
+            "/admin/reviews/review-1/decision",
+            json={
+                "decision": "approved",
+                "selected_observation_id": "obs-a",
+                "reviewer_note": "Checked against PDF page 7.",
+            },
+        )
+        self.assertEqual(200, approved.status_code, approved.text)
+        self.assertEqual("approved", approved.json()["queue_status"])
+        self.assertEqual(0, self.client.get("/admin/reviews").json()["count"])
+        reopened = self.client.delete("/admin/reviews/review-1/decision")
+        self.assertEqual(200, reopened.status_code, reopened.text)
+        rejected = self.client.post(
+            "/admin/reviews/review-1/decision",
+            json={"decision": "rejected", "reviewer_note": "Evidence is not sufficient."},
+        )
+        self.assertEqual(200, rejected.status_code, rejected.text)
+        self.assertEqual("rejected", rejected.json()["queue_status"])
 
     def test_watchlists_are_private_idempotent_and_enriched(self):
         self._login()

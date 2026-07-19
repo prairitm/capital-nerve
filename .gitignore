@@ -22,6 +22,8 @@ backend/.env
 
 # Local runtime data
 backend/var/
+v4/logs/
+v4/data/capital_nerve_app.db*
 .DS_Store
 
 # IDE / editor

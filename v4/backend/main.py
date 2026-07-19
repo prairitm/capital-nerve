@@ -15,7 +15,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app_db import migrate_app_db
 from config import settings
 from nse_listings import refresh_nse_listings_if_due
-from routers import admin, auth, companies, documents, events, feed, nse, profile, signals, watchlist
+from routers import admin, auth, companies, documents, events, feed, nse, profile, reviews, signals, watchlist
 from security import bootstrap_admin, require_ready_user
 
 
@@ -48,6 +48,7 @@ protected = [Depends(require_ready_user)]
 app.include_router(auth.router)
 app.include_router(profile.router)
 app.include_router(admin.router)
+app.include_router(reviews.router)
 app.include_router(watchlist.router)
 app.include_router(nse.router)
 app.include_router(companies.router, dependencies=protected)

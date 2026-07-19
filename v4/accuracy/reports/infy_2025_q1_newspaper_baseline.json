@@ -1,0 +1,131 @@
+{
+  "approved_gold_records": 8,
+  "counts": {
+    "abstain": 5,
+    "correct_published": 2,
+    "incorrect_published": 1,
+    "missing": 5,
+    "publish": 3,
+    "spurious_published": 0
+  },
+  "details": [
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "aa187a45:revenue_from_operations:2025-06-30:consolidated:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "aa187a45:pbt:2025-06-30:consolidated:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [
+        "wrong_value"
+      ],
+      "label_id": "aa187a45:pat:2025-06-30:consolidated:quarter"
+    },
+    {
+      "decision": "missing",
+      "errors": [
+        "missing_prediction"
+      ],
+      "label_id": "aa187a45:eps_basic:2025-06-30:consolidated:quarter"
+    },
+    {
+      "decision": "missing",
+      "errors": [
+        "missing_prediction"
+      ],
+      "label_id": "aa187a45:eps_diluted:2025-06-30:consolidated:quarter"
+    },
+    {
+      "decision": "missing",
+      "errors": [
+        "missing_prediction"
+      ],
+      "label_id": "aa187a45:revenue_from_operations:2025-06-30:standalone:quarter"
+    },
+    {
+      "decision": "missing",
+      "errors": [
+        "missing_prediction"
+      ],
+      "label_id": "aa187a45:pbt:2025-06-30:standalone:quarter"
+    },
+    {
+      "decision": "missing",
+      "errors": [
+        "missing_prediction"
+      ],
+      "label_id": "aa187a45:pat:2025-06-30:standalone:quarter"
+    }
+  ],
+  "errors": {
+    "spurious_prediction": 0,
+    "wrong_value": 1
+  },
+  "ignored_unapproved_gold_records": 0,
+  "metrics": {
+    "abstention_rate": 0.625,
+    "auto_published_coverage": 0.375,
+    "auto_published_precision": 0.6666666666666666,
+    "recall": 0.25,
+    "review_rate": 0.0
+  },
+  "per_fact": {
+    "eps_basic": {
+      "abstain": 1,
+      "gold": 1,
+      "precision": null,
+      "recall": 0.0
+    },
+    "eps_diluted": {
+      "abstain": 1,
+      "gold": 1,
+      "precision": null,
+      "recall": 0.0
+    },
+    "pat": {
+      "abstain": 1,
+      "gold": 2,
+      "incorrect_published": 1,
+      "precision": 0.0,
+      "publish": 1,
+      "recall": 0.0
+    },
+    "pbt": {
+      "abstain": 1,
+      "correct_published": 1,
+      "gold": 2,
+      "precision": 1.0,
+      "publish": 1,
+      "recall": 0.5
+    },
+    "revenue_from_operations": {
+      "abstain": 1,
+      "correct_published": 1,
+      "gold": 2,
+      "precision": 1.0,
+      "publish": 1,
+      "recall": 0.5
+    }
+  },
+  "prediction_records": 3,
+  "provisional": true,
+  "release_gates": {
+    "approved_gold_only": false,
+    "has_approved_gold": true,
+    "has_published_predictions": true,
+    "passed": false,
+    "published_precision_100_percent": false,
+    "zero_invalid_evidence": true,
+    "zero_spurious_published": true,
+    "zero_unresolved_conflicts": true,
+    "zero_wrong_basis": true,
+    "zero_wrong_period": true,
+    "zero_wrong_unit": true
+  },
+  "spurious_label_ids": []
+}

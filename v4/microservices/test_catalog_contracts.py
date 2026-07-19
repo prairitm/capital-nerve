@@ -229,6 +229,43 @@ class CatalogContractsTest(unittest.TestCase):
         self.assertIn("geography", columns)
         conn.close()
 
+    def test_review_required_facts_do_not_feed_metrics_or_signals(self) -> None:
+        conn = sqlite3.connect(":memory:")
+        conn.row_factory = sqlite3.Row
+        metrics_service.bootstrap_schema(conn)
+        conn.executemany(
+            """
+            INSERT INTO resolved_facts (
+                resolved_fact_id, company_id, event_id, fact_code,
+                resolved_value, unit, period, period_type, basis,
+                resolution_status, confidence
+            ) VALUES (?, 'company', 'event', ?, ?, 'crore', '2025-12-31',
+                      'nine_months', ?, ?, 0.92)
+            """,
+            [
+                ("review", "revenue_from_operations", 999.0, "consolidated", "review_required"),
+                ("pat-standalone", "pat", 80.0, "standalone", "resolved"),
+                ("pat-consolidated", "pat", 100.0, "consolidated", "resolved"),
+            ],
+        )
+        metric_facts = metrics_service.load_facts(
+            conn,
+            company_id="company",
+            event_id="event",
+            period_end="2025-12-31",
+        )
+        signal_facts = signals_service.load_facts_by_key(
+            conn,
+            company_id="company",
+            event_id="event",
+            period_end="2025-12-31",
+        )
+        self.assertNotIn("revenue_from_operations", metric_facts)
+        self.assertNotIn("revenue_from_operations", signal_facts)
+        self.assertEqual(metric_facts["pat"]["value"], 100.0)
+        self.assertEqual(signal_facts["pat"]["value"], 100.0)
+        conn.close()
+
     def test_company_level_presentation_signal_can_fire(self) -> None:
         signal = read_json(
             CATALOG_DIR / "investor_presentation" / "presentation_signals.json"

@@ -6,6 +6,7 @@ import { Login } from "@/pages/Login";
 import { ChangePassword } from "@/pages/ChangePassword";
 import { Watchlist } from "@/pages/Watchlist";
 import { AdminUsers } from "@/pages/AdminUsers";
+import { AdminReviews } from "@/pages/AdminReviews";
 import { HomeFeed } from "@/pages/HomeFeed";
 import { Companies } from "@/pages/Companies";
 import { Company } from "@/pages/Company";
@@ -50,6 +51,7 @@ export default function App() {
         <Route path="/signals/:signalId" element={<SignalDetail />} />
         <Route path="/documents/:documentId" element={<DocumentPage />} />
         <Route path="/admin/users" element={<RequireAdmin><AdminUsers /></RequireAdmin>} />
+        <Route path="/admin/reviews" element={<RequireAdmin><AdminReviews /></RequireAdmin>} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

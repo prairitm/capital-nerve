@@ -1,0 +1,68 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://capital-nerve.local/schemas/gold-record-v0.1.json",
+  "title": "Capital Nerve gold fact record v0.1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "label_id",
+    "document_id",
+    "company_symbol",
+    "document_kind",
+    "fact_code",
+    "unit",
+    "period_end",
+    "period_type",
+    "basis",
+    "source_page",
+    "source_text",
+    "label_status"
+  ],
+  "properties": {
+    "label_id": {"type": "string", "minLength": 1},
+    "document_id": {"type": "string", "minLength": 1},
+    "company_symbol": {"type": "string", "minLength": 1},
+    "document_kind": {"const": "financial_result"},
+    "fact_code": {
+      "enum": [
+        "revenue_from_operations",
+        "other_income",
+        "total_income",
+        "finance_cost",
+        "depreciation_and_amortization",
+        "total_expenses",
+        "pbt",
+        "tax_expense",
+        "pat",
+        "eps_basic",
+        "eps_diluted"
+      ]
+    },
+    "value_numeric": {"type": ["number", "null"]},
+    "value_text": {"type": ["string", "null"]},
+    "unit": {"type": "string", "minLength": 1},
+    "period_end": {"type": "string", "format": "date"},
+    "period_type": {
+      "enum": ["quarter", "half_year", "nine_months", "year"]
+    },
+    "basis": {"enum": ["consolidated", "standalone"]},
+    "source_page": {"type": "integer", "minimum": 1},
+    "source_text": {"type": "string", "minLength": 1},
+    "segment": {"type": ["string", "null"]},
+    "geography": {"type": ["string", "null"]},
+    "label_status": {"enum": ["draft", "approved", "rejected"]},
+    "labeled_by": {"type": ["string", "null"]},
+    "reviewed_by": {"type": ["string", "null"]},
+    "notes": {"type": ["string", "null"]}
+  },
+  "oneOf": [
+    {
+      "required": ["value_numeric"],
+      "properties": {"value_numeric": {"type": "number"}}
+    },
+    {
+      "required": ["value_text"],
+      "properties": {"value_text": {"type": "string", "minLength": 1}}
+    }
+  ]
+}

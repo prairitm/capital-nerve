@@ -27,9 +27,38 @@ from values_db import bootstrap_schema
 
 logger = logging.getLogger("uvicorn.error")
 
+_NEWSPAPER_MARKERS = re.compile(
+    r"\b(?:newspaper|financial\s+express|business\s+standard|economic\s+times|epaper)\b",
+    re.IGNORECASE,
+)
+_ISSUER_HEADING = re.compile(
+    r"^#{1,6}\s+(.{2,120}?\b(?:limited|ltd\.?)\b)\s*$",
+    re.IGNORECASE | re.MULTILINE,
+)
+_NON_ISSUER_HEADINGS = {
+    "national stock exchange of india limited",
+    "bse limited",
+}
+
 
 def company_id_for_symbol(symbol: str) -> str:
     return hashlib.sha256(f"{symbol}:NSE".encode()).hexdigest()
+
+
+def is_multi_issuer_newspaper(markdown: str) -> bool:
+    """Return true when a filing is a newspaper page carrying several issuers.
+
+    Such pages are unsafe for automatic extraction because visual parsers can
+    associate a neighbouring issuer's table with the target issuer's heading.
+    """
+    if not _NEWSPAPER_MARKERS.search(markdown):
+        return False
+    issuers = {
+        re.sub(r"\s+", " ", match.group(1)).strip().lower().rstrip(".")
+        for match in _ISSUER_HEADING.finditer(markdown)
+    }
+    issuers.difference_update(_NON_ISSUER_HEADINGS)
+    return len(issuers) >= 2
 
 
 def value_id(company_id: str, value_code: str, period_end: str, basis: str) -> str:
@@ -219,13 +248,26 @@ def _resolved_fact_id_for_row(company_id: str, event_id: str, row: dict[str, Any
             "scope_name",
         )
     )
-    return hashlib.sha256(f"{company_id}:{event_id}:{row['fact_key']}:{dims}".encode()).hexdigest()
+    identity = ":".join(
+        (
+            company_id,
+            event_id,
+            row["fact_key"],
+            str(row.get("period_end") or ""),
+            str(row.get("period_type") or ""),
+            str(row.get("basis") or ""),
+            dims,
+        )
+    )
+    return hashlib.sha256(identity.encode()).hexdigest()
 
 
 def _best_key(row: dict[str, Any], period_end: str) -> tuple[Any, ...]:
     return (
         row["fact_key"],
         row.get("period_end") or period_end,
+        row.get("period_type"),
+        row.get("basis") or "consolidated",
         row.get("segment"),
         row.get("geography"),
         row.get("product"),
@@ -259,17 +301,20 @@ def persist_fact_observations_and_resolutions(
             """
             INSERT INTO fact_observations (
                 observation_id, company_id, event_id, document_id, fact_code,
-                value, value_text, unit, period, source_page, source_text,
+                value, value_text, unit, period, period_type, basis,
+                source_page, source_text,
                 segment, geography, product, channel, project, customer_type,
                 metric_context, scope_level, scope_name, fact_type,
                 extraction_method, value_lower, value_upper, sentiment,
                 is_explicit_guidance, confidence
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT(observation_id) DO UPDATE SET
                 value = excluded.value,
                 value_text = excluded.value_text,
                 unit = excluded.unit,
                 period = excluded.period,
+                period_type = excluded.period_type,
+                basis = excluded.basis,
                 source_page = excluded.source_page,
                 source_text = excluded.source_text,
                 segment = excluded.segment,
@@ -299,6 +344,8 @@ def persist_fact_observations_and_resolutions(
                 value_text,
                 row.get("unit"),
                 row.get("period_end") or period_end,
+                row.get("period_type"),
+                row.get("basis") or "consolidated",
                 row.get("source_page"),
                 source_text,
                 row.get("segment"),
@@ -334,20 +381,29 @@ def persist_fact_observations_and_resolutions(
             best_by_fact[best_key] = candidate
 
     for _, row in best_by_fact.items():
+        resolution_status = (
+            "review_required"
+            if row.get("has_unresolved_conflict")
+            or row.get("decision") in {"review", "abstain"}
+            else "resolved"
+        )
         conn.execute(
             """
             INSERT INTO resolved_facts (
                 resolved_fact_id, company_id, event_id, fact_code,
-                resolved_value, resolved_value_text, unit,
+                resolved_value, resolved_value_text, unit, period, period_type, basis,
                 segment, geography, product, channel, project, customer_type,
                 metric_context, scope_level, scope_name, fact_type,
                 value_lower, value_upper, sentiment, is_explicit_guidance,
                 selected_observation_id, resolution_status, confidence
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'resolved', ?)
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT(resolved_fact_id) DO UPDATE SET
                 resolved_value = excluded.resolved_value,
                 resolved_value_text = excluded.resolved_value_text,
                 unit = excluded.unit,
+                period = excluded.period,
+                period_type = excluded.period_type,
+                basis = excluded.basis,
                 segment = excluded.segment,
                 geography = excluded.geography,
                 product = excluded.product,
@@ -374,6 +430,9 @@ def persist_fact_observations_and_resolutions(
                 row.get("numeric_value"),
                 row.get("value_text"),
                 row.get("unit"),
+                row.get("period_end") or period_end,
+                row.get("period_type"),
+                row.get("basis") or "consolidated",
                 row.get("segment"),
                 row.get("geography"),
                 row.get("product"),
@@ -389,6 +448,7 @@ def persist_fact_observations_and_resolutions(
                 row.get("sentiment"),
                 row.get("is_explicit_guidance"),
                 row["observation_id"],
+                resolution_status,
                 row.get("confidence"),
             ),
         )
@@ -463,6 +523,16 @@ def _optional_bool(value: Any) -> int | None:
     return None
 
 
+def _optional_positive_int(value: Any) -> int | None:
+    if value in (None, "") or isinstance(value, bool):
+        return None
+    try:
+        parsed = int(value)
+    except (TypeError, ValueError):
+        return None
+    return parsed if parsed > 0 else None
+
+
 def _slug(value: Any) -> str | None:
     text = _clean_str(value)
     if not text:
@@ -489,6 +559,8 @@ def extract_facts_from_chunk(
     *,
     model: str,
     chunk: str,
+    symbol: str,
+    company_name: str,
     period_label: str,
     period_end: str,
     fact_catalog_text: str,
@@ -501,6 +573,7 @@ def extract_facts_from_chunk(
         period_end_dmy = period_end
     prompt = f"""Extract financial facts from this Indian corporate filing markdown.
 
+Target company: {company_name} (NSE symbol: {symbol})
 Reporting period context: {period_label}
 Target quarter-end date: {period_end} ({period_end_dmy})
 
@@ -508,6 +581,8 @@ Allowed fact_key values (use canonical keys from catalog):
 {fact_catalog_text}
 
 Rules:
+- Extract facts ONLY for the target company named above
+- Ignore tables, advertisements, or results belonging to any other issuer
 - Extract ONLY values explicitly present in the markdown for the current quarter column
 - First identify the table column for the current quarter (usually labelled "Quarter ended" or "3 Months ended")
 - The target column must contain the target quarter-end date above
@@ -666,7 +741,7 @@ def canonicalize_facts(
     facts_catalog: dict[str, Any],
     storage_to_fact: dict[str, str],
 ) -> list[dict[str, Any]]:
-    cleaned: dict[tuple[str, str], dict[str, Any]] = {}
+    candidates: dict[tuple[str, str, str | None], list[dict[str, Any]]] = {}
     for entry in raw_facts:
         fact_key = entry.get("fact_key")
         if not fact_key:
@@ -686,18 +761,76 @@ def canonicalize_facts(
             "unit": _canon_unit(entry.get("unit")) or facts_catalog[canonical].get("unit"),
             "basis": basis,
             "evidence": entry.get("evidence") or "",
+            "source_text": entry.get("source_text") or entry.get("evidence") or "",
+            "source_page": _optional_positive_int(entry.get("source_page")),
+            "period_end": _clean_str(entry.get("period_end")),
+            "period_type": _clean_str(entry.get("period_type")) or "quarter",
+            "extraction_method": _clean_str(entry.get("extraction_method")) or "unknown",
+            "upstream_decision": _clean_str(entry.get("decision")),
+            "upstream_conflict": bool(entry.get("has_unresolved_conflict")),
+            "conflict_reason": _clean_str(entry.get("conflict_reason")),
             "confidence": confidence,
         }
-        key = (canonical, basis)
-        if key not in cleaned or confidence > cleaned[key]["confidence"]:
-            cleaned[key] = row
+        key = (canonical, basis, row["period_end"])
+        candidates.setdefault(key, []).append(row)
 
-    preferred: dict[str, dict[str, Any]] = {}
-    for (fact_key, basis), row in cleaned.items():
-        current = preferred.get(fact_key)
-        if current is None or (basis == "consolidated" and current["basis"] != "consolidated"):
-            preferred[fact_key] = row
-    return list(preferred.values())
+    cleaned: list[dict[str, Any]] = []
+    for rows in candidates.values():
+        ranked = sorted(rows, key=lambda row: row["confidence"], reverse=True)
+        selected = dict(ranked[0])
+        comparable = [
+            row
+            for row in ranked[1:]
+            if selected["confidence"] - row["confidence"] <= 0.05
+        ]
+        conflicts = [
+            row
+            for row in comparable
+            if abs(selected["numeric_value"] - row["numeric_value"]) > 0.01
+        ]
+        if any(row.get("upstream_conflict") for row in ranked):
+            selected["decision"] = "review"
+            selected["evidence_status"] = "conflicting"
+            selected["has_unresolved_conflict"] = True
+            selected["conflict_reason"] = next(
+                (
+                    row.get("conflict_reason")
+                    for row in ranked
+                    if row.get("conflict_reason")
+                ),
+                "upstream_extraction_conflict",
+            )
+        elif conflicts:
+            all_conflicts = [selected, *conflicts]
+            selected["decision"] = "review"
+            selected["evidence_status"] = "conflicting"
+            selected["has_unresolved_conflict"] = True
+            selected["conflict_count"] = len(all_conflicts)
+            selected["conflict_values"] = sorted(
+                {row["numeric_value"] for row in all_conflicts}
+            )
+            selected["conflict_source_pages"] = sorted(
+                {
+                    row["source_page"]
+                    for row in all_conflicts
+                    if row.get("source_page") is not None
+                }
+            )
+        elif not selected.get("source_page") and not selected.get("source_text", "").strip():
+            selected["decision"] = "abstain"
+            selected["evidence_status"] = "missing"
+            selected["has_unresolved_conflict"] = False
+        elif not selected.get("source_page") or not selected.get("source_text", "").strip():
+            selected["decision"] = "review"
+            selected["evidence_status"] = "incomplete"
+            selected["has_unresolved_conflict"] = False
+        else:
+            selected["decision"] = "publish"
+            selected["evidence_status"] = "complete"
+            selected["has_unresolved_conflict"] = False
+        cleaned.append(selected)
+
+    return cleaned
 
 
 def _dimension_payload(entry: dict[str, Any]) -> dict[str, str]:
@@ -875,18 +1008,22 @@ def persist_extracted_values(
         preferred_source="financial_result",
     )
     for row in rows:
+        if row.get("decision") in {"review", "abstain"} or row.get("has_unresolved_conflict"):
+            continue
         vid = value_id(company_id, row["fact_key"], period_end, row["basis"])
         conn.execute(
             """
             INSERT INTO extracted_values (
                 id, company_id, event_id, value_code, value_numeric, unit,
-                period_type, period_start, period_end, basis, source_text, confidence
-            ) VALUES (?, ?, ?, ?, ?, ?, 'quarter', NULL, ?, ?, ?, ?)
+                period_type, period_start, period_end, basis, source_text,
+                source_page, confidence
+            ) VALUES (?, ?, ?, ?, ?, ?, 'quarter', NULL, ?, ?, ?, ?, ?)
             ON CONFLICT(id) DO UPDATE SET
                 event_id = excluded.event_id,
                 value_numeric = excluded.value_numeric,
                 unit = excluded.unit,
                 source_text = excluded.source_text,
+                source_page = excluded.source_page,
                 confidence = excluded.confidence
             """,
             (
@@ -898,7 +1035,8 @@ def persist_extracted_values(
                 row["unit"],
                 period_end,
                 row["basis"],
-                row["evidence"],
+                row.get("source_text") or row["evidence"],
+                row.get("source_page"),
                 row["confidence"],
             ),
         )
@@ -1435,17 +1573,25 @@ def extract_and_persist_values(
     progress("load_catalog", "Loading financial results facts catalog")
     facts_catalog = load_facts_catalog()
     storage_to_fact, fact_catalog_text = _catalog_aliases(facts_catalog)
+    company_row = conn.execute(
+        "SELECT name FROM companies WHERE id = ?", (company_id,)
+    ).fetchone()
+    company_name = str(company_row["name"] if company_row is not None else symbol)
+    unsafe_multi_issuer_publication = is_multi_issuer_newspaper(markdown)
     progress(
         "deterministic_extract",
-        "Running deterministic quarter-column extraction",
+        "Running deterministic period-column extraction",
         catalog_keys=len(facts_catalog),
+        unsafe_multi_issuer_publication=unsafe_multi_issuer_publication,
     )
-    deterministic_facts = extract_facts_from_quarter_column(
-        markdown,
-        target=reporting_period,
-        fact_keys=set(facts_catalog.keys()),
-        facts_catalog=facts_catalog,
-    )
+    deterministic_facts = []
+    if not unsafe_multi_issuer_publication:
+        deterministic_facts = extract_facts_from_quarter_column(
+            markdown,
+            target=reporting_period,
+            fact_keys=set(facts_catalog.keys()),
+            facts_catalog=facts_catalog,
+        )
     deterministic_by_key = {row["fact_key"]: row for row in deterministic_facts}
     raw_facts: list[dict[str, Any]] = list(deterministic_facts)
     missing_keys = set(facts_catalog.keys()) - set(deterministic_by_key)
@@ -1461,7 +1607,7 @@ def extract_and_persist_values(
         missing_keys=len(missing_keys),
     )
 
-    if missing_keys:
+    if missing_keys and not unsafe_multi_issuer_publication:
         chunks = _chunk(markdown)
         workers = min(max(extraction_workers, 1), len(chunks)) if chunks else 1
         logger.info(
@@ -1480,8 +1626,16 @@ def extract_and_persist_values(
     else:
         chunks = []
         workers = 1
-        logger.info("Skipping LLM fallback; deterministic extraction covered the catalog")
-        progress("llm_fallback_skipped", "Deterministic extraction covered the catalog")
+        if unsafe_multi_issuer_publication:
+            logger.warning("Withholding extraction from multi-issuer newspaper publication")
+            progress(
+                "llm_fallback_skipped",
+                "Withheld unsafe multi-issuer newspaper publication",
+                decision="abstain",
+            )
+        else:
+            logger.info("Skipping LLM fallback; deterministic extraction covered the catalog")
+            progress("llm_fallback_skipped", "Deterministic extraction covered the catalog")
 
     def extract_chunk(index: int, chunk: str) -> tuple[int, list[dict[str, Any]]]:
         started = time.monotonic()
@@ -1496,6 +1650,8 @@ def extract_and_persist_values(
             client,
             model=openai_model,
             chunk=chunk,
+            symbol=symbol,
+            company_name=company_name,
             period_label=reporting_period.label,
             period_end=period_end,
             fact_catalog_text=fact_catalog_text,
@@ -1536,6 +1692,8 @@ def extract_and_persist_values(
                 continue
             if canonical and canonical not in missing_keys:
                 continue
+            entry.setdefault("period_end", period_end)
+            entry.setdefault("extraction_method", "llm_fallback")
             raw_facts.append(entry)
 
     accepted_rows = canonicalize_facts(
@@ -1550,7 +1708,28 @@ def extract_and_persist_values(
         accepted_rows=len(accepted_rows),
     )
     if not accepted_rows:
-        raise RuntimeError("No facts passed validation after extraction")
+        if not unsafe_multi_issuer_publication:
+            raise RuntimeError("No facts passed validation after extraction")
+        persist_extracted_values(
+            conn,
+            company_id=company_id,
+            event_id=event_id,
+            document_id=stored_doc["document_id"],
+            period_quarter=reporting_period.quarter,
+            period_fy_start=reporting_period.fy_start_year,
+            period_end=period_end,
+            rows=[],
+            facts_catalog=facts_catalog,
+        )
+        return {
+            "document_id": stored_doc["document_id"],
+            "storage_path": str(stored_doc["storage_path"]),
+            "markdown_length": len(markdown),
+            "reporting_period": reporting_period.to_dict(),
+            "values": [],
+            "decision": "abstain",
+            "abstention_reason": "multi_issuer_newspaper_publication",
+        }
 
     progress("persist_values", "Persisting extracted values", rows=len(accepted_rows))
     persist_extracted_values(

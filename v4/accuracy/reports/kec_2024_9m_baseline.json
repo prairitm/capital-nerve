@@ -1,0 +1,270 @@
+{
+  "approved_gold_records": 22,
+  "counts": {
+    "abstain": 22,
+    "missing": 22,
+    "spurious_published": 10
+  },
+  "details": [
+    {
+      "decision": "missing",
+      "errors": [
+        "missing_prediction"
+      ],
+      "label_id": "261d6717:revenue_from_operations:2024-12-31:consolidated:nine_months"
+    },
+    {
+      "decision": "missing",
+      "errors": [
+        "missing_prediction"
+      ],
+      "label_id": "261d6717:other_income:2024-12-31:consolidated:nine_months"
+    },
+    {
+      "decision": "missing",
+      "errors": [
+        "missing_prediction"
+      ],
+      "label_id": "261d6717:total_income:2024-12-31:consolidated:nine_months"
+    },
+    {
+      "decision": "missing",
+      "errors": [
+        "missing_prediction"
+      ],
+      "label_id": "261d6717:finance_cost:2024-12-31:consolidated:nine_months"
+    },
+    {
+      "decision": "missing",
+      "errors": [
+        "missing_prediction"
+      ],
+      "label_id": "261d6717:depreciation_and_amortization:2024-12-31:consolidated:nine_months"
+    },
+    {
+      "decision": "missing",
+      "errors": [
+        "missing_prediction"
+      ],
+      "label_id": "261d6717:total_expenses:2024-12-31:consolidated:nine_months"
+    },
+    {
+      "decision": "missing",
+      "errors": [
+        "missing_prediction"
+      ],
+      "label_id": "261d6717:pbt:2024-12-31:consolidated:nine_months"
+    },
+    {
+      "decision": "missing",
+      "errors": [
+        "missing_prediction"
+      ],
+      "label_id": "261d6717:tax_expense:2024-12-31:consolidated:nine_months"
+    },
+    {
+      "decision": "missing",
+      "errors": [
+        "missing_prediction"
+      ],
+      "label_id": "261d6717:pat:2024-12-31:consolidated:nine_months"
+    },
+    {
+      "decision": "missing",
+      "errors": [
+        "missing_prediction"
+      ],
+      "label_id": "261d6717:eps_basic:2024-12-31:consolidated:nine_months"
+    },
+    {
+      "decision": "missing",
+      "errors": [
+        "missing_prediction"
+      ],
+      "label_id": "261d6717:eps_diluted:2024-12-31:consolidated:nine_months"
+    },
+    {
+      "decision": "missing",
+      "errors": [
+        "missing_prediction"
+      ],
+      "label_id": "261d6717:revenue_from_operations:2024-12-31:standalone:nine_months"
+    },
+    {
+      "decision": "missing",
+      "errors": [
+        "missing_prediction"
+      ],
+      "label_id": "261d6717:other_income:2024-12-31:standalone:nine_months"
+    },
+    {
+      "decision": "missing",
+      "errors": [
+        "missing_prediction"
+      ],
+      "label_id": "261d6717:total_income:2024-12-31:standalone:nine_months"
+    },
+    {
+      "decision": "missing",
+      "errors": [
+        "missing_prediction"
+      ],
+      "label_id": "261d6717:finance_cost:2024-12-31:standalone:nine_months"
+    },
+    {
+      "decision": "missing",
+      "errors": [
+        "missing_prediction"
+      ],
+      "label_id": "261d6717:depreciation_and_amortization:2024-12-31:standalone:nine_months"
+    },
+    {
+      "decision": "missing",
+      "errors": [
+        "missing_prediction"
+      ],
+      "label_id": "261d6717:total_expenses:2024-12-31:standalone:nine_months"
+    },
+    {
+      "decision": "missing",
+      "errors": [
+        "missing_prediction"
+      ],
+      "label_id": "261d6717:pbt:2024-12-31:standalone:nine_months"
+    },
+    {
+      "decision": "missing",
+      "errors": [
+        "missing_prediction"
+      ],
+      "label_id": "261d6717:tax_expense:2024-12-31:standalone:nine_months"
+    },
+    {
+      "decision": "missing",
+      "errors": [
+        "missing_prediction"
+      ],
+      "label_id": "261d6717:pat:2024-12-31:standalone:nine_months"
+    },
+    {
+      "decision": "missing",
+      "errors": [
+        "missing_prediction"
+      ],
+      "label_id": "261d6717:eps_basic:2024-12-31:standalone:nine_months"
+    },
+    {
+      "decision": "missing",
+      "errors": [
+        "missing_prediction"
+      ],
+      "label_id": "261d6717:eps_diluted:2024-12-31:standalone:nine_months"
+    }
+  ],
+  "errors": {
+    "spurious_prediction": 10
+  },
+  "ignored_unapproved_gold_records": 0,
+  "metrics": {
+    "abstention_rate": 1.0,
+    "auto_published_coverage": 0.0,
+    "auto_published_precision": 0.0,
+    "recall": 0.0,
+    "review_rate": 0.0
+  },
+  "per_fact": {
+    "depreciation_and_amortization": {
+      "abstain": 2,
+      "gold": 2,
+      "precision": null,
+      "recall": 0.0
+    },
+    "eps_basic": {
+      "abstain": 2,
+      "gold": 2,
+      "precision": null,
+      "recall": 0.0
+    },
+    "eps_diluted": {
+      "abstain": 2,
+      "gold": 2,
+      "precision": null,
+      "recall": 0.0
+    },
+    "finance_cost": {
+      "abstain": 2,
+      "gold": 2,
+      "precision": null,
+      "recall": 0.0
+    },
+    "other_income": {
+      "abstain": 2,
+      "gold": 2,
+      "precision": null,
+      "recall": 0.0
+    },
+    "pat": {
+      "abstain": 2,
+      "gold": 2,
+      "precision": null,
+      "recall": 0.0
+    },
+    "pbt": {
+      "abstain": 2,
+      "gold": 2,
+      "precision": null,
+      "recall": 0.0
+    },
+    "revenue_from_operations": {
+      "abstain": 2,
+      "gold": 2,
+      "precision": null,
+      "recall": 0.0
+    },
+    "tax_expense": {
+      "abstain": 2,
+      "gold": 2,
+      "precision": null,
+      "recall": 0.0
+    },
+    "total_expenses": {
+      "abstain": 2,
+      "gold": 2,
+      "precision": null,
+      "recall": 0.0
+    },
+    "total_income": {
+      "abstain": 2,
+      "gold": 2,
+      "precision": null,
+      "recall": 0.0
+    }
+  },
+  "prediction_records": 10,
+  "provisional": true,
+  "release_gates": {
+    "approved_gold_only": false,
+    "has_approved_gold": true,
+    "has_published_predictions": true,
+    "passed": false,
+    "published_precision_100_percent": false,
+    "zero_invalid_evidence": true,
+    "zero_spurious_published": false,
+    "zero_unresolved_conflicts": true,
+    "zero_wrong_basis": true,
+    "zero_wrong_period": true,
+    "zero_wrong_unit": true
+  },
+  "spurious_label_ids": [
+    "261d6717:depreciation_and_amortization:2024-12-31:consolidated:quarter",
+    "261d6717:eps_basic:2024-12-31:consolidated:quarter",
+    "261d6717:finance_cost:2024-12-31:consolidated:quarter",
+    "261d6717:other_income:2024-12-31:consolidated:quarter",
+    "261d6717:pat:2024-12-31:consolidated:quarter",
+    "261d6717:pbt:2024-12-31:consolidated:quarter",
+    "261d6717:revenue_from_operations:2024-12-31:consolidated:quarter",
+    "261d6717:tax_expense:2024-12-31:consolidated:quarter",
+    "261d6717:total_expenses:2024-12-31:consolidated:quarter",
+    "261d6717:total_income:2024-12-31:consolidated:quarter"
+  ]
+}

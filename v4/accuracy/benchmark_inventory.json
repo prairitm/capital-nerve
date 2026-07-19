@@ -1,0 +1,568 @@
+{
+  "benchmark_version": "0.2-development",
+  "contract_schema": "gold.schema.json",
+  "selection_status": "development_frozen",
+  "development_document_count": 20,
+  "labeled_document_count": 19,
+  "negative_control_count": 1,
+  "company_count": 14,
+  "draft_gold_fact_count": 428,
+  "difficult_pdf_count": 14,
+  "max_documents_per_company": 2,
+  "labels_approved": 0,
+  "release_status": "blocked_pending_independent_human_approval_and_holdout_labels",
+  "isolation": {
+    "database": "temporary benchmark database outside repository",
+    "documents": "temporary benchmark data directory outside repository",
+    "parsed_markdown": "temporary benchmark cache outside repository",
+    "production_data_modified": false
+  },
+  "notes": [
+    "All positive labels were transcribed from rendered source pages before prediction comparison and remain draft.",
+    "The Sun Pharma newspaper is a zero-positive negative control because Sun Pharma's own result is available only through a QR code while unrelated issuers have full tables.",
+    "Legacy source URLs and pipeline counts were not present in the frozen v0.1 snapshot; they are intentionally not invented.",
+    "The 380-page Infosys outcome is retained as an explicit pipeline-timeout/abstention case.",
+    "No company contributes more than two development documents."
+  ],
+  "documents": [
+    {
+      "document_id": "2bcf3252f2267b8995120e1b55642e59287534286cc32f293f59553e1803660f",
+      "company_symbol": "KEC",
+      "announcement_date": "2024-05-07",
+      "reporting_period": "2024-03-31",
+      "period_types": [
+        "year"
+      ],
+      "document_type": "financial_result",
+      "source_url": null,
+      "event_id": null,
+      "gold_file": "gold/kec_2024_fy.jsonl",
+      "gold_facts": 22,
+      "label_status": "draft",
+      "difficulty": [
+        "scanned_statement",
+        "multi_page_table"
+      ],
+      "difficult_pdf": true,
+      "pipeline": {
+        "status": "frozen_snapshot"
+      }
+    },
+    {
+      "document_id": "261d6717078b4661e2140cc5aa932202295b0a4bd65ad7dccf8168a0eaf048e8",
+      "company_symbol": "KEC",
+      "announcement_date": "2025-02-03",
+      "reporting_period": "2024-12-31",
+      "period_types": [
+        "nine_months"
+      ],
+      "document_type": "financial_result",
+      "source_url": null,
+      "event_id": null,
+      "gold_file": "gold/kec_2024_9m.jsonl",
+      "gold_facts": 22,
+      "label_status": "draft",
+      "difficulty": [
+        "scanned_statement",
+        "nine_month_column"
+      ],
+      "difficult_pdf": true,
+      "pipeline": {
+        "status": "frozen_snapshot"
+      }
+    },
+    {
+      "document_id": "e3ae9197774db11fc5152da67d77715569a3861ee56ae4c67c835624ca779b2a",
+      "company_symbol": "LT",
+      "announcement_date": "2025-10-29",
+      "reporting_period": "2025-09-30",
+      "period_types": [
+        "quarter"
+      ],
+      "document_type": "financial_result",
+      "source_url": null,
+      "event_id": null,
+      "gold_file": "gold/lt_2025_q2.jsonl",
+      "gold_facts": 22,
+      "label_status": "draft",
+      "difficulty": [
+        "merged_period_headers",
+        "multi_page_table"
+      ],
+      "difficult_pdf": false,
+      "pipeline": {
+        "status": "frozen_snapshot"
+      }
+    },
+    {
+      "document_id": "f6f5ee3e258e49914088cab3a9abd7757ccc6f245cc86e4a07747fe4cc8364c8",
+      "company_symbol": "LT",
+      "announcement_date": "2026-01-28",
+      "reporting_period": "2025-12-31",
+      "period_types": [
+        "nine_months"
+      ],
+      "document_type": "financial_result",
+      "source_url": null,
+      "event_id": null,
+      "gold_file": "gold/lt_2025_9m.jsonl",
+      "gold_facts": 22,
+      "label_status": "draft",
+      "difficulty": [
+        "quarter_and_nine_month_same_end",
+        "continuation_table"
+      ],
+      "difficult_pdf": true,
+      "pipeline": {
+        "status": "frozen_snapshot"
+      }
+    },
+    {
+      "document_id": "589a0d9edae6a5ed72524d6a8391bbe48780123b61167c5789a4444cd86869a8",
+      "company_symbol": "RELIANCE",
+      "announcement_date": "2025-07-18",
+      "reporting_period": "2025-06-30",
+      "period_types": [
+        "quarter"
+      ],
+      "document_type": "financial_result",
+      "source_url": null,
+      "event_id": null,
+      "gold_file": "gold/reliance_2025_q1.jsonl",
+      "gold_facts": 20,
+      "label_status": "draft",
+      "difficulty": [
+        "multi_page_consolidated_statement",
+        "associates_pat"
+      ],
+      "difficult_pdf": false,
+      "pipeline": {
+        "status": "frozen_snapshot"
+      }
+    },
+    {
+      "document_id": "0fd4d2409fa868e981611968912ee28879723a1a0474706c087b36db812b7ec3",
+      "company_symbol": "RELIANCE",
+      "announcement_date": "2025-10-17",
+      "reporting_period": "2025-09-30",
+      "period_types": [
+        "half_year"
+      ],
+      "document_type": "financial_result",
+      "source_url": null,
+      "event_id": null,
+      "gold_file": "gold/reliance_2025_h1.jsonl",
+      "gold_facts": 20,
+      "label_status": "draft",
+      "difficulty": [
+        "quarter_and_half_year_same_end",
+        "associates_pat"
+      ],
+      "difficult_pdf": true,
+      "pipeline": {
+        "status": "frozen_snapshot"
+      }
+    },
+    {
+      "document_id": "c9a47d5cfa27a80a49070e60f306f092819535e4023da7a398d7df592763fd06",
+      "company_symbol": "TCS",
+      "announcement_date": "2026-07-09",
+      "reporting_period": "2026-06-30",
+      "period_types": [
+        "quarter"
+      ],
+      "document_type": "financial_result",
+      "source_url": null,
+      "event_id": null,
+      "gold_file": "gold/tcs_2026_q1.jsonl",
+      "gold_facts": 22,
+      "label_status": "draft",
+      "difficulty": [
+        "blank_label_header",
+        "eps_continuation"
+      ],
+      "difficult_pdf": false,
+      "pipeline": {
+        "status": "frozen_snapshot"
+      }
+    },
+    {
+      "document_id": "aa187a45c53b3f8f6b7e54d720246fa97295920bb3e692085ad1369b554e765e",
+      "company_symbol": "INFY",
+      "announcement_date": "2025-07-24",
+      "reporting_period": "2025-06-30",
+      "period_types": [
+        "quarter"
+      ],
+      "document_type": "newspaper_extract",
+      "source_url": "https://nsearchives.nseindia.com/corporate/Infosys_24072025193340_Financialsnewspaperad_24072025.pdf",
+      "event_id": "d794569e6be76fc07a3d3a3c77724694d272ffad15d1f15e98c2f763e170f50f",
+      "gold_file": "gold/infy_2025_q1_newspaper.jsonl",
+      "gold_facts": 8,
+      "label_status": "draft",
+      "difficulty": [
+        "newspaper_extract",
+        "condensed_table"
+      ],
+      "difficult_pdf": false,
+      "pipeline": {
+        "status": "completed",
+        "observations": 10,
+        "resolved_facts": 10,
+        "published": 4,
+        "review": 6,
+        "abstained": 0
+      }
+    },
+    {
+      "document_id": "6c409074cb28cf16ae17eb01b8ce7bbb8ed19efaa4d49395eb9773dc5f87822c",
+      "company_symbol": "ITC",
+      "announcement_date": "2025-08-01",
+      "reporting_period": "2025-06-30",
+      "period_types": [
+        "quarter"
+      ],
+      "document_type": "financial_result",
+      "source_url": "https://nsearchives.nseindia.com/corporate/ITC_01082025172207_SE_Results_.pdf",
+      "event_id": "9dc16a26c9633154820be997f254e2bdde609abd25c184b8eb54da1143c9a956",
+      "gold_file": "gold/itc_2025_q1.jsonl",
+      "gold_facts": 22,
+      "label_status": "draft",
+      "difficulty": [
+        "standalone_and_consolidated",
+        "continuation_pages"
+      ],
+      "difficult_pdf": false,
+      "pipeline": {
+        "status": "completed",
+        "observations": 45,
+        "resolved_facts": 45,
+        "published": 32,
+        "review": 13,
+        "abstained": 0
+      }
+    },
+    {
+      "document_id": "0fab4bb6c9696c390acd89921c28c7dbbfd2c90611701a12dd52665ce21b8993",
+      "company_symbol": "MARUTI",
+      "announcement_date": "2025-07-31",
+      "reporting_period": "2025-06-30",
+      "period_types": [
+        "quarter"
+      ],
+      "document_type": "financial_result",
+      "source_url": "https://nsearchives.nseindia.com/corporate/MARUTIASHISH_31072025145652_Results_30June2025.pdf",
+      "event_id": "c64303929b500ee4977377b334dcd10fe142184a307ac20c34da9579e6f8fa63",
+      "gold_file": "gold/maruti_2025_q1.jsonl",
+      "gold_facts": 22,
+      "label_status": "draft",
+      "difficulty": [
+        "inr_million_unit",
+        "standalone_and_consolidated"
+      ],
+      "difficult_pdf": false,
+      "pipeline": {
+        "status": "completed",
+        "observations": 44,
+        "resolved_facts": 44,
+        "published": 34,
+        "review": 10,
+        "abstained": 0
+      }
+    },
+    {
+      "document_id": "944998b5645ff3000b1d46f91f905c49699723241815a33b2b504f31b4c98528",
+      "company_symbol": "ULTRACEMCO",
+      "announcement_date": "2025-07-21",
+      "reporting_period": "2025-06-30",
+      "period_types": [
+        "quarter"
+      ],
+      "document_type": "financial_result",
+      "source_url": "https://nsearchives.nseindia.com/corporate/ULTRACEMCO_21072025134911_OutcomeofBM.pdf",
+      "event_id": "98fbe5a99346d6641a9ce6297fbebd57242d7bafaa9ace11dc7cb5ebaac2c60d",
+      "gold_file": "gold/ultracemco_2025_q1.jsonl",
+      "gold_facts": 20,
+      "label_status": "draft",
+      "difficulty": [
+        "scanned_pdf",
+        "ocr",
+        "20_pages"
+      ],
+      "difficult_pdf": true,
+      "pipeline": {
+        "status": "completed",
+        "observations": 25,
+        "resolved_facts": 25,
+        "published": 0,
+        "review": 25,
+        "abstained": 0
+      }
+    },
+    {
+      "document_id": "762e5d6f8a659fa4b3476eadf7c9f38669b57d8d9fd74866de44b6c4aae068e9",
+      "company_symbol": "ASIANPAINT",
+      "announcement_date": "2025-07-29",
+      "reporting_period": "2025-06-30",
+      "period_types": [
+        "quarter"
+      ],
+      "document_type": "financial_result",
+      "source_url": "https://nsearchives.nseindia.com/corporate/ASIANPAINT_29072025140836_StockexchangeintimationFRQ1FY26.pdf",
+      "event_id": "88d27e677c8e4e0db6560388c606f0338b2a09d6833324eabf344ef59d52f29f",
+      "gold_file": "gold/asianpaint_2025_q1.jsonl",
+      "gold_facts": 22,
+      "label_status": "draft",
+      "difficulty": [
+        "scanned_pdf",
+        "split_particulars_header",
+        "15_pages"
+      ],
+      "difficult_pdf": true,
+      "pipeline": {
+        "status": "completed",
+        "observations": 47,
+        "resolved_facts": 47,
+        "published": 2,
+        "review": 45,
+        "abstained": 0
+      }
+    },
+    {
+      "document_id": "914f2f78b8969c727d5ea61eb023dc23ca01913e66ed9c64429b2406d9f5f1d2",
+      "company_symbol": "DRREDDY",
+      "announcement_date": "2025-07-23",
+      "reporting_period": "2025-06-30",
+      "period_types": [
+        "quarter"
+      ],
+      "document_type": "financial_result",
+      "source_url": "https://nsearchives.nseindia.com/corporate/DRREDDY_23072025163644_SEintimation_Outcome_Results_23072025_Final_1_signed.pdf",
+      "event_id": "4c04d3bced4194dceb98b5804ae30bc9a3d7991bcc17987e69d70ee56748616a",
+      "gold_file": "gold/drreddy_2025_q1.jsonl",
+      "gold_facts": 20,
+      "label_status": "draft",
+      "difficulty": [
+        "26_pages",
+        "indian_rupees_millions",
+        "tax_components_without_total"
+      ],
+      "difficult_pdf": true,
+      "pipeline": {
+        "status": "completed",
+        "observations": 35,
+        "resolved_facts": 35,
+        "published": 0,
+        "review": 35,
+        "abstained": 0
+      }
+    },
+    {
+      "document_id": "337f78973fbf9618b7e4a9b423cd1885c7d19f86bcf97154b556cc1d0974148c",
+      "company_symbol": "HINDUNILVR",
+      "announcement_date": "2025-07-31",
+      "reporting_period": "2025-06-30",
+      "period_types": [
+        "quarter"
+      ],
+      "document_type": "financial_result",
+      "source_url": "https://nsearchives.nseindia.com/corporate/HINDUNILVR_31072025094415_SEINtimationOutcome31072025signed.pdf",
+      "event_id": "569c37e28408b60dddfe13cf36f30d4234384a34f4c7ca8fbff8c2e28b47a360",
+      "gold_file": "gold/hindunilvr_2025_q1.jsonl",
+      "gold_facts": 18,
+      "label_status": "draft",
+      "difficulty": [
+        "weak_table_text_layer",
+        "derived_revenue_components",
+        "missing_explicit_tax_total"
+      ],
+      "difficult_pdf": true,
+      "pipeline": {
+        "status": "completed",
+        "observations": 29,
+        "resolved_facts": 29,
+        "published": 0,
+        "review": 29,
+        "abstained": 0
+      }
+    },
+    {
+      "document_id": "6c25945227f1812b45137aaffbba3cea51661bd695219b4be1baa281b8ce49af",
+      "company_symbol": "TATASTEEL",
+      "announcement_date": "2025-07-30",
+      "reporting_period": "2025-06-30",
+      "period_types": [
+        "quarter"
+      ],
+      "document_type": "financial_result",
+      "source_url": "https://nsearchives.nseindia.com/corporate/SWATISHETH_30072025175716_BSENSE30072025.pdf",
+      "event_id": "fa79afa5180cc3e694afb4bf3f7a682e63374e79056b94c91ee54277b75dfb30",
+      "gold_file": "gold/tatasteel_2025_q1.jsonl",
+      "gold_facts": 22,
+      "label_status": "draft",
+      "difficulty": [
+        "20_pages",
+        "statement_of_profit_and_loss_title",
+        "ratio_tables_after_statement"
+      ],
+      "difficult_pdf": true,
+      "pipeline": {
+        "status": "completed",
+        "observations": 38,
+        "resolved_facts": 38,
+        "published": 28,
+        "review": 10,
+        "abstained": 0
+      }
+    },
+    {
+      "document_id": "1d75d71df7bc81415d2a623641cea8dd9124c107692db5ac731e31a6d776ac45",
+      "company_symbol": "BHARTIARTL",
+      "announcement_date": "2025-08-05",
+      "reporting_period": "2025-06-30",
+      "period_types": [
+        "quarter"
+      ],
+      "document_type": "financial_result",
+      "source_url": "https://nsearchives.nseindia.com/corporate/BHARTIARTL_05082025165817_FR.pdf",
+      "event_id": "2d49d77ec3c173e669657eeb789b2fbd8f00348e7be200b82853a591e0c1c74f",
+      "gold_file": "gold/bhartiartl_2025_q1.jsonl",
+      "gold_facts": 20,
+      "label_status": "draft",
+      "difficulty": [
+        "82_pages",
+        "scanned_with_ocr",
+        "rs_million_unit"
+      ],
+      "difficult_pdf": true,
+      "pipeline": {
+        "status": "completed",
+        "observations": 83,
+        "resolved_facts": 83,
+        "published": 29,
+        "review": 54,
+        "abstained": 0
+      }
+    },
+    {
+      "document_id": "6b1f26139a9dd31775081b1eef43abbb7c14d8dd297fbe8df65bb6d47f1d1ff9",
+      "company_symbol": "SUNPHARMA",
+      "announcement_date": "2025-07-31",
+      "reporting_period": "2025-06-30",
+      "period_types": [
+        "quarter"
+      ],
+      "document_type": "financial_result",
+      "source_url": "https://nsearchives.nseindia.com/corporate/SUNSEC_31072025142149_BMoutcomeFinal.pdf",
+      "event_id": "7dda49387058fbf6c1feb895637cc1bdf175874f294de7d45300ff8bc88141a2",
+      "gold_file": "gold/sunpharma_2025_q1.jsonl",
+      "gold_facts": 20,
+      "label_status": "draft",
+      "difficulty": [
+        "17_pages",
+        "exceptional_tax_components",
+        "nci_attribution"
+      ],
+      "difficult_pdf": true,
+      "pipeline": {
+        "status": "completed",
+        "observations": 45,
+        "resolved_facts": 45,
+        "published": 35,
+        "review": 10,
+        "abstained": 0
+      }
+    },
+    {
+      "document_id": "f572c75144e5e94d236a07338241d1df8a1a0fd4bb2586bd4648ccaa16cf0874",
+      "company_symbol": "INFY",
+      "announcement_date": "2025-04-17",
+      "reporting_period": "2025-03-31",
+      "period_types": [
+        "quarter",
+        "year"
+      ],
+      "document_type": "financial_result",
+      "source_url": "https://nsearchives.nseindia.com/corporate/Infosys_17042025162119_BM_Outcome_April172025.pdf",
+      "event_id": "83bfe95be535c127263dbc3250174a3e0826c01ad1faf726788de6d3d6eb392a",
+      "gold_file": "gold/infy_2025_q4_fy.jsonl",
+      "gold_facts": 40,
+      "label_status": "draft",
+      "difficulty": [
+        "380_pages",
+        "scanned_pdf",
+        "quarter_and_year_same_end"
+      ],
+      "difficult_pdf": true,
+      "pipeline": {
+        "status": "failed",
+        "observations": 0,
+        "resolved_facts": 0,
+        "published": 0,
+        "review": 0,
+        "abstained": 40,
+        "error": "values extraction timed out after 900 seconds; replay emits explicit abstentions"
+      }
+    },
+    {
+      "document_id": "e1e2a9cb6d42e0d15db78bed532f2c77a6956f12dc428da7b7db7aed1cc86d02",
+      "company_symbol": "ITC",
+      "announcement_date": "2025-05-22",
+      "reporting_period": "2025-03-31",
+      "period_types": [
+        "quarter",
+        "year"
+      ],
+      "document_type": "financial_result",
+      "source_url": "https://nsearchives.nseindia.com/corporate/ITC_22052025164616_SE_Results_.pdf",
+      "event_id": "1c6506c0a95bc84a658988b3fb8d0f6423c3de56ca93cf4688971ecb19343fc0",
+      "gold_file": "gold/itc_2025_q4_fy.jsonl",
+      "gold_facts": 44,
+      "label_status": "draft",
+      "difficulty": [
+        "continuing_and_discontinued_operations",
+        "quarter_and_year_same_end",
+        "multiple_tax_scopes"
+      ],
+      "difficult_pdf": true,
+      "pipeline": {
+        "status": "completed",
+        "observations": 112,
+        "resolved_facts": 112,
+        "published": 37,
+        "review": 75,
+        "abstained": 0
+      }
+    },
+    {
+      "document_id": "2a98f3ad980c92e847a52feda65bf81229af4e29476c67b355937cbee049577a",
+      "company_symbol": "SUNPHARMA",
+      "announcement_date": "2025-08-01",
+      "reporting_period": "2025-06-30",
+      "period_types": [
+        "quarter"
+      ],
+      "document_type": "newspaper_negative_control",
+      "source_url": "https://nsearchives.nseindia.com/corporate/SUNSEC_01082025185611_SEIntimationfornewspaperfinancial.pdf",
+      "event_id": "8a27712ff1b7d8c6e0b43aad085df4f32f878b3580214522322e525aea92f2e8",
+      "gold_file": null,
+      "gold_facts": 0,
+      "label_status": "negative_control",
+      "difficulty": [
+        "multi_issuer_newspaper",
+        "issuer_results_only_by_qr_code",
+        "unrelated_full_tables"
+      ],
+      "difficult_pdf": true,
+      "pipeline": {
+        "status": "completed",
+        "observations": 13,
+        "resolved_facts": 13,
+        "published": 7,
+        "review": 6,
+        "abstained": 0,
+        "after_fix_published": 0
+      }
+    }
+  ]
+}

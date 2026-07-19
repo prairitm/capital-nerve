@@ -143,7 +143,12 @@ def migrate_unified_schema(conn: sqlite3.Connection) -> None:
         _ensure_column(conn, table, "is_explicit_guidance", "INTEGER")
     _ensure_column(conn, "fact_observations", "value_text", "TEXT")
     _ensure_column(conn, "fact_observations", "extraction_method", "TEXT")
+    _ensure_column(conn, "fact_observations", "basis", "TEXT")
+    _ensure_column(conn, "fact_observations", "period_type", "TEXT")
     _ensure_column(conn, "resolved_facts", "resolved_value_text", "TEXT")
+    _ensure_column(conn, "resolved_facts", "period", "TEXT")
+    _ensure_column(conn, "resolved_facts", "period_type", "TEXT")
+    _ensure_column(conn, "resolved_facts", "basis", "TEXT")
     conn.executescript(
         """
         CREATE TABLE IF NOT EXISTS presentation_document_inventory (

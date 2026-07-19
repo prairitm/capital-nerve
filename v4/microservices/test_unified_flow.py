@@ -106,6 +106,18 @@ class UnifiedFlowContractsTest(unittest.TestCase):
         }
         self.assertIn("presentation_document_inventory", tables)
         self.assertIn("presentation_segments", tables)
+        observation_cols = {
+            row["name"]
+            for row in conn.execute("PRAGMA table_info(fact_observations)").fetchall()
+        }
+        resolved_cols = {
+            row["name"]
+            for row in conn.execute("PRAGMA table_info(resolved_facts)").fetchall()
+        }
+        self.assertIn("basis", observation_cols)
+        self.assertIn("period_type", observation_cols)
+        self.assertIn("basis", resolved_cols)
+        self.assertIn("period", resolved_cols)
         conn.close()
 
     def test_metrics_uses_presentation_catalog_for_presentations(self) -> None:

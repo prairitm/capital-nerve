@@ -1,0 +1,216 @@
+{
+  "approved_gold_records": 20,
+  "counts": {
+    "abstain": 4,
+    "correct_published": 15,
+    "incorrect_published": 1,
+    "publish": 16,
+    "spurious_published": 0
+  },
+  "details": [
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "1d75d71d:revenue_from_operations:2025-06-30:consolidated:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "1d75d71d:other_income:2025-06-30:consolidated:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "1d75d71d:total_income:2025-06-30:consolidated:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "1d75d71d:finance_cost:2025-06-30:consolidated:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "1d75d71d:depreciation_and_amortization:2025-06-30:consolidated:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "1d75d71d:pbt:2025-06-30:consolidated:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "1d75d71d:tax_expense:2025-06-30:consolidated:quarter"
+    },
+    {
+      "decision": "abstain",
+      "errors": [],
+      "label_id": "1d75d71d:pat:2025-06-30:consolidated:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "1d75d71d:eps_basic:2025-06-30:consolidated:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "1d75d71d:eps_diluted:2025-06-30:consolidated:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "1d75d71d:revenue_from_operations:2025-06-30:standalone:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "1d75d71d:other_income:2025-06-30:standalone:quarter"
+    },
+    {
+      "decision": "abstain",
+      "errors": [],
+      "label_id": "1d75d71d:total_income:2025-06-30:standalone:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "1d75d71d:finance_cost:2025-06-30:standalone:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [
+        "wrong_value"
+      ],
+      "label_id": "1d75d71d:depreciation_and_amortization:2025-06-30:standalone:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "1d75d71d:pbt:2025-06-30:standalone:quarter"
+    },
+    {
+      "decision": "abstain",
+      "errors": [],
+      "label_id": "1d75d71d:tax_expense:2025-06-30:standalone:quarter"
+    },
+    {
+      "decision": "abstain",
+      "errors": [],
+      "label_id": "1d75d71d:pat:2025-06-30:standalone:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "1d75d71d:eps_basic:2025-06-30:standalone:quarter"
+    },
+    {
+      "decision": "publish",
+      "errors": [],
+      "label_id": "1d75d71d:eps_diluted:2025-06-30:standalone:quarter"
+    }
+  ],
+  "errors": {
+    "spurious_prediction": 0,
+    "wrong_value": 1
+  },
+  "ignored_unapproved_gold_records": 0,
+  "metrics": {
+    "abstention_rate": 0.2,
+    "auto_published_coverage": 0.8,
+    "auto_published_precision": 0.9375,
+    "recall": 0.75,
+    "review_rate": 0.0
+  },
+  "per_fact": {
+    "depreciation_and_amortization": {
+      "correct_published": 1,
+      "gold": 2,
+      "incorrect_published": 1,
+      "precision": 0.5,
+      "publish": 2,
+      "recall": 0.5
+    },
+    "eps_basic": {
+      "correct_published": 2,
+      "gold": 2,
+      "precision": 1.0,
+      "publish": 2,
+      "recall": 1.0
+    },
+    "eps_diluted": {
+      "correct_published": 2,
+      "gold": 2,
+      "precision": 1.0,
+      "publish": 2,
+      "recall": 1.0
+    },
+    "finance_cost": {
+      "correct_published": 2,
+      "gold": 2,
+      "precision": 1.0,
+      "publish": 2,
+      "recall": 1.0
+    },
+    "other_income": {
+      "correct_published": 2,
+      "gold": 2,
+      "precision": 1.0,
+      "publish": 2,
+      "recall": 1.0
+    },
+    "pat": {
+      "abstain": 2,
+      "gold": 2,
+      "precision": null,
+      "recall": 0.0
+    },
+    "pbt": {
+      "correct_published": 2,
+      "gold": 2,
+      "precision": 1.0,
+      "publish": 2,
+      "recall": 1.0
+    },
+    "revenue_from_operations": {
+      "correct_published": 2,
+      "gold": 2,
+      "precision": 1.0,
+      "publish": 2,
+      "recall": 1.0
+    },
+    "tax_expense": {
+      "abstain": 1,
+      "correct_published": 1,
+      "gold": 2,
+      "precision": 1.0,
+      "publish": 1,
+      "recall": 0.5
+    },
+    "total_income": {
+      "abstain": 1,
+      "correct_published": 1,
+      "gold": 2,
+      "precision": 1.0,
+      "publish": 1,
+      "recall": 0.5
+    }
+  },
+  "prediction_records": 20,
+  "provisional": true,
+  "release_gates": {
+    "approved_gold_only": false,
+    "has_approved_gold": true,
+    "has_published_predictions": true,
+    "passed": false,
+    "published_precision_100_percent": false,
+    "zero_invalid_evidence": true,
+    "zero_spurious_published": true,
+    "zero_unresolved_conflicts": true,
+    "zero_wrong_basis": true,
+    "zero_wrong_period": true,
+    "zero_wrong_unit": true
+  },
+  "spurious_label_ids": []
+}

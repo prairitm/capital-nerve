@@ -9,6 +9,74 @@ import run
 
 
 class ExactDocumentRunnerTest(unittest.TestCase):
+    def test_full_flow_preserves_manual_document_queue_until_resolution(self) -> None:
+        company_id = "b" * 64
+        event_id = "c" * 64
+        document_id = "d" * 64
+        source_url = "https://example.com/manual.pdf"
+        args = argparse.Namespace(
+            symbol="EXAMPLE",
+            from_date="01-04-2026",
+            to_date="30-04-2026",
+            event_type="Financial Results",
+            documents_json=None,
+            document=[
+                "document_type=financial_result,source_mode=manual_url,"
+                f"source_url={source_url}"
+            ],
+            source_mode=None,
+            skip_health=True,
+            timeout=30.0,
+            poll_interval=0.01,
+            values_sync=False,
+            values_parse_workers=None,
+            values_extraction_workers=None,
+            detail_limit=1,
+            **{f"{name}_url": url for name, url in run.DEFAULT_SERVICES.items()},
+        )
+        common = {
+            "symbol": args.symbol,
+            "from_date": args.from_date,
+            "to_date": args.to_date,
+            "company_id": company_id,
+            "event_id": event_id,
+        }
+        responses = [
+            {"company": {"id": company_id}},
+            {"next_service_params": {key: common[key] for key in common if key != "event_id"}},
+            {
+                "event_id": event_id,
+                "resolved_documents": [
+                    {
+                        "document_type": "financial_result",
+                        "source_mode": "manual_url",
+                        "source_url": source_url,
+                    }
+                ],
+                "next_service_params": common,
+            },
+            {"next_service_params": {**common, "document_id": document_id}},
+            {"next_service_params": {**common, "document_id": document_id}},
+            {"next_service_params": {**common, "document_id": document_id}},
+        ]
+        values = {
+            "document_id": document_id,
+            "next_service_params": {**common, "document_id": document_id},
+        }
+
+        with patch.object(run, "request_json", side_effect=responses) as request, \
+             patch.object(run, "wait_for_values_job", return_value=values):
+            run.run_flow(args)
+
+        resolution_call = next(
+            call
+            for call in request.call_args_list
+            if call.args[1].endswith("/event-type/resolve")
+        )
+        document = json.loads(resolution_call.kwargs["query"]["documents_json"])[0]
+        self.assertEqual("manual_url", document["source_mode"])
+        self.assertEqual(source_url, document["source_url"])
+
     def test_starts_at_resolution_and_pins_discovered_source(self) -> None:
         event_id = "c" * 64
         document_id = "d" * 64

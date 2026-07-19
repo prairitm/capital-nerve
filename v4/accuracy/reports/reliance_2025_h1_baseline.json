@@ -1,0 +1,250 @@
+{
+  "approved_gold_records": 20,
+  "counts": {
+    "abstain": 20,
+    "missing": 20,
+    "spurious_published": 10
+  },
+  "details": [
+    {
+      "decision": "missing",
+      "errors": [
+        "missing_prediction"
+      ],
+      "label_id": "0fd4d240:revenue_from_operations:2025-09-30:consolidated:half_year"
+    },
+    {
+      "decision": "missing",
+      "errors": [
+        "missing_prediction"
+      ],
+      "label_id": "0fd4d240:other_income:2025-09-30:consolidated:half_year"
+    },
+    {
+      "decision": "missing",
+      "errors": [
+        "missing_prediction"
+      ],
+      "label_id": "0fd4d240:total_income:2025-09-30:consolidated:half_year"
+    },
+    {
+      "decision": "missing",
+      "errors": [
+        "missing_prediction"
+      ],
+      "label_id": "0fd4d240:finance_cost:2025-09-30:consolidated:half_year"
+    },
+    {
+      "decision": "missing",
+      "errors": [
+        "missing_prediction"
+      ],
+      "label_id": "0fd4d240:depreciation_and_amortization:2025-09-30:consolidated:half_year"
+    },
+    {
+      "decision": "missing",
+      "errors": [
+        "missing_prediction"
+      ],
+      "label_id": "0fd4d240:total_expenses:2025-09-30:consolidated:half_year"
+    },
+    {
+      "decision": "missing",
+      "errors": [
+        "missing_prediction"
+      ],
+      "label_id": "0fd4d240:pbt:2025-09-30:consolidated:half_year"
+    },
+    {
+      "decision": "missing",
+      "errors": [
+        "missing_prediction"
+      ],
+      "label_id": "0fd4d240:pat:2025-09-30:consolidated:half_year"
+    },
+    {
+      "decision": "missing",
+      "errors": [
+        "missing_prediction"
+      ],
+      "label_id": "0fd4d240:eps_basic:2025-09-30:consolidated:half_year"
+    },
+    {
+      "decision": "missing",
+      "errors": [
+        "missing_prediction"
+      ],
+      "label_id": "0fd4d240:eps_diluted:2025-09-30:consolidated:half_year"
+    },
+    {
+      "decision": "missing",
+      "errors": [
+        "missing_prediction"
+      ],
+      "label_id": "0fd4d240:revenue_from_operations:2025-09-30:standalone:half_year"
+    },
+    {
+      "decision": "missing",
+      "errors": [
+        "missing_prediction"
+      ],
+      "label_id": "0fd4d240:other_income:2025-09-30:standalone:half_year"
+    },
+    {
+      "decision": "missing",
+      "errors": [
+        "missing_prediction"
+      ],
+      "label_id": "0fd4d240:total_income:2025-09-30:standalone:half_year"
+    },
+    {
+      "decision": "missing",
+      "errors": [
+        "missing_prediction"
+      ],
+      "label_id": "0fd4d240:finance_cost:2025-09-30:standalone:half_year"
+    },
+    {
+      "decision": "missing",
+      "errors": [
+        "missing_prediction"
+      ],
+      "label_id": "0fd4d240:depreciation_and_amortization:2025-09-30:standalone:half_year"
+    },
+    {
+      "decision": "missing",
+      "errors": [
+        "missing_prediction"
+      ],
+      "label_id": "0fd4d240:total_expenses:2025-09-30:standalone:half_year"
+    },
+    {
+      "decision": "missing",
+      "errors": [
+        "missing_prediction"
+      ],
+      "label_id": "0fd4d240:pbt:2025-09-30:standalone:half_year"
+    },
+    {
+      "decision": "missing",
+      "errors": [
+        "missing_prediction"
+      ],
+      "label_id": "0fd4d240:pat:2025-09-30:standalone:half_year"
+    },
+    {
+      "decision": "missing",
+      "errors": [
+        "missing_prediction"
+      ],
+      "label_id": "0fd4d240:eps_basic:2025-09-30:standalone:half_year"
+    },
+    {
+      "decision": "missing",
+      "errors": [
+        "missing_prediction"
+      ],
+      "label_id": "0fd4d240:eps_diluted:2025-09-30:standalone:half_year"
+    }
+  ],
+  "errors": {
+    "spurious_prediction": 10
+  },
+  "ignored_unapproved_gold_records": 0,
+  "metrics": {
+    "abstention_rate": 1.0,
+    "auto_published_coverage": 0.0,
+    "auto_published_precision": 0.0,
+    "recall": 0.0,
+    "review_rate": 0.0
+  },
+  "per_fact": {
+    "depreciation_and_amortization": {
+      "abstain": 2,
+      "gold": 2,
+      "precision": null,
+      "recall": 0.0
+    },
+    "eps_basic": {
+      "abstain": 2,
+      "gold": 2,
+      "precision": null,
+      "recall": 0.0
+    },
+    "eps_diluted": {
+      "abstain": 2,
+      "gold": 2,
+      "precision": null,
+      "recall": 0.0
+    },
+    "finance_cost": {
+      "abstain": 2,
+      "gold": 2,
+      "precision": null,
+      "recall": 0.0
+    },
+    "other_income": {
+      "abstain": 2,
+      "gold": 2,
+      "precision": null,
+      "recall": 0.0
+    },
+    "pat": {
+      "abstain": 2,
+      "gold": 2,
+      "precision": null,
+      "recall": 0.0
+    },
+    "pbt": {
+      "abstain": 2,
+      "gold": 2,
+      "precision": null,
+      "recall": 0.0
+    },
+    "revenue_from_operations": {
+      "abstain": 2,
+      "gold": 2,
+      "precision": null,
+      "recall": 0.0
+    },
+    "total_expenses": {
+      "abstain": 2,
+      "gold": 2,
+      "precision": null,
+      "recall": 0.0
+    },
+    "total_income": {
+      "abstain": 2,
+      "gold": 2,
+      "precision": null,
+      "recall": 0.0
+    }
+  },
+  "prediction_records": 10,
+  "provisional": true,
+  "release_gates": {
+    "approved_gold_only": false,
+    "has_approved_gold": true,
+    "has_published_predictions": true,
+    "passed": false,
+    "published_precision_100_percent": false,
+    "zero_invalid_evidence": true,
+    "zero_spurious_published": false,
+    "zero_unresolved_conflicts": true,
+    "zero_wrong_basis": true,
+    "zero_wrong_period": true,
+    "zero_wrong_unit": true
+  },
+  "spurious_label_ids": [
+    "0fd4d240:depreciation_and_amortization:2025-09-30:consolidated:quarter",
+    "0fd4d240:eps_basic:2025-09-30:consolidated:quarter",
+    "0fd4d240:eps_diluted:2025-09-30:consolidated:quarter",
+    "0fd4d240:finance_cost:2025-09-30:consolidated:quarter",
+    "0fd4d240:other_income:2025-09-30:consolidated:quarter",
+    "0fd4d240:pat:2025-09-30:consolidated:quarter",
+    "0fd4d240:pbt:2025-09-30:consolidated:quarter",
+    "0fd4d240:revenue_from_operations:2025-09-30:consolidated:quarter",
+    "0fd4d240:total_expenses:2025-09-30:consolidated:quarter",
+    "0fd4d240:total_income:2025-09-30:consolidated:quarter"
+  ]
+}

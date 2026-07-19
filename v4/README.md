@@ -79,7 +79,8 @@ continues to be owned by the extraction pipeline.
 - `MEMBER` users can access every backend-added company and maintain their own
   watchlist.
 - `ADMIN` users have the same research access and can create, update,
-  deactivate, reactivate, and reset other user accounts from **Users**.
+  deactivate, reactivate, and reset other user accounts from **Users**. They
+  can also adjudicate uncertain extracted facts from **Reviews**.
 - New users receive a generated temporary password and must replace it on first
   login. There is no public signup or email recovery flow.
 - Sessions are stored server-side, expire after seven days, and use an
@@ -158,6 +159,43 @@ company is added; historical filings are not reprocessed.
 | `MONITOR_MAX_ATTEMPTS` | `5` | Maximum full-pipeline attempts per filing |
 | `MONITOR_PIPELINE_VERSION` | `v4-1` | Idempotency version for durable jobs |
 | `MONITOR_FLOW_TIMEOUT_SECONDS` | `1800` | Timeout for one exact-document flow |
+
+## Fact review queue
+
+Extraction outcomes marked `review_required` appear in the administrator-only
+**Reviews** page. Each item shows all matching observations, values, confidence,
+PDF page evidence, reporting basis, and period. Approval requires selecting an
+observation; rejection requires a reviewer note; either decision can be
+reopened until an approval has been applied.
+
+Review decisions are written to the application database with the administrator
+and timestamp. They do not mutate the read-only analytics database and do not
+auto-publish a fact. A later controlled reconciliation step must apply approved
+decisions to analytics before metrics or signals may consume them. Facts whose
+resolution status is not exactly `resolved` are excluded from those downstream
+calculations.
+
+Preview all pending approvals without writing either database:
+
+```bash
+python v4/microservices/reconcile_reviews.py
+```
+
+After checking the JSON preview, apply validated approvals and recompute
+dependent metrics and signals once for each affected event:
+
+```bash
+python v4/microservices/reconcile_reviews.py \
+  --apply \
+  --applied-by "operator@example.com"
+```
+
+Use `--resolved-fact-id ID` one or more times to limit a run. Application is
+idempotent and resumable: analytics stores an immutable before/after ledger,
+while the app database records application and recomputation status. The
+reconciler refuses stale decisions, mismatched period/basis/dimensions, missing
+values, and observations without page-level source evidence. `--no-recompute`
+is available only for maintenance recovery and leaves downstream work pending.
 
 ## Run the 7-step microservice flow
 

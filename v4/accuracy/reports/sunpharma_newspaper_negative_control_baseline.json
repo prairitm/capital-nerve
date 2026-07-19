@@ -1,0 +1,43 @@
+{
+  "approved_gold_records": 0,
+  "counts": {
+    "spurious_published": 7
+  },
+  "details": [],
+  "errors": {
+    "spurious_prediction": 7
+  },
+  "ignored_unapproved_gold_records": 0,
+  "metrics": {
+    "abstention_rate": null,
+    "auto_published_coverage": null,
+    "auto_published_precision": 0.0,
+    "recall": null,
+    "review_rate": null
+  },
+  "per_fact": {},
+  "prediction_records": 7,
+  "provisional": true,
+  "release_gates": {
+    "approved_gold_only": false,
+    "has_approved_gold": false,
+    "has_published_predictions": true,
+    "passed": false,
+    "published_precision_100_percent": false,
+    "zero_invalid_evidence": true,
+    "zero_spurious_published": false,
+    "zero_unresolved_conflicts": true,
+    "zero_wrong_basis": true,
+    "zero_wrong_period": true,
+    "zero_wrong_unit": true
+  },
+  "spurious_label_ids": [
+    "2a98f3ad:eps_basic:2025-06-30:standalone:quarter",
+    "2a98f3ad:eps_diluted:2025-06-30:standalone:quarter",
+    "2a98f3ad:equity_share_capital:2025-06-30:standalone:quarter",
+    "2a98f3ad:pbt:2025-06-30:standalone:quarter",
+    "2a98f3ad:total_assets:2025-06-30:standalone:quarter",
+    "2a98f3ad:total_comprehensive_income:2025-06-30:standalone:quarter",
+    "2a98f3ad:total_income:2025-06-30:standalone:quarter"
+  ]
+}
