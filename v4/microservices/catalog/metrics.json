@@ -81,42 +81,6 @@
       }
     ]
   },
-  // "ebit_margin": {
-  //   "name": "EBIT Margin",
-  //   "unit": "%",
-  //   "category": "margin",
-  //   "formula": "ebit/revenue*100",
-  //   "inputs": [
-  //     {
-  //       "var": "ebit",
-  //       "fact_key": "ebit",
-  //       "scope": "CURRENT"
-  //     },
-  //     {
-  //       "var": "revenue",
-  //       "fact_key": "revenue_from_operations",
-  //       "scope": "CURRENT"
-  //     }
-  //   ]
-  // },
-  // "pbt_margin": {
-  //   "name": "PBT Margin",
-  //   "unit": "%",
-  //   "category": "margin",
-  //   "formula": "pbt/revenue*100",
-  //   "inputs": [
-  //     {
-  //       "var": "pbt",
-  //       "fact_key": "pbt",
-  //       "scope": "CURRENT"
-  //     },
-  //     {
-  //       "var": "revenue",
-  //       "fact_key": "revenue_from_operations",
-  //       "scope": "CURRENT"
-  //     }
-  //   ]
-  // },
   "pat_margin": {
     "name": "PAT Margin",
     "unit": "%",
@@ -154,24 +118,6 @@
     ],
     "valid_when": "pbt!=0"
   },
-  // "other_income_to_total_income": {
-  //   "name": "Other Income To Total Income",
-  //   "unit": "%",
-  //   "category": "earnings_quality",
-  //   "formula": "other_income/total_income*100",
-  //   "inputs": [
-  //     {
-  //       "var": "other_income",
-  //       "fact_key": "other_income",
-  //       "scope": "CURRENT"
-  //     },
-  //     {
-  //       "var": "total_income",
-  //       "fact_key": "total_income",
-  //       "scope": "CURRENT"
-  //     }
-  //   ]
-  // },
   "exceptional_to_pbt": {
     "name": "Exceptional To PBT",
     "unit": "%",
