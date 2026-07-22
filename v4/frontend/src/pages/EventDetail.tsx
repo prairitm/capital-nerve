@@ -469,7 +469,6 @@ function EarningsCallAnalysis({ section }: { section: QuarterDocumentSection }) 
 }
 
 function QuarterlyResultAnalysis({ section, snapshot }: { section: QuarterDocumentSection; snapshot: SnapshotRow[] }) {
-  const documentId = section.document?.id ?? section.event?.document_id ?? null;
   const config = section.display ?? {};
   const allowedFacts = new Set(config.headline_facts ?? []);
   const headlineFacts = snapshot.filter((row) => allowedFacts.size === 0 || allowedFacts.has(row.code));
@@ -497,23 +496,6 @@ function QuarterlyResultAnalysis({ section, snapshot }: { section: QuarterDocume
 
       {signals.length > 0 && <EventSignalList signals={signals} title="What matters" />}
 
-      {documentId && (
-        <Link
-          to={`/documents/${documentId}`}
-          className="focus-ring card flex items-center justify-between gap-4 px-5 py-4 transition-colors hover:bg-surface-2/35"
-        >
-          <span className="flex min-w-0 items-center gap-3">
-            <FileSearch size={17} className="shrink-0 text-ink-soft" />
-            <span>
-              <span className="block text-sm font-semibold text-ink">Review selected facts</span>
-              <span className="mt-0.5 block text-xs text-ink-mute">
-                Statement line items and source references are available in the filing.
-              </span>
-            </span>
-          </span>
-          <ArrowUpRight size={16} className="shrink-0 text-ink-soft" />
-        </Link>
-      )}
     </section>
   );
 }
