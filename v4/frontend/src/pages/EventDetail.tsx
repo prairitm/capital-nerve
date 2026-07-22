@@ -427,7 +427,7 @@ function PresentationHighlights({ section }: { section: QuarterDocumentSection }
     <div className="space-y-4">
       <DisplayMetricGrid metrics={metrics} title="Operating indicators" />
       <DisplayFactGroups section={section} groups={config.fact_groups ?? []} title="What drove it" maxItems={6} dedupeCodes />
-      {signals.length > 0 && <EventSignalList signals={signals} title="What matters" />}
+      {signals.length > 0 && <EventSignalList signals={signals} title="Signals" />}
     </div>
   );
 }
@@ -458,7 +458,7 @@ function EarningsCallAnalysis({ section }: { section: QuarterDocumentSection }) 
     <section className="space-y-4">
       <DisplayMetricGrid metrics={metrics} title="Forward indicators" />
       <DisplayFactGroups section={section} groups={config.fact_groups ?? []} title="Management read-through" maxItems={8} />
-      {signals.length > 0 && <EventSignalList signals={signals} title="What matters" />}
+      {signals.length > 0 && <EventSignalList signals={signals} title="Signals" />}
 
       <section className="card overflow-hidden">
         <button type="button" onClick={() => setSupportingOpen((open) => !open)} aria-expanded={supportingOpen} className="focus-ring flex w-full items-center justify-between gap-4 rounded-2xl px-5 py-4 text-left hover:bg-surface-2/35"><span className="flex min-w-0 items-center gap-3"><FileSearch size={17} className="shrink-0 text-ink-soft" /><span><span className="block text-base font-semibold text-ink">Supporting transcript data</span><span className="mt-0.5 block text-xs text-ink-mute">Extracted claims and direct source references</span></span></span><ChevronDown size={16} className={clsx("shrink-0 text-ink-soft transition-transform", supportingOpen && "rotate-180")} /></button>
@@ -494,7 +494,7 @@ function QuarterlyResultAnalysis({ section, snapshot }: { section: QuarterDocume
         </section>
       )}
 
-      {signals.length > 0 && <EventSignalList signals={signals} title="What matters" />}
+      {signals.length > 0 && <EventSignalList signals={signals} title="Signals" />}
 
     </section>
   );
