@@ -3,7 +3,9 @@ from __future__ import annotations
 import unittest
 import sys
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import Mock, patch
+
+import requests
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
@@ -11,6 +13,7 @@ from event_type_service import _resolve_exact_nse_document, classify_announcemen
 from nse_fr_resolver import (
     build_candidate_pool,
     classify_pdf_content,
+    download_pdf,
     infer_period_markers,
     metadata_score,
     resolve_canonical_financial_report,
@@ -48,6 +51,26 @@ def _financial_result() -> dict[str, str]:
         "event_bucket": "Financial Results",
         "fileSize": "1.2 MB",
     }
+
+
+class DownloadRegressionTests(unittest.TestCase):
+    @patch("nse_fr_resolver.time.sleep")
+    def test_pdf_download_retries_transient_request_errors(self, sleep) -> None:
+        response = Mock()
+        response.raise_for_status.return_value = None
+        response.content = b"%PDF-result"
+        session = Mock()
+        session.get.side_effect = [
+            requests.ConnectionError("temporary failure"),
+            response,
+        ]
+
+        self.assertEqual(
+            download_pdf("https://example.test/result.pdf", session),
+            b"%PDF-result",
+        )
+        self.assertEqual(session.get.call_count, 2)
+        sleep.assert_called_once()
 
 
 class PresentationExclusionTests(unittest.TestCase):
@@ -157,6 +180,39 @@ class SelectionRegressionTests(unittest.TestCase):
         self.assertNotIn("07052024", markers)
 
     @patch("nse_fr_resolver._fetch_and_classify")
+    def test_strict_period_match_normalizes_nse_date_punctuation(
+        self, fetch_and_classify
+    ) -> None:
+        result = self._result(
+            "https://example.test/signedBSENSE_10022025205304.pdf",
+            "2025-02-10 20:53:04",
+            text=(
+                "Submitted to the Exchange, the financial results for the period "
+                "ended December 31, 2024."
+            ),
+        )
+        fetch_and_classify.return_value = (
+            "result-hash",
+            {
+                "is_financial_report": True,
+                "confidence": 0.9,
+                "document_kind": "FINANCIAL_RESULT",
+            },
+            b"%PDF-result",
+        )
+
+        resolved = resolve_canonical_financial_report(
+            [result],
+            [result],
+            period_markers=infer_period_markers([result]),
+            strict_period_match=True,
+            session=object(),
+        )
+
+        self.assertIsNotNone(resolved)
+        self.assertEqual(resolved["url"], result["attchmntFile"])
+
+    @patch("nse_fr_resolver._fetch_and_classify")
     def test_strict_target_period_does_not_fall_back_to_older_period(
         self, fetch_and_classify
     ) -> None:
@@ -195,6 +251,23 @@ class SelectionRegressionTests(unittest.TestCase):
         self.assertIsNone(resolved)
         attempted_urls = [call.args[0] for call in fetch_and_classify.call_args_list]
         self.assertEqual(attempted_urls, [target["attchmntFile"]])
+
+    @patch("nse_fr_resolver._fetch_and_classify")
+    def test_transport_failure_is_not_reported_as_invalid_pdf(
+        self, fetch_and_classify
+    ) -> None:
+        result = self._result(
+            "https://example.test/result.pdf",
+            "2025-02-10 20:53:04",
+            text=(
+                "Submitted to the Exchange, the financial results for the period "
+                "ended December 31, 2024"
+            ),
+        )
+        fetch_and_classify.side_effect = requests.ConnectionError("archive unavailable")
+
+        with self.assertRaises(requests.ConnectionError):
+            resolve_canonical_financial_report([result], [result], session=object())
 
     @patch("nse_fr_resolver._fetch_and_classify")
     def test_exact_result_does_not_recover_from_another_day(

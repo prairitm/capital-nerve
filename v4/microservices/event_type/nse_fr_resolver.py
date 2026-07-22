@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import io
 import re
+import time
 from datetime import datetime
 from typing import Any
 
@@ -28,6 +29,8 @@ def _get_pdf_reader():
     return PdfReader
 
 _PDF_MAGIC = b"%PDF-"
+_PDF_DOWNLOAD_ATTEMPTS = 3
+_PDF_DOWNLOAD_BACKOFF_SECONDS = 0.5
 _NUMBER_RE = re.compile(r"(?<![\d.])(-?\d[\d,]*(?:\.\d+)?)(?![\d.])")
 
 # url -> (pdf_hash, classification dict, pdf_bytes)
@@ -235,8 +238,18 @@ def download_pdf(
 ) -> bytes:
     """Download a PDF from NSE archives using the warmed session."""
     headers = {"Referer": referer} if referer else None
-    response = session.get(url, headers=headers, timeout=timeout)
-    response.raise_for_status()
+    response = None
+    for attempt in range(_PDF_DOWNLOAD_ATTEMPTS):
+        try:
+            response = session.get(url, headers=headers, timeout=timeout)
+            response.raise_for_status()
+            break
+        except requests.RequestException:
+            if attempt + 1 == _PDF_DOWNLOAD_ATTEMPTS:
+                raise
+            time.sleep(_PDF_DOWNLOAD_BACKOFF_SECONDS * (2**attempt))
+    if response is None:  # pragma: no cover - loop always assigns or raises
+        raise requests.RequestException(f"Failed to download {url}")
     data = response.content
     if not data:
         raise ValueError(f"Empty response from {url}")
@@ -593,7 +606,12 @@ def _matches_period_markers(item: dict[str, Any], period_markers: list[str] | No
     if not period_markers:
         return True
     text = build_text_blob(item)
-    return any(marker.lower() in text for marker in period_markers)
+    normalized_text = re.sub(r"[^a-z0-9]+", " ", text).strip()
+    return any(
+        marker.lower() in text
+        or re.sub(r"[^a-z0-9]+", " ", marker.lower()).strip() in normalized_text
+        for marker in period_markers
+    )
 
 
 def build_same_filing_recovery_scope(
@@ -875,6 +893,27 @@ def resolve_canonical_financial_report(
         tried.add(url)
         try:
             digest, cls, pdf_bytes = _fetch_and_classify(url, session, referer=referer)
+        except requests.RequestException as exc:
+            print(f"  skip {url.rsplit('/', 1)[-1]}: {exc}")
+            recovered = resolve_financial_report_pdf(
+                announcements,
+                period_markers=period_markers,
+                max_candidates=max_candidates,
+                session=session,
+                tried_urls=tried.copy(),
+                referer=referer,
+                strict_period_match=strict_period_match,
+            )
+            if recovered:
+                recovered["recovery_needed"] = True
+                recovered["rejected_url"] = url
+                if best is None or _resolved_rank(recovered) > _resolved_rank(best):
+                    best = recovered
+            elif best is None:
+                # Preserve transport failures so the API reports a retryable
+                # upstream error instead of the misleading "no valid PDF".
+                raise
+            continue
         except Exception as exc:
             print(f"  skip {url.rsplit('/', 1)[-1]}: {exc}")
             recovered = resolve_financial_report_pdf(

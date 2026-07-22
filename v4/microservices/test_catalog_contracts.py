@@ -269,7 +269,7 @@ class CatalogContractsTest(unittest.TestCase):
     def test_company_level_presentation_signal_can_fire(self) -> None:
         signal = read_json(
             CATALOG_DIR / "investor_presentation" / "presentation_signals.json"
-        )["volume_led_growth"]
+        )["revenue_guidance_upgrade"]
         metrics = {
             key: [
                 {
@@ -281,17 +281,18 @@ class CatalogContractsTest(unittest.TestCase):
                 }
             ]
             for key, value in {
-                "revenue_yoy_growth": 10.0,
-                "sales_volume_yoy_growth": 10.0,
-                "price_mix_contribution_yoy": 0.0,
+                "revenue_guidance_revision_pct": 10.0,
             }.items()
         }
         fired = signals_service.evaluate_presentation_signal_rules(
-            {"volume_led_growth": signal},
+            {"revenue_guidance_upgrade": signal},
             metrics_by_key=metrics,
             facts_by_key={},
         )
-        self.assertEqual([item["signal_key"] for item in fired], ["volume_led_growth"])
+        self.assertEqual(
+            [item["signal_key"] for item in fired],
+            ["revenue_guidance_upgrade"],
+        )
 
     def test_earnings_semantic_signal_matches_extracted_text(self) -> None:
         signal = read_json(
