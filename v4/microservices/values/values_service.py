@@ -39,6 +39,7 @@ _NON_ISSUER_HEADINGS = {
     "national stock exchange of india limited",
     "bse limited",
 }
+_PAGE_MARKER_RE = re.compile(r"^# Page (\d+)\s*$", re.MULTILINE)
 
 
 def company_id_for_symbol(symbol: str) -> str:
@@ -469,6 +470,60 @@ def _chunk(text: str, max_chars: int = 12000) -> list[str]:
     return chunks
 
 
+def _marked_page_numbers(markdown: str) -> set[int]:
+    return {int(match.group(1)) for match in _PAGE_MARKER_RE.finditer(markdown)}
+
+
+def _chunk_financial_markdown(markdown: str, max_chars: int = 12000) -> list[str]:
+    """Chunk financial-result markdown without separating content from its page marker."""
+    markers = list(_PAGE_MARKER_RE.finditer(markdown))
+    if not markers:
+        return _chunk(markdown, max_chars=max_chars)
+
+    page_blocks: list[str] = []
+    for index, marker in enumerate(markers):
+        end = markers[index + 1].start() if index + 1 < len(markers) else len(markdown)
+        block = markdown[marker.start():end].strip()
+        if len(block) <= max_chars:
+            page_blocks.append(block)
+            continue
+
+        header = marker.group(0)
+        body = block[len(header):].lstrip()
+        body_limit = max(max_chars - len(header) - 2, 1)
+        page_blocks.extend(
+            f"{header}\n\n{part}" for part in _chunk(body, max_chars=body_limit)
+        )
+
+    separator = "\n\n---\n\n"
+    chunks: list[str] = []
+    current = ""
+    for block in page_blocks:
+        candidate = f"{current}{separator}{block}" if current else block
+        if current and len(candidate) > max_chars:
+            chunks.append(current)
+            current = block
+        else:
+            current = candidate
+    if current:
+        chunks.append(current)
+    return chunks
+
+
+def _validate_fact_source_pages(
+    facts: list[dict[str, Any]], chunk: str
+) -> list[dict[str, Any]]:
+    """Keep only page citations that reference a page marker in the supplied chunk."""
+    allowed_pages = _marked_page_numbers(chunk)
+    validated: list[dict[str, Any]] = []
+    for fact in facts:
+        item = dict(fact)
+        source_page = _optional_positive_int(item.get("source_page"))
+        item["source_page"] = source_page if source_page in allowed_pages else None
+        validated.append(item)
+    return validated
+
+
 def _canon_unit(unit: Any) -> Any:
     if not unit:
         return None
@@ -565,6 +620,8 @@ def extract_facts_from_chunk(
     period_end: str,
     fact_catalog_text: str,
 ) -> list[dict[str, Any]]:
+    marked_pages = sorted(_marked_page_numbers(chunk))
+    marked_page_text = ", ".join(str(page) for page in marked_pages) or "none"
     period_end_dmy = ""
     try:
         parsed_period_end = date.fromisoformat(period_end)
@@ -592,9 +649,12 @@ Rules:
 - numeric_value must be a number (strip commas)
 - unit should match catalog (crore, Rs, etc.)
 - evidence: short verbatim snippet containing the number
+- source_page is required and must be the number from the # Page heading that contains the evidence
+- Page numbers available in this chunk: {marked_page_text}
+- Never invent a page number or cite a page outside the available page numbers
 - confidence: 0.0 to 1.0
 
-Return JSON object: {{"facts": [{{"fact_key": "...", "numeric_value": 0.0, "unit": "...", "basis": "consolidated", "evidence": "...", "confidence": 0.9}}]}}
+Return JSON object: {{"facts": [{{"fact_key": "...", "numeric_value": 0.0, "unit": "...", "basis": "consolidated", "source_page": 1, "evidence": "...", "confidence": 0.9}}]}}
 If no facts found, return {{"facts": []}}.
 
 Markdown:
@@ -608,7 +668,9 @@ Markdown:
     )
     payload = json.loads((response.output_text or "{}").strip())
     facts = payload.get("facts") or []
-    return [fact for fact in facts if isinstance(fact, dict)]
+    return _validate_fact_source_pages(
+        [fact for fact in facts if isinstance(fact, dict)], chunk
+    )
 
 
 def _presentation_catalog_aliases(facts_catalog: dict[str, Any]) -> tuple[dict[str, str], str]:
@@ -1608,7 +1670,7 @@ def extract_and_persist_values(
     )
 
     if missing_keys and not unsafe_multi_issuer_publication:
-        chunks = _chunk(markdown)
+        chunks = _chunk_financial_markdown(markdown)
         workers = min(max(extraction_workers, 1), len(chunks)) if chunks else 1
         logger.info(
             "Running LLM fallback over %s markdown chunks with %s worker(s) for missing facts",

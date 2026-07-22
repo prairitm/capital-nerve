@@ -9,6 +9,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from values_db import bootstrap_schema
 from values_service import (
+    _chunk_financial_markdown,
+    _validate_fact_source_pages,
     canonicalize_facts,
     is_multi_issuer_newspaper,
     persist_extracted_values,
@@ -16,6 +18,29 @@ from values_service import (
 
 
 class ValuesProvenanceTest(unittest.TestCase):
+    def test_financial_chunks_preserve_page_markers(self) -> None:
+        markdown = "# Page 1\n\n" + ("Revenue 100\n" * 20) + "\n# Page 2\n\nPAT 20"
+        chunks = _chunk_financial_markdown(markdown, max_chars=100)
+
+        self.assertGreater(len(chunks), 2)
+        self.assertTrue(all(chunk.startswith("# Page ") for chunk in chunks))
+        self.assertIn("# Page 2", chunks[-1])
+
+    def test_llm_source_page_must_match_chunk_marker(self) -> None:
+        chunk = "# Page 7\n\nRevenue from operations | 1,234.50"
+        rows = _validate_fact_source_pages(
+            [
+                {"fact_key": "revenue_from_operations", "source_page": 7},
+                {"fact_key": "pat", "source_page": 8},
+                {"fact_key": "ebitda", "source_page": "not-a-page"},
+            ],
+            chunk,
+        )
+
+        self.assertEqual(rows[0]["source_page"], 7)
+        self.assertIsNone(rows[1]["source_page"])
+        self.assertIsNone(rows[2]["source_page"])
+
     def test_upstream_statement_conflict_remains_review_required(self) -> None:
         rows = canonicalize_facts(
             [
