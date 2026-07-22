@@ -35,6 +35,9 @@ class Settings:
         self.email_max_attempts = int(os.getenv("V4_EMAIL_MAX_ATTEMPTS", "5"))
         self.email_lease_seconds = int(os.getenv("V4_EMAIL_LEASE_SECONDS", "120"))
         self.email_worker_interval_seconds = float(os.getenv("V4_EMAIL_WORKER_INTERVAL_SECONDS", "2"))
+        self.review_reconciliation_interval_seconds = float(
+            os.getenv("MONITOR_REVIEW_RECONCILIATION_INTERVAL_SECONDS", "5")
+        )
         self.smtp_timeout_seconds = float(os.getenv("V4_SMTP_TIMEOUT_SECONDS", "30"))
         self.service_urls = {
             "company": os.getenv("MONITOR_COMPANY_URL", "http://127.0.0.1:8020"),

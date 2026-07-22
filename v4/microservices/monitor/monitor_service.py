@@ -9,6 +9,7 @@ from types import SimpleNamespace
 from zoneinfo import ZoneInfo
 
 from run import request_json, run_exact_document_flow
+from reconcile_reviews import apply_approved_reviews, connect as reconciliation_conn, recompute_event
 
 from .monitor_config import Settings
 from .monitor_db import (
@@ -83,6 +84,11 @@ class MonitorRuntime:
             threading.Thread(target=self._poll_loop, name="filing-poller", daemon=True),
             threading.Thread(target=self._worker_loop, name="filing-worker", daemon=True),
             threading.Thread(target=self._notification_loop, name="email-worker", daemon=True),
+            threading.Thread(
+                target=self._review_reconciliation_loop,
+                name="review-reconciler",
+                daemon=True,
+            ),
         ]
         for thread in self.threads:
             thread.start()
@@ -102,6 +108,58 @@ class MonitorRuntime:
             "smtp_configured": bool(self.settings.smtp_password),
             "app_db_path": str(self.settings.app_db_path),
         }
+
+    def _reconcile_approved_reviews(self) -> int:
+        app = reconciliation_conn(self.settings.app_db_path, writable=True)
+        try:
+            due = app.execute(
+                """
+                SELECT 1 FROM fact_review_decisions
+                WHERE decision = 'approved' AND (
+                    application_status IN ('pending', 'failed')
+                    OR (application_status = 'applied' AND recompute_status IN ('pending', 'failed'))
+                )
+                LIMIT 1
+                """
+            ).fetchone()
+            if due is None:
+                return 0
+
+            analytics = reconciliation_conn(self.settings.analytics_db_path, writable=True)
+            try:
+                results = apply_approved_reviews(
+                    analytics,
+                    app,
+                    applied_by="automatic-review-reconciler",
+                    recompute=recompute_event,
+                )
+            finally:
+                analytics.close()
+        finally:
+            app.close()
+        for result in results:
+            if result.recompute_status == "failed" or result.status == "invalid":
+                logger.error(
+                    "Review reconciliation %s failed: %s",
+                    result.resolved_fact_id,
+                    result.message,
+                )
+            else:
+                logger.info(
+                    "Review reconciliation %s completed (%s)",
+                    result.resolved_fact_id,
+                    result.recompute_status,
+                )
+        return len(results)
+
+    def _review_reconciliation_loop(self) -> None:
+        while not self.stop_event.is_set():
+            try:
+                self._reconcile_approved_reviews()
+                self.stop_event.wait(self.settings.review_reconciliation_interval_seconds)
+            except Exception:
+                logger.exception("Review reconciliation loop error")
+                self.stop_event.wait(self.settings.review_reconciliation_interval_seconds)
 
     def _company_symbol(self, company_id: str) -> str:
         uri = f"file:{self.settings.analytics_db_path}?mode=ro"

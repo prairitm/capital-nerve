@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowUpRight, ChevronDown, FileSearch, FileText, Sparkles } from "lucide-react";
+import { ArrowUpRight, ChevronDown, FileSearch, FileText, Loader2, Sparkles } from "lucide-react";
 import clsx from "clsx";
 import { api } from "@/api/client";
 import type {
@@ -1009,6 +1009,8 @@ export function EventDetail() {
     queryKey: ["event", eventId],
     queryFn: () => api<EventDetailT>(`/events/${eventId}`),
     enabled: !!eventId,
+    refetchInterval: (query) =>
+      query.state.data?.intelligence_status?.state === "processing" ? 15_000 : false,
   });
   const { data, isLoading } = eventQuery;
 
@@ -1091,6 +1093,22 @@ export function EventDetail() {
         ) : null}
         </div>
       </header>
+
+      {data.intelligence_status?.state === "processing" && (
+        <section className="rounded-2xl border border-brand/25 bg-brand/5 px-5 py-4" role="status">
+          <div className="flex items-start gap-3">
+            <Loader2 className="mt-0.5 shrink-0 animate-spin text-brand" size={18} />
+            <div>
+              <h2 className="text-sm font-semibold text-ink">Intelligence processing</h2>
+              <p className="mt-1 text-sm leading-6 text-ink-mute">
+                Some extracted facts are being verified. Current signals use verified facts and
+                will refresh automatically when verification finishes. You can return to
+                this update later.
+              </p>
+            </div>
+          </div>
+        </section>
+      )}
 
       <QuarterAtGlance
         sections={allDocumentSections}

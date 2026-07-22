@@ -280,6 +280,11 @@ export interface CompanyHub {
 export interface EventDetail {
   event: CompanyEvent;
   company: Company | null;
+  intelligence_status: {
+    state: "processing" | "ready";
+    pending_facts: number;
+    verified_facts: number;
+  };
   facts: ExtractedValue[];
   fact_periods: FactPeriod[];
   selected_fact_period_end: string | null;

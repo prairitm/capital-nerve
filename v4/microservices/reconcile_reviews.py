@@ -1,8 +1,8 @@
 """Apply approved fact reviews through a controlled, resumable workflow.
 
-The administrator API only records decisions in the application database. This
-maintenance command is the sole writer that promotes an approved observation
-into analytics. Preview is the default; ``--apply`` is required to mutate data.
+The administrator API only records decisions in the application database. The
+monitor invokes this workflow automatically; this module's CLI remains available
+for preview and recovery. CLI preview is the default and ``--apply`` mutates data.
 """
 
 from __future__ import annotations
@@ -587,9 +587,10 @@ def _quarter_context(context: dict[str, Any]) -> tuple[int, int]:
 
 def recompute_event(analytics: sqlite3.Connection, context: dict[str, Any]) -> None:
     base = Path(__file__).resolve().parent
-    for directory in (base / "values", base / "metrics", base / "signals"):
+    for directory in (base / "values", base / "metrics", base / "signals", base / "alerts"):
         if str(directory) not in sys.path:
             sys.path.insert(0, str(directory))
+    from alerts_service import persist_intelligence_cards
     from metrics_service import compute_and_persist_metrics
     from signals_service import evaluate_and_persist_signals
 
@@ -609,6 +610,11 @@ def recompute_event(analytics: sqlite3.Connection, context: dict[str, Any]) -> N
         period_fy_start=fy_start,
     )
     evaluate_and_persist_signals(analytics, **kwargs)
+    persist_intelligence_cards(
+        analytics,
+        company_id=str(context["company_id"]),
+        event_id=str(context["id"]),
+    )
 
 
 def _parser() -> argparse.ArgumentParser:

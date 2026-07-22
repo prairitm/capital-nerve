@@ -192,6 +192,7 @@ company is added; historical filings are not reprocessed.
 | Variable | Default | Purpose |
 | --- | --- | --- |
 | `MONITOR_POLL_INTERVAL_SECONDS` | `120` | Seconds between successful company polls |
+| `MONITOR_REVIEW_RECONCILIATION_INTERVAL_SECONDS` | `5` | Seconds between checks for newly approved fact reviews |
 | `MONITOR_MAX_ATTEMPTS` | `5` | Maximum full-pipeline attempts per filing |
 | `MONITOR_PIPELINE_VERSION` | `v4-1` | Idempotency version for durable jobs |
 | `MONITOR_FLOW_TIMEOUT_SECONDS` | `1800` | Timeout for one exact-document flow |
@@ -209,9 +210,13 @@ and timestamp. They do not mutate the read-only analytics database and do not
 auto-publish a fact. A later controlled reconciliation step must apply approved
 decisions to analytics before metrics or signals may consume them. Facts whose
 resolution status is not exactly `resolved` are excluded from those downstream
-calculations.
+calculations. Event pages show **Intelligence processing** while a review or its
+dependent recomputation is outstanding and poll for refreshed metrics and signals;
+watchlist notification delivery is not delayed by that review.
 
-Preview all pending approvals without writing either database:
+The watchlist monitor automatically applies new approvals and recomputes their
+dependent metrics, signals, and intelligence cards. For maintenance or recovery,
+preview pending approvals without writing either database:
 
 ```bash
 python v4/microservices/reconcile_reviews.py

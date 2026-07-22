@@ -11,6 +11,11 @@ export type SourceBbox = {
   y1: number;
 };
 
+export type PdfHighlightResult = {
+  matched: boolean;
+  target: HTMLElement | null;
+};
+
 const MAX_QUOTE_LEN = 600;
 const NUMBER_RE = /\(?[-+]?\d[\d,]*(?:\.\d+)?\)?/g;
 
@@ -387,7 +392,7 @@ function removeValueOverlays(textLayer: HTMLElement) {
   textLayer.querySelectorAll(".evidence-value-highlight").forEach((el) => el.remove());
 }
 
-function addValueOverlay(textLayer: HTMLElement, rect: DOMRect) {
+function addValueOverlay(textLayer: HTMLElement, rect: DOMRect): HTMLElement {
   const overlay = document.createElement("div");
   overlay.className = "evidence-value-highlight";
   overlay.style.left = `${rect.left}px`;
@@ -395,6 +400,7 @@ function addValueOverlay(textLayer: HTMLElement, rect: DOMRect) {
   overlay.style.width = `${rect.width}px`;
   overlay.style.height = `${rect.height}px`;
   textLayer.appendChild(overlay);
+  return overlay;
 }
 
 function matchTargetValueToPdfSpans(
@@ -404,8 +410,8 @@ function matchTargetValueToPdfSpans(
   pdfText: string,
   highlights: EvidenceHighlights,
   referenceText: string | null | undefined,
-): boolean {
-  if (highlights.targetValues.length === 0) return false;
+): HTMLElement | null {
+  if (highlights.targetValues.length === 0) return null;
 
   const labelWords = sourceLabelWords(highlights.quoteTexts[0] ?? referenceText ?? "");
   const candidates: ValueCandidate[] = [];
@@ -443,7 +449,7 @@ function matchTargetValueToPdfSpans(
     }
   }
 
-  if (candidates.length === 0) return false;
+  if (candidates.length === 0) return null;
 
   let best = candidates[0];
   for (const candidate of candidates) {
@@ -452,37 +458,46 @@ function matchTargetValueToPdfSpans(
     }
   }
 
-  for (const rect of best.rects) addValueOverlay(textLayer, rect);
-  if (best.rects[0]) {
-    const layerRect = textLayer.getBoundingClientRect();
-    window.scrollTo({
-      top: window.scrollY + layerRect.top + best.rects[0].top - window.innerHeight / 2,
-      behavior: "smooth",
-    });
+  let firstOverlay: HTMLElement | null = null;
+  for (const rect of best.rects) {
+    const overlay = addValueOverlay(textLayer, rect);
+    firstOverlay ??= overlay;
   }
-  return true;
+  return firstOverlay;
 }
 
 export function applyPdfPageHighlights(
   textLayer: HTMLElement,
   highlights: EvidenceHighlights,
   referenceText?: string | null,
-): boolean {
+): PdfHighlightResult {
   const spans = [...textLayer.querySelectorAll('[role="presentation"]')] as HTMLElement[];
   spans.forEach((el) => el.classList.remove("evidence-highlight"));
   removeValueOverlays(textLayer);
 
-  if (spans.length === 0 || highlights.quoteTexts.length === 0) return false;
+  if (spans.length === 0 || highlights.quoteTexts.length === 0) {
+    return { matched: false, target: null };
+  }
 
   const { text: pdfText, ranges } = joinPdfTextSpans(spans);
   const hit = new Set<HTMLElement>();
   const refNorm = referenceText ? normalizeQuoteText(referenceText) : "";
 
-  if (matchTargetValueToPdfSpans(textLayer, spans, ranges, pdfText, highlights, referenceText)) {
-    return true;
+  const valueTarget = matchTargetValueToPdfSpans(
+    textLayer,
+    spans,
+    ranges,
+    pdfText,
+    highlights,
+    referenceText,
+  );
+  if (valueTarget) {
+    return { matched: true, target: valueTarget };
   }
 
-  if (highlights.targetValues.length > 0) return false;
+  if (highlights.targetValues.length > 0) {
+    return { matched: false, target: null };
+  }
 
   for (const quote of highlights.quoteTexts) {
     let matched = false;
@@ -507,12 +522,7 @@ export function applyPdfPageHighlights(
 
   hit.forEach((el) => el.classList.add("evidence-highlight"));
 
-  const first = [...hit][0];
-  if (first) {
-    first.scrollIntoView({ block: "center", behavior: "smooth" });
-  }
-
-  return hit.size > 0;
+  return { matched: hit.size > 0, target: [...hit][0] ?? null };
 }
 
 /** Wrap full source-quote matches in `<mark class="evidence-highlight">`. */

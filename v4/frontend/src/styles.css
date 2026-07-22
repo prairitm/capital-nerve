@@ -58,6 +58,37 @@ body {
   display: none;
 }
 
+.pdf-scroll-viewport {
+  scrollbar-gutter: stable;
+}
+
+.pdf-page-frame {
+  background: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 3px;
+  box-shadow:
+    0 1px 1px rgba(0, 0, 0, 0.35),
+    0 16px 40px rgba(0, 0, 0, 0.28);
+}
+
+.pdf-page-frame .react-pdf__Page,
+.pdf-page-frame .react-pdf__Page__canvas {
+  border-radius: 2px;
+}
+
+.pdf-page-number {
+  position: absolute;
+  top: 0.25rem;
+  right: calc(100% + 0.625rem);
+  z-index: 2;
+  min-width: 1.5rem;
+  color: #7d879b;
+  font-size: 0.625rem;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.25rem;
+  text-align: right;
+}
+
 @layer components {
   .card {
     @apply rounded-2xl bg-surface border border-line shadow-card;
@@ -122,6 +153,7 @@ body {
     border: 2px solid rgba(34, 197, 94, 0.75);
     border-radius: 2px;
     box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.15);
+    z-index: 4;
   }
   .evidence-value-highlight {
     position: absolute;

@@ -608,6 +608,12 @@ def persist_fired_signals(
     event_id: str,
     fired_signals: list[dict[str, Any]],
 ) -> None:
+    # Cards reference signals without ON DELETE CASCADE. Remove this derived
+    # presentation layer before replacing the event's signals.
+    conn.execute(
+        "DELETE FROM intelligence_cards WHERE company_id = ? AND event_id = ?",
+        (company_id, event_id),
+    )
     conn.execute(
         "DELETE FROM signals WHERE company_id = ? AND event_id = ?",
         (company_id, event_id),

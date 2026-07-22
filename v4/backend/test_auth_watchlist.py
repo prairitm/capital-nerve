@@ -12,6 +12,7 @@ from fastapi.testclient import TestClient
 from app_db import get_app_conn, migrate_app_db, utc_iso, utc_now
 from config import settings
 from main import app
+from routers.events import _intelligence_status
 from security import bootstrap_admin, hash_password
 
 
@@ -396,13 +397,42 @@ class AuthWatchlistApiTest(unittest.TestCase):
         self.client.delete("/watchlist/companies/beta-id")
         self.assertEqual(["event-1"], [item["event"]["id"] for item in self.client.get("/feed").json()])
 
+    def test_event_reports_intelligence_processing_until_review_is_settled(self):
+        analytics = sqlite3.connect(settings.db_path)
+        analytics.row_factory = sqlite3.Row
+        self.addCleanup(analytics.close)
+        self.assertEqual(
+            {"state": "processing", "pending_facts": 1, "verified_facts": 0},
+            _intelligence_status(analytics, "event-1"),
+        )
+
+        with get_app_conn() as conn:
+            now = utc_iso()
+            conn.execute(
+                """
+                INSERT INTO fact_review_decisions(
+                    resolved_fact_id, company_id, event_id, fact_code, decision,
+                    selected_observation_id, reviewer_note, reviewed_by, reviewed_at,
+                    updated_at, application_status, recompute_status
+                ) VALUES (
+                    'review-1', 'alpha-id', 'event-1', 'revenue_from_operations',
+                    'rejected', NULL, 'Not reliable', ?, ?, ?,
+                    'not_applicable', 'not_applicable'
+                )
+                """,
+                (self.admin_id, now, now),
+            )
+            conn.commit()
+
+        self.assertEqual("ready", _intelligence_status(analytics, "event-1")["state"])
+
     def test_migration_and_admin_bootstrap_are_idempotent(self):
         migrate_app_db()
         with get_app_conn() as conn:
             versions = conn.execute("SELECT COUNT(*) AS count FROM schema_migrations").fetchone()[
                 "count"
             ]
-        self.assertEqual(4, versions)
+        self.assertEqual(5, versions)
         settings.admin_email = "bootstrap@example.com"
         settings.admin_password = "BootstrapPassword123!"
         bootstrap_admin()
