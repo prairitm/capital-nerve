@@ -72,6 +72,26 @@ class DownloadRegressionTests(unittest.TestCase):
         self.assertEqual(session.get.call_count, 2)
         sleep.assert_called_once()
 
+    @patch("nse_fr_resolver.time.sleep")
+    def test_pdf_download_retries_html_block_page_with_http_200(self, sleep) -> None:
+        blocked = Mock()
+        blocked.raise_for_status.return_value = None
+        blocked.content = b"<html>Request blocked</html>"
+        blocked.headers = {"content-type": "text/html"}
+        pdf = Mock()
+        pdf.raise_for_status.return_value = None
+        pdf.content = b"%PDF-result"
+        pdf.headers = {"content-type": "application/pdf"}
+        session = Mock()
+        session.get.side_effect = [blocked, pdf]
+
+        self.assertEqual(
+            download_pdf("https://example.test/result.pdf", session),
+            b"%PDF-result",
+        )
+        self.assertEqual(session.get.call_count, 2)
+        sleep.assert_called_once()
+
 
 class PresentationExclusionTests(unittest.TestCase):
     def test_bharat_coal_title_is_classified_as_investor_presentation(self) -> None:

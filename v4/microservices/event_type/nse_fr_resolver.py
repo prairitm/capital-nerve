@@ -238,24 +238,24 @@ def download_pdf(
 ) -> bytes:
     """Download a PDF from NSE archives using the warmed session."""
     headers = {"Referer": referer} if referer else None
-    response = None
     for attempt in range(_PDF_DOWNLOAD_ATTEMPTS):
         try:
             response = session.get(url, headers=headers, timeout=timeout)
             response.raise_for_status()
-            break
+            data = response.content
+            if not data:
+                raise requests.RequestException(f"Empty response from {url}")
+            if not data.startswith(_PDF_MAGIC):
+                content_type = response.headers.get("content-type", "unknown")
+                raise requests.RequestException(
+                    f"Non-PDF response from {url} (content-type: {content_type})"
+                )
+            return data
         except requests.RequestException:
             if attempt + 1 == _PDF_DOWNLOAD_ATTEMPTS:
                 raise
             time.sleep(_PDF_DOWNLOAD_BACKOFF_SECONDS * (2**attempt))
-    if response is None:  # pragma: no cover - loop always assigns or raises
-        raise requests.RequestException(f"Failed to download {url}")
-    data = response.content
-    if not data:
-        raise ValueError(f"Empty response from {url}")
-    if not data.startswith(_PDF_MAGIC):
-        raise ValueError(f"Not a PDF (no %PDF- header): {url}")
-    return data
+    raise requests.RequestException(f"Failed to download {url}")  # pragma: no cover
 
 
 def pdf_hash(pdf_bytes: bytes) -> str:
