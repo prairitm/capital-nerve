@@ -9,11 +9,30 @@ from fastapi.responses import FileResponse
 
 from config import REPO_ROOT, settings
 from db import get_conn
-from queries import uses_eight_step_metrics
+from queries import document_facts, uses_eight_step_metrics
 from serializers import company_dict, document_dict, event_dict
 from source_locate import locate_source
 
 router = APIRouter(tags=["documents"])
+
+_SUMMARY_FACT_LIMIT = 4
+_SUMMARY_FACT_PRIORITY = {
+    "revenue_from_operations": 100,
+    "revenue": 99,
+    "pat": 95,
+    "profit_after_tax": 95,
+    "ebitda": 90,
+    "ebitda_margin": 88,
+    "total_income": 87,
+    "operating_margin": 86,
+    "total_expenses": 85,
+    "order_book": 84,
+    "cash_flow_from_operations": 82,
+    "net_debt": 80,
+    "guidance": 78,
+    "management_outlook": 76,
+    "capex": 74,
+}
 
 
 def _parsed_md_path(document_id: str) -> Path:
@@ -45,6 +64,67 @@ def _counts(conn, event_id: str | None) -> dict[str, int]:
     }
 
 
+def _has_fact_value(fact: dict) -> bool:
+    return any(
+        fact.get(key) is not None
+        for key in ("value_numeric", "value_text", "value_lower", "value_upper")
+    )
+
+
+def _summary_fact_rank(fact: dict) -> tuple[int, int, float]:
+    code = str(fact.get("value_code") or "").lower()
+    priority = _SUMMARY_FACT_PRIORITY.get(code, 0)
+    if not priority:
+        priority = max(
+            (
+                score - 1
+                for term, score in _SUMMARY_FACT_PRIORITY.items()
+                if term in code
+            ),
+            default=0,
+        )
+    explicit_guidance = 1 if fact.get("is_explicit_guidance") else 0
+    confidence = float(fact.get("confidence") or 0)
+    return priority, explicit_guidance, confidence
+
+
+def _summary_fact_family(code: str) -> str:
+    lowered = code.lower()
+    if lowered == "pat" or lowered.startswith("pat_") or "profit_after_tax" in lowered:
+        return "pat"
+    if "revenue" in lowered:
+        return "revenue"
+    if "ebitda" in lowered:
+        return "ebitda"
+    return lowered
+
+
+def build_filing_summary(facts: list[dict]) -> dict | None:
+    """Select a few material stored facts; no LLM call or fact mutation."""
+    ranked = sorted(
+        (fact for fact in facts if _has_fact_value(fact)),
+        key=_summary_fact_rank,
+        reverse=True,
+    )
+    highlights: list[dict] = []
+    seen_families: set[str] = set()
+    for fact in ranked:
+        code = str(fact.get("value_code") or "")
+        family = _summary_fact_family(code)
+        if not code or family in seen_families:
+            continue
+        seen_families.add(family)
+        highlights.append(fact)
+        if len(highlights) >= _SUMMARY_FACT_LIMIT:
+            break
+    if not highlights:
+        return None
+    return {
+        "available_fact_count": len(facts),
+        "highlights": highlights,
+    }
+
+
 @router.get("/documents/{document_id}")
 def document_detail(document_id: str):
     with get_conn() as conn:
@@ -61,12 +141,18 @@ def document_detail(document_id: str):
             "SELECT * FROM events WHERE document_id = ? ORDER BY event_date DESC LIMIT 1",
             (document_id,),
         ).fetchone()
+        facts = document_facts(
+            conn,
+            document_id=document_id,
+            fallback_event_id=event["id"] if event else None,
+        )
 
         return {
             "document": document_dict(doc),
             "company": company_dict(company) if company else None,
             "event": event_dict(event) if event else None,
             "counts": _counts(conn, event["id"] if event else None),
+            "filing_summary": build_filing_summary(facts),
         }
 
 

@@ -9,7 +9,7 @@ import logging
 import re
 import sqlite3
 import time
-from datetime import date, datetime
+from datetime import UTC, date, datetime
 from pathlib import Path
 from typing import Any, Callable
 
@@ -74,6 +74,207 @@ def load_env_value(key: str) -> str:
         if line.startswith(f"{key}="):
             return line.split("=", 1)[1].strip()
     return ""
+
+
+_EVENT_SUMMARY_RESPONSE_FORMAT = {
+    "type": "json_schema",
+    "name": "event_summary",
+    "strict": True,
+    "schema": {
+        "type": "object",
+        "properties": {
+            "headline": {"type": "string"},
+            "summary": {"type": "string"},
+            "key_points": {
+                "type": "array",
+                "items": {"type": "string"},
+                "minItems": 3,
+                "maxItems": 3,
+            },
+            "investor_takeaway": {"type": "string"},
+        },
+        "required": ["headline", "summary", "key_points", "investor_takeaway"],
+        "additionalProperties": False,
+    },
+}
+
+
+def _summary_markdown(markdown: str, max_chars: int = 400_000) -> str:
+    if len(markdown) <= max_chars:
+        return markdown
+    leading_chars = int(max_chars * 0.6)
+    trailing_chars = max_chars - leading_chars
+    return (
+        markdown[:leading_chars]
+        + "\n\n[Middle of long document omitted for summary cost control]\n\n"
+        + markdown[-trailing_chars:]
+    )
+
+
+def generate_event_summary(
+    client: Any,
+    *,
+    model: str,
+    markdown: str,
+    company_name: str,
+    event_title: str,
+    event_type: str,
+) -> dict[str, Any]:
+    prompt = f"""Create a high-impact professional investor summary of this Indian corporate filing.
+
+Company: {company_name}
+Event type: {event_type}
+Filing title: {event_title}
+
+Requirements:
+- Use only information explicitly present in the markdown. Never invent, extrapolate, or add outside knowledge.
+- Prioritize material financial performance, operational change, management decisions, guidance, risks, and catalysts.
+- Make the headline specific and decisive, not promotional, with at most 14 words.
+- Use neutral, professional wording; avoid promotional or emotive verbs such as "sparks", "soars", or "plunges".
+- Write a concise 2-3 sentence executive summary that explains what changed and why it matters.
+- Return exactly 3 key points. Use concrete figures when the filing provides them.
+- Read the unit printed above each table and preserve every number in that exact unit. For example,
+  if a table is labelled "INR crore", 20,211 means INR 20,211 crore, never INR 20.21 crore.
+- Write one professional investor takeaway describing the central implication, not investment advice.
+- Keep reporting periods exactly as written in the filing; do not invent or shorten a fiscal-year label.
+- Do not speculate about tax, impairment, valuation, or future revenue mix unless the filing explicitly does so.
+- In the takeaway, connect only reported facts. Do not assert a transaction's accounting or
+  consolidated impact unless the filing explicitly states it.
+- Avoid filler such as "the company announced" when a more direct statement is possible.
+- Preserve uncertainty and qualifiers from the filing.
+
+Filing markdown:
+{_summary_markdown(markdown)}
+"""
+    request_options: dict[str, Any] = {
+        "model": model,
+        "input": [{"role": "user", "content": prompt}],
+        "text": {"format": _EVENT_SUMMARY_RESPONSE_FORMAT},
+        "max_output_tokens": 1_500,
+    }
+    if model.startswith("gpt-5"):
+        request_options["reasoning"] = {"effort": "minimal"}
+    response = client.responses.create(
+        **request_options,
+    )
+    payload = json.loads((response.output_text or "{}").strip())
+    headline = str(payload.get("headline") or "").strip()
+    summary = str(payload.get("summary") or "").strip()
+    key_points = [
+        str(point).strip()
+        for point in (payload.get("key_points") or [])
+        if str(point).strip()
+    ][:3]
+    investor_takeaway = str(payload.get("investor_takeaway") or "").strip()
+    if not headline or not summary or len(key_points) != 3 or not investor_takeaway:
+        raise RuntimeError("OpenAI returned an incomplete event summary")
+    return {
+        "headline": headline,
+        "summary": summary,
+        "key_points": key_points,
+        "investor_takeaway": investor_takeaway,
+    }
+
+
+def generate_event_summary_for_event(
+    conn: sqlite3.Connection,
+    *,
+    client: Any,
+    model: str,
+    event_id: str,
+    force: bool = False,
+) -> dict[str, Any]:
+    bootstrap_schema(conn)
+    event = conn.execute(
+        "SELECT * FROM events WHERE id = ?", (event_id,)
+    ).fetchone()
+    if event is None:
+        raise LookupError("Event not found")
+    document_id = str(event["document_id"] or "")
+    if not document_id:
+        raise RuntimeError("Event has no source document")
+    document = conn.execute(
+        "SELECT * FROM documents WHERE id = ?", (document_id,)
+    ).fetchone()
+    if document is None:
+        raise RuntimeError("Source document not found")
+    markdown_path = settings.parsed_dir / f"{document_id}.md"
+    if not markdown_path.exists():
+        raise RuntimeError("Parsed markdown is not available for this event")
+    markdown = markdown_path.read_text(encoding="utf-8")
+    markdown_sha256 = hashlib.sha256(markdown.encode("utf-8")).hexdigest()
+
+    if not force:
+        cached = conn.execute(
+            """
+            SELECT * FROM event_summaries
+            WHERE event_id = ? AND markdown_sha256 = ? AND model = ?
+            """,
+            (event_id, markdown_sha256, model),
+        ).fetchone()
+        if cached is not None:
+            return {
+                "event_id": event_id,
+                "document_id": document_id,
+                "model": cached["model"],
+                "headline": cached["headline"],
+                "summary": cached["summary"],
+                "key_points": json.loads(cached["key_points_json"]),
+                "investor_takeaway": cached["investor_takeaway"],
+                "generated_at": cached["updated_at"],
+                "cached": True,
+            }
+
+    company = conn.execute(
+        "SELECT name FROM companies WHERE id = ?", (event["company_id"],)
+    ).fetchone()
+    generated = generate_event_summary(
+        client,
+        model=model,
+        markdown=markdown,
+        company_name=str(company["name"] if company is not None else "Unknown company"),
+        event_title=str(event["title"] or document["title"] or "Corporate filing"),
+        event_type=str(event["event_type"] or document["document_kind"] or "Corporate filing"),
+    )
+    now = datetime.now(UTC).isoformat(timespec="seconds").replace("+00:00", "Z")
+    conn.execute(
+        """
+        INSERT INTO event_summaries (
+            event_id, document_id, markdown_sha256, model, headline, summary,
+            key_points_json, investor_takeaway, created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ON CONFLICT(event_id) DO UPDATE SET
+            document_id = excluded.document_id,
+            markdown_sha256 = excluded.markdown_sha256,
+            model = excluded.model,
+            headline = excluded.headline,
+            summary = excluded.summary,
+            key_points_json = excluded.key_points_json,
+            investor_takeaway = excluded.investor_takeaway,
+            updated_at = excluded.updated_at
+        """,
+        (
+            event_id,
+            document_id,
+            markdown_sha256,
+            model,
+            generated["headline"],
+            generated["summary"],
+            json.dumps(generated["key_points"], ensure_ascii=False),
+            generated["investor_takeaway"],
+            now,
+            now,
+        ),
+    )
+    conn.commit()
+    return {
+        "event_id": event_id,
+        "document_id": document_id,
+        "model": model,
+        **generated,
+        "generated_at": now,
+        "cached": False,
+    }
 
 
 def _event_context(conn: sqlite3.Connection, event_id: str) -> dict[str, Any]:
@@ -1468,6 +1669,7 @@ def extract_and_persist_values(
     openai_api_key = load_env_value("OPENAI_API_KEY")
     openai_model = load_env_value("OPENAI_MODEL") or "gpt-4.1-mini"
     openai_parse_model = load_env_value("OPENAI_PARSE_MODEL") or openai_model
+    openai_summary_model = load_env_value("OPENAI_SUMMARY_MODEL") or "gpt-4.1-mini"
     if not openai_api_key:
         raise RuntimeError(f"OPENAI_API_KEY not found in {settings.env_path}")
 
@@ -1537,6 +1739,32 @@ def extract_and_persist_values(
         quarter=reporting_period.quarter,
         fy_start_year=reporting_period.fy_start_year,
     )
+
+    try:
+        progress(
+            "generate_summary",
+            "Generating professional filing summary",
+            model=openai_summary_model,
+        )
+        summary_result = generate_event_summary_for_event(
+            conn,
+            client=client,
+            model=openai_summary_model,
+            event_id=event_id,
+        )
+        progress(
+            "summary_ready",
+            "Filing summary is ready",
+            model=summary_result["model"],
+            cached=summary_result["cached"],
+        )
+    except Exception:
+        # Summary quality must not block the deterministic extraction pipeline.
+        logger.exception("Could not generate filing summary for event %s", event_id)
+        progress(
+            "summary_skipped",
+            "Filing summary could not be generated; extraction will continue",
+        )
 
     if event_type in {"Investor Presentation", "Earnings Call Transcript"}:
         progress("load_catalog", "Loading unified document facts catalog", event_type=event_type)

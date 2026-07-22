@@ -21,6 +21,8 @@ from values_client import download_pdf
 from values_config import settings
 from values_db import get_conn
 from values_models import (
+    EventSummaryRequest,
+    EventSummaryResponse,
     ExtractedValueResponse,
     ExtractValuesJobStartResponse,
     ExtractValuesJobStatusResponse,
@@ -28,7 +30,11 @@ from values_models import (
     ExtractValuesResponse,
     ReportingPeriodResponse,
 )
-from values_service import extract_and_persist_values
+from values_service import (
+    extract_and_persist_values,
+    generate_event_summary_for_event,
+    load_env_value,
+)
 
 app = FastAPI(title="CapitalNerve Values Step Service")
 logger = logging.getLogger("uvicorn.error")
@@ -47,6 +53,39 @@ app.add_middleware(
 @app.get("/health")
 def health() -> dict[str, str | bool]:
     return {"ok": True, "db_path": str(settings.db_path)}
+
+
+@app.post("/values/summarize", response_model=EventSummaryResponse)
+def summarize_event(payload: EventSummaryRequest) -> EventSummaryResponse:
+    api_key = load_env_value("OPENAI_API_KEY")
+    model = load_env_value("OPENAI_SUMMARY_MODEL") or "gpt-4.1-mini"
+    if not api_key:
+        raise HTTPException(status_code=503, detail="OpenAI summary service is not configured")
+
+    from openai import OpenAI
+
+    client = OpenAI(
+        api_key=api_key,
+        timeout=settings.openai_timeout_seconds,
+        max_retries=settings.openai_max_retries,
+    )
+    try:
+        with get_conn() as conn:
+            result = generate_event_summary_for_event(
+                conn,
+                client=client,
+                model=model,
+                event_id=payload.event_id,
+                force=payload.force,
+            )
+    except LookupError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except RuntimeError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    except Exception as exc:
+        logger.exception("Event summary generation failed for %s", payload.event_id)
+        raise HTTPException(status_code=502, detail="Event summary generation failed") from exc
+    return EventSummaryResponse(**result)
 
 
 def _build_payload(

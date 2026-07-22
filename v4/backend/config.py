@@ -45,6 +45,9 @@ class Settings:
         self.company_service_url = os.getenv(
             "V4_COMPANY_SERVICE_URL", "http://127.0.0.1:8020"
         ).rstrip("/")
+        self.values_service_url = os.getenv(
+            "V4_VALUES_SERVICE_URL", "http://127.0.0.1:8023"
+        ).rstrip("/")
         self.nse_equity_csv_url = os.getenv(
             "V4_NSE_EQUITY_CSV_URL",
             "https://nsearchives.nseindia.com/content/equities/EQUITY_L.csv",

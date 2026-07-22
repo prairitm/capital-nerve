@@ -2,9 +2,13 @@
 
 from __future__ import annotations
 
+import json
+
+import httpx
 from fastapi import APIRouter, HTTPException, Query
 
 from app_db import get_app_conn
+from config import settings
 from db import get_conn
 from catalog import quarter_synthesis_config
 from queries import (
@@ -19,6 +23,31 @@ from queries import (
 from serializers import company_dict, event_dict
 
 router = APIRouter(tags=["events"])
+
+
+def _event_summary(conn, event_id: str) -> dict | None:
+    if not has_table(conn, "event_summaries"):
+        return None
+    row = conn.execute(
+        "SELECT * FROM event_summaries WHERE event_id = ?", (event_id,)
+    ).fetchone()
+    if row is None:
+        return None
+    try:
+        key_points = json.loads(row["key_points_json"])
+    except (TypeError, ValueError, json.JSONDecodeError):
+        key_points = []
+    return {
+        "event_id": event_id,
+        "document_id": row["document_id"],
+        "model": row["model"],
+        "headline": row["headline"],
+        "summary": row["summary"],
+        "key_points": key_points,
+        "investor_takeaway": row["investor_takeaway"],
+        "generated_at": row["updated_at"],
+        "cached": True,
+    }
 
 
 def _intelligence_status(conn, event_id: str) -> dict:
@@ -166,4 +195,41 @@ def event_detail(event_id: str, period_end: str | None = Query(default=None)):
             "related_events": [event_dict(e) for e in related_events],
             "document_sections": document_sections,
             "quarter_display": quarter_synthesis_config(),
+            "event_summary": _event_summary(conn, event_id),
         }
+
+
+@router.post("/events/{event_id}/summary")
+def generate_event_summary(event_id: str, force: bool = Query(default=False)):
+    with get_conn() as conn:
+        event_exists = conn.execute(
+            "SELECT 1 FROM events WHERE id = ?", (event_id,)
+        ).fetchone()
+        if event_exists is None:
+            raise HTTPException(status_code=404, detail="Event not found")
+        if not force:
+            cached = _event_summary(conn, event_id)
+            if cached is not None:
+                return cached
+
+    try:
+        response = httpx.post(
+            f"{settings.values_service_url}/values/summarize",
+            json={"event_id": event_id, "force": force},
+            timeout=90,
+        )
+        response.raise_for_status()
+    except httpx.HTTPStatusError as exc:
+        detail = "Event summary generation failed"
+        try:
+            payload = exc.response.json()
+            detail = str(payload.get("detail") or detail)
+        except (TypeError, ValueError):
+            pass
+        raise HTTPException(status_code=502, detail=detail) from exc
+    except httpx.HTTPError as exc:
+        raise HTTPException(
+            status_code=503,
+            detail="Event summary service is unavailable",
+        ) from exc
+    return response.json()

@@ -200,3 +200,29 @@ class ExtractValuesJobStatusResponse(BaseModel):
     progress: dict[str, Any] | None = None
     result: ExtractValuesResponse | None = None
     error: str | None = None
+
+
+class EventSummaryRequest(BaseModel):
+    event_id: str
+    force: bool = False
+
+    @validator("event_id")
+    @classmethod
+    def normalize_event_id(cls, value: str) -> str:
+        digest = value.strip()
+        if len(digest) != 64:
+            raise ValueError("event_id must be a 64-character sha256 hex digest")
+        int(digest, 16)
+        return digest
+
+
+class EventSummaryResponse(BaseModel):
+    event_id: str
+    document_id: str
+    model: str
+    headline: str
+    summary: str
+    key_points: list[str]
+    investor_takeaway: str
+    generated_at: str
+    cached: bool

@@ -95,6 +95,18 @@ CREATE TABLE IF NOT EXISTS intelligence_cards (
     confidence TEXT,
     display_status TEXT DEFAULT 'published'
 );
+CREATE TABLE IF NOT EXISTS event_summaries (
+    event_id TEXT PRIMARY KEY REFERENCES events(id),
+    document_id TEXT NOT NULL REFERENCES documents(id),
+    markdown_sha256 TEXT NOT NULL,
+    model TEXT NOT NULL,
+    headline TEXT NOT NULL,
+    summary TEXT NOT NULL,
+    key_points_json TEXT NOT NULL,
+    investor_takeaway TEXT NOT NULL,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
 """
 
 
