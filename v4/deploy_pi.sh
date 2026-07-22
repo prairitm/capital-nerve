@@ -145,6 +145,7 @@ write_configuration() {
     echo "OPENAI_API_KEY=${openai_key}"
     echo "OPENAI_MODEL=gpt-4.1-mini"
     echo "OPENAI_PARSE_MODEL=gpt-4.1-mini"
+    echo "OPENAI_SUMMARY_MODEL=gpt-4.1-mini"
   } >"${openai_tmp}"
 
   sudo install -d -m 750 -o root -g "${DEPLOY_GROUP}" "${ENV_DIR}"
