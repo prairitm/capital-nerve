@@ -393,12 +393,20 @@ function removeValueOverlays(textLayer: HTMLElement) {
 }
 
 function addValueOverlay(textLayer: HTMLElement, rect: DOMRect): HTMLElement {
+  const paddingX = Math.max(2, Math.min(4, rect.height * 0.28));
+  const paddingY = Math.max(1.5, Math.min(3, rect.height * 0.18));
+  const layerWidth = textLayer.clientWidth;
+  const layerHeight = textLayer.clientHeight;
+  const left = Math.max(0, rect.left - paddingX);
+  const top = Math.max(0, rect.top - paddingY);
+  const right = layerWidth > 0 ? Math.min(layerWidth, rect.right + paddingX) : rect.right + paddingX;
+  const bottom = layerHeight > 0 ? Math.min(layerHeight, rect.bottom + paddingY) : rect.bottom + paddingY;
   const overlay = document.createElement("div");
   overlay.className = "evidence-value-highlight";
-  overlay.style.left = `${rect.left}px`;
-  overlay.style.top = `${rect.top}px`;
-  overlay.style.width = `${rect.width}px`;
-  overlay.style.height = `${rect.height}px`;
+  overlay.style.left = `${left}px`;
+  overlay.style.top = `${top}px`;
+  overlay.style.width = `${Math.max(1, right - left)}px`;
+  overlay.style.height = `${Math.max(1, bottom - top)}px`;
   textLayer.appendChild(overlay);
   return overlay;
 }

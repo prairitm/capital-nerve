@@ -361,6 +361,8 @@ function PdfPageWithHighlights({
     [highlightText, highlightValue],
   );
   const scale = pdfPageWidth > 0 ? pageWidth / pdfPageWidth : 0;
+  const bboxPaddingX = 3;
+  const bboxPaddingY = 2;
 
   const paintHighlights = useCallback(() => {
     const layer = pageWrapRef.current?.querySelector(".react-pdf__Page__textContent");
@@ -422,10 +424,12 @@ function PdfPageWithHighlights({
           ref={bboxRef}
           className="evidence-bbox-highlight pointer-events-none absolute"
           style={{
-            left: bbox.x0 * scale,
-            top: bbox.y0 * scale,
-            width: (bbox.x1 - bbox.x0) * scale,
-            height: (bbox.y1 - bbox.y0) * scale,
+            left: Math.max(0, bbox.x0 * scale - bboxPaddingX),
+            top: Math.max(0, bbox.y0 * scale - bboxPaddingY),
+            width:
+              Math.min(pageWidth, bbox.x1 * scale + bboxPaddingX) -
+              Math.max(0, bbox.x0 * scale - bboxPaddingX),
+            height: (bbox.y1 - bbox.y0) * scale + bboxPaddingY * 2,
           }}
         />
       )}
