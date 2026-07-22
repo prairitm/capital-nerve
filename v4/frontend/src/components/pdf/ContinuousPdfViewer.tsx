@@ -194,7 +194,7 @@ export const ContinuousPdfViewer = forwardRef<
           </div>
         }
       >
-        <div className="mx-auto flex min-w-max flex-col items-center gap-5 px-4 py-6 md:gap-7 md:px-8 md:py-8">
+        <div className="mx-auto flex min-w-max flex-col items-center gap-5 px-3 py-6 md:gap-7 md:px-8 md:py-8">
           {pages.map((pageNumber) => (
             <PdfPageFrame
               key={pageNumber}

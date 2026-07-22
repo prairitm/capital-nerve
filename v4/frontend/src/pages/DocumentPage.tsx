@@ -36,7 +36,7 @@ export function DocumentPage() {
   const highlightValue = searchParams.get("value");
   const highlightContext = searchParams.get("context");
   const viewerHandleRef = useRef<ContinuousPdfViewerHandle>(null);
-  const viewerWidthRef = useRef<HTMLDivElement>(null);
+  const [viewerWidthElement, setViewerWidthElement] = useState<HTMLDivElement | null>(null);
   const [numPages, setNumPages] = useState(0);
   const [currentPage, setCurrentPage] = useState(pageFromUrl ?? 1);
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
@@ -98,7 +98,7 @@ export function DocumentPage() {
   }, [highlightKey, locate?.bbox]);
 
   useEffect(() => {
-    const element = viewerWidthRef.current;
+    const element = viewerWidthElement;
     if (!element) return;
     const update = () => {
       const availableWidth = Math.max(240, element.clientWidth - 64);
@@ -108,7 +108,7 @@ export function DocumentPage() {
     const observer = new ResizeObserver(update);
     observer.observe(element);
     return () => observer.disconnect();
-  }, [pdfUrl, highlightChecked, pdfHighlightMatched]);
+  }, [viewerWidthElement]);
 
   useEffect(() => {
     if (!documentId) return;
@@ -175,7 +175,7 @@ export function DocumentPage() {
   const pageWidth = Math.max(240, Math.round(fitPageWidth * zoom));
 
   return (
-    <div className="mx-auto flex h-[calc(100dvh-7.25rem)] min-h-[34rem] max-w-[1500px] flex-col overflow-hidden rounded-2xl border border-line bg-surface shadow-card lg:h-[calc(100dvh-3.5rem)]">
+    <div className="mx-auto flex h-[calc(100dvh-9rem)] min-h-[30rem] max-w-[1500px] flex-col overflow-hidden rounded-2xl border border-line bg-surface shadow-card lg:h-[calc(100dvh-3.5rem)] lg:min-h-[34rem]">
       <PdfViewerToolbar
         title={title}
         companyName={company?.name}
@@ -193,11 +193,11 @@ export function DocumentPage() {
       <div
         className={`grid min-h-0 flex-1 ${
           showMarkdownFallback
-            ? "grid-rows-[minmax(0,1fr)_minmax(10rem,auto)] lg:grid-cols-[minmax(0,1fr)_20rem] lg:grid-rows-1"
+            ? "grid-rows-[minmax(0,1fr)_minmax(9rem,38%)] lg:grid-cols-[minmax(0,1fr)_20rem] lg:grid-rows-1"
             : "grid-cols-1"
         }`}
       >
-        <div ref={viewerWidthRef} className="min-h-0 min-w-0">
+        <div ref={setViewerWidthElement} className="min-h-0 min-w-0">
           {pdfLoading ? (
             <div className="grid h-full place-items-center">
               <Spinner size={22} />

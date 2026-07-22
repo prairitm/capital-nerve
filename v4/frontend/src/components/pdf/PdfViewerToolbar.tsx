@@ -56,7 +56,7 @@ export function PdfViewerToolbar({
   };
 
   return (
-    <header className="relative z-20 flex min-h-16 flex-wrap items-center gap-3 border-b border-line/80 bg-surface/95 px-3 py-2.5 backdrop-blur md:flex-nowrap md:px-4">
+    <header className="relative z-20 flex min-h-16 flex-wrap items-center gap-2 border-b border-line/80 bg-surface/95 px-2 py-2.5 backdrop-blur md:flex-nowrap md:gap-3 md:px-4">
       <div className="flex min-w-0 flex-1 items-center gap-2.5">
         <BackButton fallback="/companies" />
         <div className="hidden h-7 w-px bg-line/80 sm:block" />
@@ -122,7 +122,7 @@ export function PdfViewerToolbar({
           >
             <Minus size={14} />
           </button>
-          <span className="num w-11 text-center text-[11px] text-ink-soft">
+          <span className="num hidden w-11 text-center text-[11px] text-ink-soft min-[375px]:inline-block">
             {Math.round(zoom * 100)}%
           </span>
           <button
@@ -151,11 +151,13 @@ export function PdfViewerToolbar({
         {hasEvidence && (
           <button
             type="button"
-            className="focus-ring hidden h-9 items-center gap-1.5 rounded-xl border border-positive/25 bg-positive-bg px-2.5 text-xs font-medium text-positive transition-colors hover:border-positive/45 sm:inline-flex"
+            className="focus-ring inline-flex size-9 items-center justify-center gap-1.5 rounded-xl border border-positive/25 bg-positive-bg text-xs font-medium text-positive transition-colors hover:border-positive/45 sm:h-9 sm:w-auto sm:px-2.5"
+            aria-label="Return to highlighted evidence"
+            title="Return to highlighted evidence"
             onClick={onReturnToEvidence}
           >
             <LocateFixed size={14} />
-            Evidence
+            <span className="hidden sm:inline">Evidence</span>
           </button>
         )}
         {pdfUrl && (
