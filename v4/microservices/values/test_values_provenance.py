@@ -4,6 +4,8 @@ import sqlite3
 import sys
 import unittest
 from pathlib import Path
+from types import SimpleNamespace
+from unittest.mock import MagicMock
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
@@ -12,12 +14,40 @@ from values_service import (
     _chunk_financial_markdown,
     _validate_fact_source_pages,
     canonicalize_facts,
+    extract_facts_from_chunk,
     is_multi_issuer_newspaper,
     persist_extracted_values,
 )
 
 
 class ValuesProvenanceTest(unittest.TestCase):
+    def test_financial_llm_extraction_uses_strict_json_schema(self) -> None:
+        client = MagicMock()
+        client.responses.create.return_value = SimpleNamespace(
+            output_text=(
+                '{"facts":[{"fact_key":"revenue_from_operations",'
+                '"numeric_value":1234.5,"unit":"crore",'
+                '"basis":"consolidated","source_page":7,'
+                '"evidence":"Revenue 1,234.50","confidence":0.95}]}'
+            )
+        )
+
+        facts = extract_facts_from_chunk(
+            client,
+            model="test-model",
+            chunk="# Page 7\nRevenue 1,234.50",
+            symbol="TEST",
+            company_name="Test Limited",
+            period_label="Q1 FY2026-27",
+            period_end="2026-06-30",
+            fact_catalog_text="- revenue_from_operations: Revenue [crore]",
+        )
+
+        self.assertEqual(facts[0]["source_page"], 7)
+        response_format = client.responses.create.call_args.kwargs["text"]["format"]
+        self.assertEqual(response_format["type"], "json_schema")
+        self.assertTrue(response_format["strict"])
+
     def test_financial_chunks_preserve_page_markers(self) -> None:
         markdown = "# Page 1\n\n" + ("Revenue 100\n" * 20) + "\n# Page 2\n\nPAT 20"
         chunks = _chunk_financial_markdown(markdown, max_chars=100)

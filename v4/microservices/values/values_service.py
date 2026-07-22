@@ -609,6 +609,52 @@ def _catalog_aliases(facts_catalog: dict[str, Any]) -> tuple[dict[str, str], str
     return storage_to_fact, "\n".join(fact_lines)
 
 
+_FINANCIAL_FACTS_RESPONSE_FORMAT = {
+    "type": "json_schema",
+    "name": "financial_facts",
+    "strict": True,
+    "schema": {
+        "type": "object",
+        "properties": {
+            "facts": {
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "fact_key": {"type": "string"},
+                        "numeric_value": {"type": "number"},
+                        "unit": {"type": "string"},
+                        "basis": {
+                            "type": "string",
+                            "enum": ["consolidated", "standalone"],
+                        },
+                        "source_page": {"type": "integer", "minimum": 1},
+                        "evidence": {"type": "string"},
+                        "confidence": {
+                            "type": "number",
+                            "minimum": 0,
+                            "maximum": 1,
+                        },
+                    },
+                    "required": [
+                        "fact_key",
+                        "numeric_value",
+                        "unit",
+                        "basis",
+                        "source_page",
+                        "evidence",
+                        "confidence",
+                    ],
+                    "additionalProperties": False,
+                },
+            }
+        },
+        "required": ["facts"],
+        "additionalProperties": False,
+    },
+}
+
+
 def extract_facts_from_chunk(
     client: Any,
     *,
@@ -663,7 +709,7 @@ Markdown:
     response = client.responses.create(
         model=model,
         input=[{"role": "user", "content": prompt}],
-        text={"format": {"type": "json_object"}},
+        text={"format": _FINANCIAL_FACTS_RESPONSE_FORMAT},
         temperature=0,
     )
     payload = json.loads((response.output_text or "{}").strip())
