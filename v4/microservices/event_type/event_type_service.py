@@ -14,6 +14,7 @@ import requests
 from event_type_client import PAGE_URL
 from event_type_db import bootstrap_schema
 from nse_fr_resolver import (
+    build_same_filing_recovery_scope,
     download_pdf,
     infer_period_markers,
     is_pdf_url,
@@ -160,13 +161,14 @@ def _resolve_nse_document(
         raise LookupError(f"No '{bucket}' announcements found")
 
     if document_type == "financial_result":
-        period_markers = infer_period_markers(announcements)
+        period_markers = infer_period_markers([candidates[0]])
         resolved = resolve_canonical_financial_report(
             announcements,
             candidates,
             period_markers=period_markers or None,
             session=session,
             referer=PAGE_URL,
+            strict_period_match=bool(period_markers),
         )
         if not resolved:
             raise LookupError("No valid financial results PDF found")
@@ -235,12 +237,19 @@ def _resolve_exact_nse_document(
         raise LookupError("The exact NSE announcement is no longer present in the requested window")
 
     if document_type == "financial_result":
-        resolved = resolve_canonical_financial_report(
+        period_markers = infer_period_markers([exact]) or None
+        recovery_scope = build_same_filing_recovery_scope(
             announcements,
+            exact,
+            period_markers=period_markers,
+        )
+        resolved = resolve_canonical_financial_report(
+            recovery_scope,
             [exact],
-            period_markers=infer_period_markers(announcements) or None,
+            period_markers=period_markers,
             session=session,
             referer=PAGE_URL,
+            strict_period_match=bool(period_markers),
         )
         if not resolved:
             raise LookupError("No valid financial results PDF found for the exact announcement")

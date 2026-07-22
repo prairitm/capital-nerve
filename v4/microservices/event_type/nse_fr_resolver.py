@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import io
 import re
+from datetime import datetime
 from typing import Any
 
 import requests
@@ -52,14 +53,17 @@ _POSITIVE_PHRASES = (
     r"independent auditor's report",
 )
 
-_EXCLUDED_CONTENT_PHRASES = (
+_HARD_EXCLUDED_CONTENT_PHRASES = (
     r"monitoring agency report",
-    r"monitoring agency",
     r"utilization of proceeds",
     r"certificate under regulation 74",
     r"regulation 74\s*\(\s*5\s*\)",
-    r"credit rating",
     r"postal ballot",
+)
+
+_SOFT_EXCLUDED_CONTENT_PHRASES = (
+    r"monitoring agency",
+    r"credit rating",
 )
 
 _CORE_FINANCIAL_PHRASES = (
@@ -94,7 +98,12 @@ _NEGATIVE_PHRASES = (
 
 _POSITIVE_RES = [re.compile(p, re.IGNORECASE) for p in _POSITIVE_PHRASES]
 _NEGATIVE_RES = [re.compile(p, re.IGNORECASE | re.DOTALL) for p in _NEGATIVE_PHRASES]
-_EXCLUDED_CONTENT_RES = [re.compile(p, re.IGNORECASE) for p in _EXCLUDED_CONTENT_PHRASES]
+_HARD_EXCLUDED_CONTENT_RES = [
+    re.compile(p, re.IGNORECASE) for p in _HARD_EXCLUDED_CONTENT_PHRASES
+]
+_SOFT_EXCLUDED_CONTENT_RES = [
+    re.compile(p, re.IGNORECASE) for p in _SOFT_EXCLUDED_CONTENT_PHRASES
+]
 _CORE_FINANCIAL_RES = [re.compile(p, re.IGNORECASE) for p in _CORE_FINANCIAL_PHRASES]
 
 _STRONG_FIN_URL_MARKERS = (
@@ -161,7 +170,8 @@ _MISLINKED_BUCKETS = _EXCLUDED_EVENT_BUCKETS
 
 _PERIOD_ENDED_RE = re.compile(
     r"(?:period|quarter|year|financial year)\s+ended\s+"
-    r"(\d{1,2}\s+[a-z]+\s+\d{4}|[a-z]+\s+\d{1,2},?\s+\d{4})",
+    r"(\d{1,2}(?:st|nd|rd|th)?\s+[a-z]+\s+\d{4}|"
+    r"[a-z]+\s+\d{1,2}(?:st|nd|rd|th)?,?\s+\d{4})",
     re.IGNORECASE,
 )
 _FY_TOKEN_RE = re.compile(r"q([1-4])fy(\d{2,4})", re.IGNORECASE)
@@ -331,15 +341,21 @@ def classify_pdf_content(
 
     positive_hits = sum(1 for pat in _POSITIVE_RES if pat.search(lower))
     negative_hits = sum(1 for pat in _NEGATIVE_RES if pat.search(lower))
-    excluded_hits = sum(1 for pat in _EXCLUDED_CONTENT_RES if pat.search(lower))
+    hard_excluded_hits = sum(
+        1 for pat in _HARD_EXCLUDED_CONTENT_RES if pat.search(lower)
+    )
+    soft_excluded_hits = sum(
+        1 for pat in _SOFT_EXCLUDED_CONTENT_RES if pat.search(lower)
+    )
+    excluded_hits = hard_excluded_hits + soft_excluded_hits
     has_core_financial = any(pat.search(lower) for pat in _CORE_FINANCIAL_RES)
     table_row_count = sum(1 for line in lower.splitlines() if _is_financial_table_row(line))
 
     score = 0.0
     reasons: list[str] = []
 
-    if excluded_hits:
-        reasons.append(f"{excluded_hits} excluded doc phrase(s)")
+    if hard_excluded_hits:
+        reasons.append(f"{hard_excluded_hits} hard-excluded doc phrase(s)")
         return {
             "is_financial_report": False,
             "confidence": 0.0,
@@ -348,6 +364,8 @@ def classify_pdf_content(
                 "positive_hits": positive_hits,
                 "negative_hits": negative_hits,
                 "excluded_hits": excluded_hits,
+                "hard_excluded_hits": hard_excluded_hits,
+                "soft_excluded_hits": soft_excluded_hits,
                 "has_core_financial": has_core_financial,
                 "table_row_count": table_row_count,
                 "page_count": page_count,
@@ -363,6 +381,10 @@ def classify_pdf_content(
     score -= min(negative_hits * 0.12, 0.36)
     if negative_hits:
         reasons.append(f"{negative_hits} letter/admin phrase(s)")
+
+    if soft_excluded_hits:
+        score -= min(soft_excluded_hits * 0.12, 0.24)
+        reasons.append(f"{soft_excluded_hits} ambiguous excluded phrase(s)")
 
     if page_count >= 20:
         score += 0.42
@@ -404,7 +426,8 @@ def classify_pdf_content(
         not is_financial_report
         and source_url
         and url_suggests_financial_report(source_url)
-        and excluded_hits == 0
+        and hard_excluded_hits == 0
+        and (soft_excluded_hits == 0 or has_core_financial)
         and negative_hits < 2
         and (confidence >= 0.30 or table_row_count >= 2 or page_count >= 5)
     ):
@@ -427,6 +450,8 @@ def classify_pdf_content(
             "positive_hits": positive_hits,
             "negative_hits": negative_hits,
             "excluded_hits": excluded_hits,
+            "hard_excluded_hits": hard_excluded_hits,
+            "soft_excluded_hits": soft_excluded_hits,
             "has_core_financial": has_core_financial,
             "table_row_count": table_row_count,
             "page_count": page_count,
@@ -460,6 +485,7 @@ def _expand_period_date(day: int, month: int, year: int) -> set[str]:
 
 
 def _expand_period_text(raw: str) -> set[str]:
+    raw = re.sub(r"(?<=\d)(?:st|nd|rd|th)\b", "", raw)
     markers = {raw}
     parts = raw.replace(",", "").split()
     if len(parts) == 3 and parts[0].isdigit() and parts[2].isdigit():
@@ -493,7 +519,15 @@ def infer_period_markers(announcements: list[dict[str, Any]]) -> list[str]:
             markers.add(match.group(0).replace("_", " "))
         for match in _DDMMYYYY_IN_URL_RE.finditer(url):
             parsed = _parse_ddmmyyyy(match.group(1))
-            if parsed:
+            # Bare eight-digit tokens in NSE filenames are commonly the upload
+            # date (for example Boardoutcome_07052024.pdf).  Only canonical
+            # quarter ends are safe enough to treat as reporting-period hints.
+            if parsed and (parsed[0], parsed[1]) in {
+                (31, 3),
+                (30, 6),
+                (30, 9),
+                (31, 12),
+            }:
                 markers.update(_expand_period_date(*parsed))
     return sorted(markers)
 
@@ -562,10 +596,45 @@ def _matches_period_markers(item: dict[str, Any], period_markers: list[str] | No
     return any(marker.lower() in text for marker in period_markers)
 
 
+def build_same_filing_recovery_scope(
+    announcements: list[dict[str, Any]],
+    anchor: dict[str, Any],
+    *,
+    period_markers: list[str] | None = None,
+) -> list[dict[str, Any]]:
+    """Limit exact-source recovery to companion attachments for one filing.
+
+    NSE commonly publishes a board letter, the result PDF, and supporting
+    material on the same day.  Exact-mode recovery may inspect those companion
+    files, but it must not select another filing elsewhere in the query window.
+    """
+    anchor_url = (anchor.get("attchmntFile") or "").strip()
+    anchor_sort_date = str(anchor.get("sort_date") or "")
+    anchor_day = anchor_sort_date[:10] if len(anchor_sort_date) >= 10 else ""
+    markers = period_markers or infer_period_markers([anchor])
+
+    scoped: list[dict[str, Any]] = []
+    for item in announcements:
+        url = (item.get("attchmntFile") or "").strip()
+        if url == anchor_url:
+            scoped.append(item)
+            continue
+        if not anchor_day:
+            continue
+        item_sort_date = str(item.get("sort_date") or "")
+        if item_sort_date[:10] != anchor_day:
+            continue
+        if markers and not _matches_period_markers(item, markers):
+            continue
+        scoped.append(item)
+    return scoped
+
+
 def build_candidate_pool(
     announcements: list[dict[str, Any]],
     *,
     period_markers: list[str] | None = None,
+    allow_period_fallback: bool = True,
 ) -> list[dict[str, Any]]:
     def _collect(markers: list[str] | None) -> list[dict[str, Any]]:
         seen_urls: set[str] = set()
@@ -586,7 +655,7 @@ def build_candidate_pool(
         return pool
 
     pool = _collect(period_markers)
-    if not pool and period_markers:
+    if not pool and period_markers and allow_period_fallback:
         pool = _collect(None)
     return pool
 
@@ -594,6 +663,9 @@ def build_candidate_pool(
 def _financial_url_candidates(
     announcements: list[dict[str, Any]],
     tried: set[str],
+    *,
+    period_markers: list[str] | None = None,
+    strict_period_match: bool = False,
 ) -> list[dict[str, Any]]:
     """PDFs whose URL strongly suggests a financial-results attachment."""
     pool: list[dict[str, Any]] = []
@@ -603,6 +675,8 @@ def _financial_url_candidates(
         if not url or not is_pdf_url(url) or url in tried or url in seen_urls:
             continue
         if _is_excluded_candidate(item):
+            continue
+        if strict_period_match and not _matches_period_markers(item, period_markers):
             continue
         url_lower = url.lower()
         if not any(marker in url_lower for marker in _URL_FIN_MARKERS):
@@ -646,9 +720,20 @@ def classify_pdf_url(
     return classification
 
 
-def _resolved_rank(resolved: dict[str, Any]) -> float:
+def _resolved_rank(resolved: dict[str, Any]) -> tuple[datetime, float, float]:
     cls = resolved.get("classification") or {}
-    return float(resolved.get("metadata_score") or 0) + float(cls.get("confidence") or 0) * 10.0
+    item = resolved.get("announcement") or {}
+    try:
+        published_at = datetime.strptime(
+            str(item.get("sort_date") or ""), "%Y-%m-%d %H:%M:%S"
+        )
+    except ValueError:
+        published_at = datetime.min
+    return (
+        published_at,
+        float(cls.get("confidence") or 0),
+        float(resolved.get("metadata_score") or 0),
+    )
 
 
 def _resolved_from_item(
@@ -718,12 +803,18 @@ def resolve_financial_report_pdf(
     session: requests.Session,
     tried_urls: set[str] | None = None,
     referer: str | None = None,
+    strict_period_match: bool = False,
 ) -> dict[str, Any] | None:
     """Search announcement batch for the PDF that actually is a financial report."""
     tried = set(tried_urls or ())
 
     if tried_urls:
-        fin_url_pool = _financial_url_candidates(announcements, tried)
+        fin_url_pool = _financial_url_candidates(
+            announcements,
+            tried,
+            period_markers=period_markers,
+            strict_period_match=strict_period_match,
+        )
         found = _try_candidate_pool(
             fin_url_pool, tried, session, max_candidates, referer=referer
         )
@@ -731,12 +822,16 @@ def resolve_financial_report_pdf(
             return found
 
     marker_passes: list[list[str] | None] = [period_markers]
-    if period_markers:
+    if period_markers and not strict_period_match:
         marker_passes.append(None)
 
     best: dict[str, Any] | None = None
     for markers in marker_passes:
-        pool = build_candidate_pool(announcements, period_markers=markers)
+        pool = build_candidate_pool(
+            announcements,
+            period_markers=markers,
+            allow_period_fallback=not strict_period_match,
+        )
         found = _try_candidate_pool(
             pool, tried, session, max_candidates, referer=referer
         )
@@ -754,12 +849,21 @@ def resolve_canonical_financial_report(
     session: requests.Session,
     max_candidates: int = 24,
     referer: str | None = None,
+    strict_period_match: bool = False,
 ) -> dict[str, Any] | None:
     """Resolve the canonical financial report with per-bucket mislink recovery."""
     tried: set[str] = set()
     best: dict[str, Any] | None = None
 
-    for item in financial_results:
+    eligible_financial_results = financial_results
+    if strict_period_match and period_markers:
+        eligible_financial_results = [
+            item
+            for item in financial_results
+            if _matches_period_markers(item, period_markers)
+        ]
+
+    for item in eligible_financial_results:
         url = (item.get("attchmntFile") or "").strip()
         if not url:
             continue
@@ -780,6 +884,7 @@ def resolve_canonical_financial_report(
                 session=session,
                 tried_urls=tried.copy(),
                 referer=referer,
+                strict_period_match=strict_period_match,
             )
             if recovered:
                 recovered["recovery_needed"] = True
@@ -802,6 +907,7 @@ def resolve_canonical_financial_report(
                 session=session,
                 tried_urls=tried.copy(),
                 referer=referer,
+                strict_period_match=strict_period_match,
             )
             if recovered:
                 recovered["recovery_needed"] = True
@@ -817,5 +923,7 @@ def resolve_canonical_financial_report(
         period_markers=period_markers,
         max_candidates=max_candidates,
         session=session,
+        tried_urls=tried or None,
         referer=referer,
+        strict_period_match=strict_period_match,
     )

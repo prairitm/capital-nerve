@@ -71,6 +71,21 @@ This removes all companies, their pipeline data, monitor jobs, watchlist
 entries, stored PDFs, and parsed-document cache. It preserves user accounts,
 user settings, and the static fact-definition catalog.
 
+## Remove one company's data
+
+Stop the v4 services and preview the company-scoped cleanup using its NSE
+ticker, then explicitly confirm it:
+
+```bash
+.venv/bin/python v4/remove_company_data.py --symbol RELIANCE
+.venv/bin/python v4/remove_company_data.py --symbol RELIANCE --confirm
+```
+
+The command also accepts an exact company ID or ISIN as its positional
+argument. It removes only that company's analytics, pipeline jobs, watchlist
+entries, stored PDFs, and parsed-document cache. Other companies, users, user
+settings, and the static fact-definition catalog are preserved.
+
 ## Deploy publicly on a Raspberry Pi
 
 On a 64-bit Raspberry Pi OS installation, clone this repository and run:
