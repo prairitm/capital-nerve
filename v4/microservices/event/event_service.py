@@ -37,7 +37,12 @@ def normalize_supported_event_type(item: dict[str, Any]) -> str | None:
 
     if has("transcript of the discussion", "earnings call transcript", "concall transcript"):
         return "Earnings Call Transcript"
-    if desc == "Investor Presentation" or has("investor presentation"):
+    if desc == "Investor Presentation" or has(
+        "investor presentation",
+        "presentation made by company",
+        "presentation_with_ppt",
+        "presentationwithppt",
+    ):
         return "Investor Presentation"
     is_intimation = has(
         "scheduled to be held",

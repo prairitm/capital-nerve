@@ -42,6 +42,27 @@ class EventDiscoveryPersistenceTest(unittest.TestCase):
         result = persist_announcements(self.conn, "EXAMPLE", [item])
         self.assertIsNone(result["events"][0]["normalized_event_type"])
 
+    def test_presentation_filename_overrides_financial_results_description(self) -> None:
+        item = {
+            **self.announcement,
+            "attchmntFile": "https://example.com/Presentation_with_PPT_Signed.pdf",
+        }
+        result = persist_announcements(self.conn, "EXAMPLE", [item])
+        self.assertEqual(
+            "Investor Presentation", result["events"][0]["normalized_event_type"]
+        )
+
+    def test_presentation_announcement_text_overrides_financial_results_description(self) -> None:
+        item = {
+            **self.announcement,
+            "attchmntFile": "https://example.com/attachment.pdf",
+            "attchmntText": "Presentation made by Company on the Unaudited Financial Results",
+        }
+        result = persist_announcements(self.conn, "EXAMPLE", [item])
+        self.assertEqual(
+            "Investor Presentation", result["events"][0]["normalized_event_type"]
+        )
+
 
 if __name__ == "__main__":
     unittest.main()
