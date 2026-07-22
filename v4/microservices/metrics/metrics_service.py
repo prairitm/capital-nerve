@@ -931,6 +931,7 @@ def compute_presentation_coverage_metrics(
     company_id: str,
     event_id: str,
     period_end: str,
+    coverage_catalog: dict[str, Any],
 ) -> list[dict[str, Any]]:
     rows = conn.execute(
         """
@@ -945,13 +946,6 @@ def compute_presentation_coverage_metrics(
 
     scope_counts: dict[str, int] = {}
     segments: set[str] = set()
-    guidance_fact_keys = {
-        "revenue_growth_guidance",
-        "margin_guidance",
-        "management_outlook",
-        "segment_outlook",
-    }
-    guidance_count = 0
     confidence_values: list[float] = []
 
     for row in rows:
@@ -959,91 +953,42 @@ def compute_presentation_coverage_metrics(
         scope_counts[scope_level] = scope_counts.get(scope_level, 0) + 1
         if row["segment"]:
             segments.add(row["segment"])
-        if row["fact_type"] == "guidance" or row["value_code"] in guidance_fact_keys:
-            guidance_count += 1
         confidence_values.append(float(row["confidence"] or 0.0))
 
     average_confidence = (
         sum(confidence_values) / len(confidence_values) if confidence_values else 0.0
     )
 
-    def metric(
-        metric_key: str,
-        name: str,
-        value: float,
-        unit: str,
-        category: str,
-        formula: str,
-    ) -> dict[str, Any]:
-        return {
-            "metric_key": metric_key,
-            "name": name,
-            "value": round(float(value), 4),
-            "unit": unit,
-            "category": category,
-            "formula": formula,
-            "inputs": [],
-            "input_fact_ids": [],
-        }
-
-    return [
-        metric(
-            "presentation_fact_count",
-            "Presentation Fact Count",
-            len(rows),
-            "count",
-            "coverage",
-            "count(scoped_presentation_facts)",
-        ),
-        metric(
-            "presentation_segment_count",
-            "Detected Segment Count",
-            len(segments),
-            "count",
-            "coverage",
-            "count(distinct segment)",
-        ),
-        metric(
-            "presentation_segment_fact_count",
-            "Segment Scoped Fact Count",
-            scope_counts.get("segment", 0),
-            "count",
-            "coverage",
-            "count(facts where scope_level='segment')",
-        ),
-        metric(
-            "presentation_company_fact_count",
-            "Company Scoped Fact Count",
-            scope_counts.get("company", 0),
-            "count",
-            "coverage",
-            "count(facts where scope_level='company')",
-        ),
-        metric(
-            "presentation_unknown_scope_fact_count",
-            "Unknown Scope Fact Count",
-            scope_counts.get("unknown", 0),
-            "count",
-            "quality",
-            "count(facts where scope_level='unknown')",
-        ),
-        metric(
-            "presentation_average_confidence",
-            "Average Presentation Extraction Confidence",
-            average_confidence,
-            "score",
-            "quality",
-            "avg(fact.confidence)",
-        ),
-        metric(
-            "presentation_guidance_fact_count",
-            "Guidance Fact Count",
-            guidance_count,
-            "count",
-            "content",
-            "count(guidance facts)",
-        ),
-    ]
+    computed: list[dict[str, Any]] = []
+    for metric_key, spec in coverage_catalog.items():
+        aggregation = spec.get("coverage_aggregation")
+        if aggregation == "fact_count":
+            value = len(rows)
+        elif aggregation == "distinct_segment_count":
+            value = len(segments)
+        elif aggregation == "scope_count":
+            value = scope_counts.get(str(spec.get("scope_level") or "unknown"), 0)
+        elif aggregation == "average_confidence":
+            value = average_confidence
+        elif aggregation == "fact_type_count":
+            value = sum(
+                1 for row in rows if row["fact_type"] == spec.get("fact_type")
+            )
+        else:
+            raise ValueError(f"Unsupported presentation coverage aggregation: {aggregation}")
+        computed.append(
+            {
+                "metric_key": metric_key,
+                "name": spec["name"],
+                "value": round(float(value), 4),
+                "unit": spec["unit"],
+                "category": spec["category"],
+                "formula": spec["formula"],
+                "inputs": [],
+                "input_fact_ids": [],
+            }
+        )
+    return computed
 
 
 def compute_and_persist_metrics(
@@ -1064,9 +1009,19 @@ def compute_and_persist_metrics(
     bootstrap_schema(conn)
     if event_type in {"Investor Presentation", "Earnings Call Transcript"}:
         metrics_catalog = load_event_metrics_catalog(event_type)
+        coverage_catalog = {
+            key: spec
+            for key, spec in metrics_catalog.items()
+            if spec.get("formula_type") == "COVERAGE"
+        }
+        formula_catalog = {
+            key: spec
+            for key, spec in metrics_catalog.items()
+            if spec.get("formula_type") != "COVERAGE"
+        }
         scopes = {
             str(inp.get("scope") or "CURRENT").upper()
-            for spec in metrics_catalog.values()
+            for spec in formula_catalog.values()
             for inp in spec.get("inputs") or []
             if "fact_key" in inp
         }
@@ -1084,7 +1039,7 @@ def compute_and_persist_metrics(
             for scope in scopes
         }
         computed_metrics = compute_presentation_metrics(
-            metrics_catalog,
+            formula_catalog,
             period_quarter=period_quarter,
             scope_pools=scope_pools,
         )
@@ -1095,6 +1050,7 @@ def compute_and_persist_metrics(
                     company_id=company_id,
                     event_id=event_id,
                     period_end=period_end,
+                    coverage_catalog=coverage_catalog,
                 )
             )
         persist_metric_values(

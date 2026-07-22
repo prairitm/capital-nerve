@@ -106,6 +106,40 @@
     "aliases": [
     ]
   },
+  // "product_revenue": {
+  //   "name": "Product Revenue",
+  //   "statement": "REVENUE_MIX",
+  //   "unit": "crore",
+  //   "documents": [
+  //     "INVESTOR_PRESENTATION"
+  //   ],
+  //   "dimensions": [
+  //     "product"
+  //   ]
+  // },
+  // "geography_revenue": {
+  //   "name": "Geography Revenue",
+  //   "statement": "REVENUE_MIX",
+  //   "unit": "crore",
+  //   "documents": [
+  //     "INVESTOR_PRESENTATION"
+  //   ],
+  //   "dimensions": [
+  //     "geography"
+  //   ]
+  // },
+  // "export_revenue": {
+  //   "name": "Export Revenue",
+  //   "statement": "REVENUE_MIX",
+  //   "unit": "crore",
+  //   "documents": [
+  //     "INVESTOR_PRESENTATION"
+  //   ],
+  //   "dimensions": [
+  //     "segment",
+  //     "product"
+  //   ]
+  // },
   "order_book": {
     "name": "Closing Order Book",
     "statement": "DEMAND",
@@ -274,6 +308,35 @@
       "plant"
     ]
   },
+  // "gross_debt": {
+  //   "name": "Gross Debt",
+  //   "statement": "CAPITAL_STRUCTURE",
+  //   "unit": "crore",
+  //   "documents": [
+  //     "INVESTOR_PRESENTATION",
+  //     "FINANCIAL_RESULT"
+  //   ]
+  // },
+  // "net_debt": {
+  //   "name": "Net Debt",
+  //   "statement": "CAPITAL_STRUCTURE",
+  //   "unit": "crore",
+  //   "documents": [
+  //     "INVESTOR_PRESENTATION"
+  //   ],
+  //   "aliases": [
+  //     "net_borrowings"
+  //   ]
+  // },
+  // "cash_and_equivalents": {
+  //   "name": "Cash and Cash Equivalents",
+  //   "statement": "CAPITAL_STRUCTURE",
+  //   "unit": "crore",
+  //   "documents": [
+  //     "INVESTOR_PRESENTATION",
+  //     "FINANCIAL_RESULT"
+  //   ]
+  // },
   "revenue_guidance_low": {
     "name": "Revenue Guidance Lower Bound",
     "statement": "GUIDANCE",

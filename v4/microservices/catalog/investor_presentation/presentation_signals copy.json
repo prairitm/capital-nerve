@@ -1,0 +1,685 @@
+{
+  "multi_segment_presentation": {
+    "name": "Multi-Segment Presentation",
+    "category": "coverage",
+    "direction": "NEUTRAL",
+    "severity": "LOW",
+    "description": "Presentation contains more than one detected segment.",
+    "rule": {
+      "metric_key": "presentation_segment_count",
+      "op": ">=",
+      "value": 2
+    }
+  },
+  "segment_facts_available": {
+    "name": "Segment Facts Available",
+    "category": "coverage",
+    "direction": "POSITIVE",
+    "severity": "MEDIUM",
+    "description": "Segment-scoped facts were extracted separately from company facts.",
+    "rule": {
+      "metric_key": "presentation_segment_fact_count",
+      "op": ">",
+      "value": 0
+    }
+  },
+  "guidance_present": {
+    "name": "Guidance Present",
+    "category": "content",
+    "direction": "NEUTRAL",
+    "severity": "MEDIUM",
+    "description": "Forward-looking or guidance facts were found in the presentation.",
+    "rule": {
+      "metric_key": "presentation_guidance_fact_count",
+      "op": ">",
+      "value": 0
+    }
+  },
+  "unknown_scope_needs_review": {
+    "name": "Unknown Scope Needs Review",
+    "category": "quality",
+    "direction": "NEGATIVE",
+    "severity": "HIGH",
+    "description": "Some presentation facts could not be tied to company, segment, geography, product, channel, project, or customer type scope.",
+    "rule": {
+      "metric_key": "presentation_unknown_scope_fact_count",
+      "op": ">",
+      "value": 0
+    }
+  },
+  "low_extraction_confidence": {
+    "name": "Low Presentation Extraction Confidence",
+    "category": "quality",
+    "direction": "NEGATIVE",
+    "severity": "HIGH",
+    "description": "Average presentation extraction confidence is below the review threshold.",
+    "rule": {
+      "metric_key": "presentation_average_confidence",
+      "op": "<",
+      "value": 0.7
+    }
+  },
+  "volume_led_growth": {
+    "name": "Volume-Led Growth",
+    "category": "growth_quality",
+    "direction": "POSITIVE",
+    "severity": "HIGH",
+    "description": "Revenue growth is supported by healthy sales-volume growth rather than only pricing.",
+    "rule": {
+      "all": [
+        {
+          "metric_key": "revenue_yoy_growth",
+          "op": ">",
+          "value": 5
+        },
+        {
+          "metric_key": "sales_volume_yoy_growth",
+          "op": ">",
+          "value": 5
+        },
+        {
+          "metric_key": "price_mix_contribution_yoy",
+          "op": "<",
+          "value": 5
+        }
+      ]
+    }
+  },
+  "price_led_growth": {
+    "name": "Price-Led Growth",
+    "category": "growth_quality",
+    "direction": "MIXED",
+    "severity": "MEDIUM",
+    "description": "Revenue growth is driven mainly by price or mix rather than unit growth.",
+    "rule": {
+      "all": [
+        {
+          "metric_key": "revenue_yoy_growth",
+          "op": ">",
+          "value": 5
+        },
+        {
+          "metric_key": "price_mix_contribution_yoy",
+          "op": ">",
+          "value": 5
+        },
+        {
+          "metric_key": "sales_volume_yoy_growth",
+          "op": "<",
+          "value": 5
+        }
+      ]
+    }
+  },
+  "demand_weakness_masked_by_pricing": {
+    "name": "Demand Weakness Masked by Pricing",
+    "category": "growth_quality",
+    "direction": "NEGATIVE",
+    "severity": "HIGH",
+    "description": "Revenue grew despite declining sales volume, implying pricing or mix masked weaker demand.",
+    "rule": {
+      "all": [
+        {
+          "metric_key": "revenue_yoy_growth",
+          "op": ">",
+          "value": 0
+        },
+        {
+          "metric_key": "sales_volume_yoy_growth",
+          "op": "<",
+          "value": 0
+        },
+        {
+          "metric_key": "realization_yoy_growth",
+          "op": ">",
+          "value": 0
+        }
+      ]
+    }
+  },
+  "volume_growth_monetization_weak": {
+    "name": "Weak Monetization of Volume Growth",
+    "category": "growth_quality",
+    "direction": "NEGATIVE",
+    "severity": "MEDIUM",
+    "description": "Volumes increased, but falling realization prevented comparable revenue growth.",
+    "rule": {
+      "all": [
+        {
+          "metric_key": "sales_volume_yoy_growth",
+          "op": ">",
+          "value": 8
+        },
+        {
+          "metric_key": "realization_yoy_growth",
+          "op": "<",
+          "value": -3
+        },
+        {
+          "metric_key": "revenue_yoy_growth",
+          "op": "<",
+          "value": 5
+        }
+      ]
+    }
+  },
+  "positive_operating_leverage": {
+    "name": "Positive Operating Leverage",
+    "category": "margin",
+    "direction": "POSITIVE",
+    "severity": "HIGH",
+    "description": "EBITDA is growing faster than revenue and margins are expanding.",
+    "rule": {
+      "all": [
+        {
+          "metric_key": "operating_leverage_spread",
+          "op": ">",
+          "value": 3
+        },
+        {
+          "metric_key": "ebitda_margin_change_yoy_bps",
+          "op": ">",
+          "value": 75
+        }
+      ]
+    }
+  },
+  "negative_operating_leverage": {
+    "name": "Negative Operating Leverage",
+    "category": "margin",
+    "direction": "NEGATIVE",
+    "severity": "HIGH",
+    "description": "Revenue growth is not translating into EBITDA growth or margin improvement.",
+    "rule": {
+      "all": [
+        {
+          "metric_key": "revenue_yoy_growth",
+          "op": ">",
+          "value": 0
+        },
+        {
+          "metric_key": "operating_leverage_spread",
+          "op": "<",
+          "value": -3
+        },
+        {
+          "metric_key": "ebitda_margin_change_yoy_bps",
+          "op": "<",
+          "value": -75
+        }
+      ]
+    }
+  },
+  "capacity_bottleneck": {
+    "name": "Capacity Bottleneck",
+    "category": "capacity",
+    "direction": "MIXED",
+    "severity": "HIGH",
+    "description": "Utilization is very high, limiting further volume growth without expansion.",
+    "rule": {
+      "all": [
+        {
+          "metric_key": "capacity_headroom",
+          "op": "<",
+          "value": 10
+        },
+        {
+          "metric_key": "sales_volume_yoy_growth",
+          "op": ">",
+          "value": 5
+        }
+      ]
+    }
+  },
+  "underutilized_capacity": {
+    "name": "Underutilized Capacity",
+    "category": "capacity",
+    "direction": "NEGATIVE",
+    "severity": "MEDIUM",
+    "description": "A large share of installed capacity remains unused.",
+    "rule": {
+      "metric_key": "capacity_headroom",
+      "op": ">",
+      "value": 40
+    }
+  },
+  "capacity_added_ahead_of_demand": {
+    "name": "Capacity Added Ahead of Demand",
+    "category": "capital_allocation",
+    "direction": "NEGATIVE",
+    "severity": "HIGH",
+    "description": "Capacity expanded while utilization and sales-volume growth weakened.",
+    "rule": {
+      "all": [
+        {
+          "metric_key": "capacity_growth_yoy",
+          "op": ">",
+          "value": 10
+        },
+        {
+          "metric_key": "capacity_utilization_change_yoy_bps",
+          "op": "<",
+          "value": -500
+        },
+        {
+          "metric_key": "sales_volume_yoy_growth",
+          "op": "<",
+          "value": 5
+        }
+      ]
+    }
+  },
+  "inventory_build_risk": {
+    "name": "Potential Inventory Build",
+    "category": "working_capital",
+    "direction": "NEGATIVE",
+    "severity": "MEDIUM",
+    "description": "Production materially exceeds sales volume, suggesting possible inventory accumulation.",
+    "rule": {
+      "metric_key": "production_to_sales_ratio",
+      "op": ">",
+      "value": 1.1
+    }
+  },
+  "order_book_acceleration": {
+    "name": "Order Book Acceleration",
+    "category": "demand",
+    "direction": "POSITIVE",
+    "severity": "HIGH",
+    "description": "Order book is expanding and new orders exceed current revenue execution.",
+    "rule": {
+      "all": [
+        {
+          "metric_key": "order_book_yoy_growth",
+          "op": ">",
+          "value": 15
+        },
+        {
+          "metric_key": "book_to_bill",
+          "op": ">",
+          "value": 1.0
+        }
+      ]
+    }
+  },
+  "order_book_depletion": {
+    "name": "Order Book Depletion",
+    "category": "demand",
+    "direction": "NEGATIVE",
+    "severity": "HIGH",
+    "description": "Order inflow is insufficient to replace executed revenue and backlog is shrinking.",
+    "rule": {
+      "all": [
+        {
+          "metric_key": "book_to_bill",
+          "op": "<",
+          "value": 0.8
+        },
+        {
+          "metric_key": "order_book_yoy_growth",
+          "op": "<",
+          "value": 0
+        }
+      ]
+    }
+  },
+  "strong_revenue_visibility": {
+    "name": "Strong Revenue Visibility",
+    "category": "demand",
+    "direction": "POSITIVE",
+    "severity": "MEDIUM",
+    "description": "The closing order book covers more than two years of annualized revenue.",
+    "rule": {
+      "metric_key": "order_book_coverage_years",
+      "op": ">",
+      "value": 2.0
+    }
+  },
+  "backlog_not_converting": {
+    "name": "Backlog Conversion Risk",
+    "category": "execution",
+    "direction": "NEGATIVE",
+    "severity": "HIGH",
+    "description": "Order book is growing, but reported revenue remains weak, suggesting execution delays.",
+    "rule": {
+      "all": [
+        {
+          "metric_key": "order_book_yoy_growth",
+          "op": ">",
+          "value": 10
+        },
+        {
+          "metric_key": "revenue_yoy_growth",
+          "op": "<",
+          "value": 3
+        }
+      ]
+    }
+  },
+  "high_margin_segment_mix_tailwind": {
+    "name": "High-Margin Segment Mix Tailwind",
+    "category": "mix",
+    "direction": "POSITIVE",
+    "severity": "MEDIUM",
+    "description": "A segment with above-company margins is gaining revenue share.",
+    "rule": {
+      "all": [
+        {
+          "metric_key": "segment_mix_change_yoy_bps",
+          "op": ">",
+          "value": 200
+        },
+        {
+          "metric_key": "segment_ebitda_margin",
+          "op": ">",
+          "compare_metric_key": "ebitda_margin"
+        }
+      ]
+    }
+  },
+  "low_margin_segment_mix_headwind": {
+    "name": "Low-Margin Segment Mix Headwind",
+    "category": "mix",
+    "direction": "NEGATIVE",
+    "severity": "MEDIUM",
+    "description": "A below-company-margin segment is gaining revenue share.",
+    "rule": {
+      "all": [
+        {
+          "metric_key": "segment_mix_change_yoy_bps",
+          "op": ">",
+          "value": 200
+        },
+        {
+          "metric_key": "segment_ebitda_margin",
+          "op": "<",
+          "compare_metric_key": "ebitda_margin"
+        }
+      ]
+    }
+  },
+  "segment_concentration_risk": {
+    "name": "Segment Concentration Risk",
+    "category": "concentration",
+    "direction": "NEGATIVE",
+    "severity": "MEDIUM",
+    "description": "One business segment contributes an excessive share of company revenue.",
+    "rule": {
+      "metric_key": "largest_segment_revenue_mix",
+      "op": ">",
+      "value": 70
+    }
+  },
+  "geographic_concentration_risk": {
+    "name": "Geographic Concentration Risk",
+    "category": "concentration",
+    "direction": "NEGATIVE",
+    "severity": "MEDIUM",
+    "description": "One geography contributes an excessive share of company revenue.",
+    "rule": {
+      "metric_key": "largest_geography_revenue_mix",
+      "op": ">",
+      "value": 60
+    }
+  },
+  "customer_growth_quality": {
+    "name": "Healthy Customer-Led Growth",
+    "category": "customer",
+    "direction": "POSITIVE",
+    "severity": "MEDIUM",
+    "description": "Customer count is expanding without diluting revenue per customer.",
+    "rule": {
+      "all": [
+        {
+          "metric_key": "customer_count_yoy_growth",
+          "op": ">",
+          "value": 8
+        },
+        {
+          "metric_key": "revenue_per_customer_yoy_growth",
+          "op": ">",
+          "value": 0
+        }
+      ]
+    }
+  },
+  "customer_growth_dilution": {
+    "name": "Customer Growth with Monetization Dilution",
+    "category": "customer",
+    "direction": "NEGATIVE",
+    "severity": "MEDIUM",
+    "description": "Customer count increased, but revenue per customer fell materially.",
+    "rule": {
+      "all": [
+        {
+          "metric_key": "customer_count_yoy_growth",
+          "op": ">",
+          "value": 8
+        },
+        {
+          "metric_key": "revenue_per_customer_yoy_growth",
+          "op": "<",
+          "value": -8
+        }
+      ]
+    }
+  },
+  "market_share_gain": {
+    "name": "Market Share Gain",
+    "category": "market_position",
+    "direction": "POSITIVE",
+    "severity": "MEDIUM",
+    "description": "The company gained meaningful market share YoY.",
+    "rule": {
+      "metric_key": "market_share_change_yoy_bps",
+      "op": ">",
+      "value": 100
+    }
+  },
+  "market_share_loss": {
+    "name": "Market Share Loss",
+    "category": "market_position",
+    "direction": "NEGATIVE",
+    "severity": "HIGH",
+    "description": "The company lost meaningful market share YoY.",
+    "rule": {
+      "metric_key": "market_share_change_yoy_bps",
+      "op": "<",
+      "value": -100
+    }
+  },
+  "capex_execution_on_track": {
+    "name": "Capex Execution On Track",
+    "category": "capital_allocation",
+    "direction": "POSITIVE",
+    "severity": "MEDIUM",
+    "description": "Cumulative capex is broadly aligned with the approved project budget.",
+    "rule": {
+      "all": [
+        {
+          "metric_key": "capex_execution",
+          "op": ">=",
+          "value": 80
+        },
+        {
+          "metric_key": "capex_execution",
+          "op": "<=",
+          "value": 105
+        }
+      ]
+    }
+  },
+  "capex_overrun_risk": {
+    "name": "Capex Overrun Risk",
+    "category": "capital_allocation",
+    "direction": "NEGATIVE",
+    "severity": "HIGH",
+    "description": "Cumulative project spend exceeds the approved plan.",
+    "rule": {
+      "metric_key": "capex_execution",
+      "op": ">",
+      "value": 110
+    }
+  },
+  "project_delay": {
+    "name": "Project Commissioning Delay",
+    "category": "execution",
+    "direction": "NEGATIVE",
+    "severity": "HIGH",
+    "description": "Management has pushed the expected commissioning date back materially.",
+    "rule": {
+      "metric_key": "commissioning_delay_days",
+      "op": ">",
+      "value": 60
+    }
+  },
+  "debt_funded_capex_risk": {
+    "name": "Debt-Funded Expansion Risk",
+    "category": "capital_allocation",
+    "direction": "NEGATIVE",
+    "severity": "HIGH",
+    "description": "Capex materially exceeds operating cash flow while net debt is rising.",
+    "rule": {
+      "all": [
+        {
+          "metric_key": "capex_to_cfo",
+          "op": ">",
+          "value": 1.5
+        },
+        {
+          "metric_key": "net_debt_yoy_change",
+          "op": ">",
+          "value": 15
+        }
+      ]
+    }
+  },
+  "deleveraging": {
+    "name": "Deleveraging",
+    "category": "leverage",
+    "direction": "POSITIVE",
+    "severity": "HIGH",
+    "description": "Net debt is falling and leverage is within a manageable range.",
+    "rule": {
+      "all": [
+        {
+          "metric_key": "net_debt_yoy_change",
+          "op": "<",
+          "value": -10
+        },
+        {
+          "metric_key": "net_debt_to_annualized_ebitda",
+          "op": "<",
+          "value": 2.5
+        }
+      ]
+    }
+  },
+  "leverage_stress": {
+    "name": "Leverage Stress",
+    "category": "leverage",
+    "direction": "NEGATIVE",
+    "severity": "HIGH",
+    "description": "Net debt is high relative to annualized EBITDA.",
+    "rule": {
+      "metric_key": "net_debt_to_annualized_ebitda",
+      "op": ">",
+      "value": 4.0
+    }
+  },
+  "revenue_guidance_upgrade": {
+    "name": "Revenue Guidance Upgrade",
+    "category": "guidance",
+    "direction": "POSITIVE",
+    "severity": "HIGH",
+    "description": "Management raised the midpoint of revenue guidance.",
+    "rule": {
+      "metric_key": "revenue_guidance_revision_pct",
+      "op": ">",
+      "value": 3
+    }
+  },
+  "revenue_guidance_cut": {
+    "name": "Revenue Guidance Cut",
+    "category": "guidance",
+    "direction": "NEGATIVE",
+    "severity": "HIGH",
+    "description": "Management reduced the midpoint of revenue guidance.",
+    "rule": {
+      "metric_key": "revenue_guidance_revision_pct",
+      "op": "<",
+      "value": -3
+    }
+  },
+  "margin_guidance_upgrade": {
+    "name": "Margin Guidance Upgrade",
+    "category": "guidance",
+    "direction": "POSITIVE",
+    "severity": "HIGH",
+    "description": "Management raised EBITDA-margin guidance.",
+    "rule": {
+      "metric_key": "ebitda_margin_guidance_revision_bps",
+      "op": ">",
+      "value": 50
+    }
+  },
+  "margin_guidance_cut": {
+    "name": "Margin Guidance Cut",
+    "category": "guidance",
+    "direction": "NEGATIVE",
+    "severity": "HIGH",
+    "description": "Management lowered EBITDA-margin guidance.",
+    "rule": {
+      "metric_key": "ebitda_margin_guidance_revision_bps",
+      "op": "<",
+      "value": -50
+    }
+  },
+  "guidance_demand_disconnect": {
+    "name": "Guidance Ahead of Demand Evidence",
+    "category": "guidance_quality",
+    "direction": "NEGATIVE",
+    "severity": "HIGH",
+    "description": "Strong growth guidance is not supported by current volume or order-book trends.",
+    "rule": {
+      "all": [
+        {
+          "metric_key": "revenue_growth_guidance_midpoint",
+          "op": ">",
+          "value": 15
+        },
+        {
+          "metric_key": "sales_volume_yoy_growth",
+          "op": "<",
+          "value": 3
+        },
+        {
+          "metric_key": "order_book_yoy_growth",
+          "op": "<",
+          "value": 5
+        }
+      ]
+    }
+  },
+  "presentation_reconciliation_issue": {
+    "name": "Presentation-to-Result Reconciliation Issue",
+    "category": "data_quality",
+    "direction": "NEGATIVE",
+    "severity": "HIGH",
+    "description": "The sum of disclosed segment revenue does not reconcile with reported company revenue.",
+    "rule": {
+      "any": [
+        {
+          "metric_key": "segment_revenue_reconciliation_gap_pct",
+          "op": ">",
+          "value": 2
+        },
+        {
+          "metric_key": "segment_revenue_reconciliation_gap_pct",
+          "op": "<",
+          "value": -2
+        }
+      ]
+    }
+  }
+}

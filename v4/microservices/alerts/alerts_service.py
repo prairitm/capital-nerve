@@ -12,45 +12,6 @@ from alerts_db import bootstrap_schema
 
 SEVERITY_ORDER = {"CRITICAL": 0, "HIGH": 1, "MEDIUM": 2, "LOW": 3}
 
-PRESENTATION_SIGNALS_CATALOG: dict[str, dict[str, Any]] = {
-    "multi_segment_presentation": {
-        "name": "Multi-Segment Presentation",
-        "category": "coverage",
-        "direction": "NEUTRAL",
-        "severity": "LOW",
-        "description": "Presentation contains more than one detected segment.",
-    },
-    "segment_facts_available": {
-        "name": "Segment Facts Available",
-        "category": "coverage",
-        "direction": "POSITIVE",
-        "severity": "MEDIUM",
-        "description": "Segment-scoped facts were extracted separately from company facts.",
-    },
-    "guidance_present": {
-        "name": "Guidance Present",
-        "category": "content",
-        "direction": "NEUTRAL",
-        "severity": "MEDIUM",
-        "description": "Forward-looking or guidance facts were found in the presentation.",
-    },
-    "unknown_scope_needs_review": {
-        "name": "Unknown Scope Needs Review",
-        "category": "quality",
-        "direction": "NEGATIVE",
-        "severity": "HIGH",
-        "description": "Some presentation facts could not be tied to company, segment, geography, product, channel, project, or customer type scope.",
-    },
-    "low_extraction_confidence": {
-        "name": "Low Presentation Extraction Confidence",
-        "category": "quality",
-        "direction": "NEGATIVE",
-        "severity": "HIGH",
-        "description": "Average presentation extraction confidence is below the review threshold.",
-    },
-}
-
-
 def company_id_for_symbol(symbol: str) -> str:
     return hashlib.sha256(f"{symbol}:NSE".encode()).hexdigest()
 
@@ -66,7 +27,7 @@ def _parse_evidence(raw: str | None) -> dict[str, Any]:
 
 
 def _signals_catalog() -> dict[str, Any]:
-    catalog: dict[str, Any] = dict(PRESENTATION_SIGNALS_CATALOG)
+    catalog: dict[str, Any] = {}
     for path in (
         settings.catalog_dir / "signals.json",
         settings.catalog_dir / "investor_presentation" / "presentation_signals.json",

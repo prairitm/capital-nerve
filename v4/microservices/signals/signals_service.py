@@ -61,45 +61,6 @@ def load_earnings_call_signals_catalog() -> dict[str, Any]:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
-PRESENTATION_SIGNALS_CATALOG: dict[str, dict[str, Any]] = {
-    "multi_segment_presentation": {
-        "name": "Multi-Segment Presentation",
-        "category": "coverage",
-        "direction": "NEUTRAL",
-        "severity": "LOW",
-        "description": "Presentation contains more than one detected segment.",
-    },
-    "segment_facts_available": {
-        "name": "Segment Facts Available",
-        "category": "coverage",
-        "direction": "POSITIVE",
-        "severity": "MEDIUM",
-        "description": "Segment-scoped facts were extracted separately from company facts.",
-    },
-    "guidance_present": {
-        "name": "Guidance Present",
-        "category": "content",
-        "direction": "NEUTRAL",
-        "severity": "MEDIUM",
-        "description": "Forward-looking or guidance facts were found in the presentation.",
-    },
-    "unknown_scope_needs_review": {
-        "name": "Unknown Scope Needs Review",
-        "category": "quality",
-        "direction": "NEGATIVE",
-        "severity": "HIGH",
-        "description": "Some presentation facts could not be tied to company, segment, geography, product, channel, project, or customer type scope.",
-    },
-    "low_extraction_confidence": {
-        "name": "Low Presentation Extraction Confidence",
-        "category": "quality",
-        "direction": "NEGATIVE",
-        "severity": "HIGH",
-        "description": "Average presentation extraction confidence is below the review threshold.",
-    },
-}
-
-
 def load_metrics_by_key(
     conn: sqlite3.Connection,
     *,
@@ -640,76 +601,6 @@ def evaluate_presentation_signal_rules(
     return fired_signals
 
 
-def evaluate_presentation_coverage_signals(
-    *,
-    metrics_by_key: dict[str, dict[str, Any]],
-) -> list[dict[str, Any]]:
-    if "presentation_fact_count" not in metrics_by_key:
-        return []
-
-    def metric_value(key: str) -> float:
-        return float(metrics_by_key.get(key, {}).get("value") or 0.0)
-
-    checks = [
-        (
-            "multi_segment_presentation",
-            metric_value("presentation_segment_count") >= 2,
-            ["presentation_segment_count"],
-        ),
-        (
-            "segment_facts_available",
-            metric_value("presentation_segment_fact_count") > 0,
-            ["presentation_segment_fact_count"],
-        ),
-        (
-            "guidance_present",
-            metric_value("presentation_guidance_fact_count") > 0,
-            ["presentation_guidance_fact_count"],
-        ),
-        (
-            "unknown_scope_needs_review",
-            metric_value("presentation_unknown_scope_fact_count") > 0,
-            ["presentation_unknown_scope_fact_count"],
-        ),
-        (
-            "low_extraction_confidence",
-            metric_value("presentation_average_confidence") < 0.70,
-            ["presentation_average_confidence"],
-        ),
-    ]
-
-    fired_signals: list[dict[str, Any]] = []
-    for signal_key, fired, metric_keys in checks:
-        if not fired:
-            continue
-        spec = PRESENTATION_SIGNALS_CATALOG[signal_key]
-        fired_signals.append(
-            {
-                "signal_key": signal_key,
-                "title": spec["name"],
-                "description": spec["description"],
-                "direction": spec["direction"],
-                "severity": spec["severity"],
-                "category": spec["category"],
-                "metric_keys": metric_keys,
-                "fact_keys": [],
-                "supporting_metric_ids": [
-                    metrics_by_key[key]["metric_id"]
-                    for key in metric_keys
-                    if key in metrics_by_key and metrics_by_key[key].get("metric_id")
-                ],
-                "supporting_fact_ids": [],
-                "trigger_values": {
-                    key: metrics_by_key[key]["value"]
-                    for key in metric_keys
-                    if key in metrics_by_key
-                },
-                "rule_text": ", ".join(metric_keys),
-            }
-        )
-    return fired_signals
-
-
 def persist_fired_signals(
     conn: sqlite3.Connection,
     *,
@@ -784,15 +675,6 @@ def evaluate_and_persist_signals(
             metrics_by_key=metrics_by_key,
             facts_by_key=facts_by_key,
         )
-        if event_type == "Investor Presentation":
-            flattened_metrics = {
-                key: rows[0]
-                for key, rows in metrics_by_key.items()
-                if rows
-            }
-            fired_signals.extend(
-                evaluate_presentation_coverage_signals(metrics_by_key=flattened_metrics)
-            )
         persist_fired_signals(
             conn,
             company_id=company_id,
@@ -804,8 +686,7 @@ def evaluate_and_persist_signals(
             "source_counts": {
                 "metrics": sum(len(rows) for rows in metrics_by_key.values()),
                 "facts": sum(len(rows) for rows in facts_by_key.values()),
-                "rules": len(signals_catalog)
-                + (len(PRESENTATION_SIGNALS_CATALOG) if event_type == "Investor Presentation" else 0),
+                "rules": len(signals_catalog),
             },
         }
 

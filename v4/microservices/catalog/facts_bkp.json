@@ -129,6 +129,35 @@
       "NON_FINANCIAL_CORPORATE"
     ]
   },
+//   "ebitda": {
+//     "name": "EBITDA",
+//     "statement": "PROFIT_AND_LOSS",
+//     "unit": "crore",
+//     "documents": [
+//       "FINANCIAL_RESULT"
+//     ],
+//     "applicability": [
+//       "NON_FINANCIAL_CORPORATE"
+//     ],
+//     "value_origin": "REPORTED_OR_DERIVED",
+//     "derivation_policy": "Prefer reported EBITDA; otherwise derive as total_income - total_expenses + finance_cost + depreciation_and_amortization - other_income."
+//   },
+//   "ebit": {
+//     "name": "EBIT",
+//     "statement": "PROFIT_AND_LOSS",
+//     "unit": "crore",
+//     "documents": [
+//       "FINANCIAL_RESULT"
+//     ],
+//     "applicability": [
+//       "NON_FINANCIAL_CORPORATE"
+//     ],
+//     "aliases": [
+//       "operating_profit"
+//     ],
+//     "value_origin": "REPORTED_OR_DERIVED",
+//     "derivation_policy": "Prefer reported EBIT; otherwise EBITDA - depreciation_and_amortization."
+//   },
   "profit_before_exceptional_items_and_tax": {
     "name": "Profit Before Exceptional Items And Tax",
     "statement": "PROFIT_AND_LOSS",
@@ -163,6 +192,28 @@
       "NON_FINANCIAL_CORPORATE"
     ]
   },
+//   "current_tax_expense": {
+//     "name": "Current Tax Expense",
+//     "statement": "PROFIT_AND_LOSS",
+//     "unit": "crore",
+//     "documents": [
+//       "FINANCIAL_RESULT"
+//     ],
+//     "applicability": [
+//       "NON_FINANCIAL_CORPORATE"
+//     ]
+//   },
+//   "deferred_tax_expense": {
+//     "name": "Deferred Tax Expense",
+//     "statement": "PROFIT_AND_LOSS",
+//     "unit": "crore",
+//     "documents": [
+//       "FINANCIAL_RESULT"
+//     ],
+//     "applicability": [
+//       "NON_FINANCIAL_CORPORATE"
+//     ]
+//   },
   "tax_expense": {
     "name": "Tax Expense",
     "statement": "PROFIT_AND_LOSS",
@@ -174,6 +225,28 @@
       "NON_FINANCIAL_CORPORATE"
     ]
   },
+//   "profit_from_continuing_operations": {
+//     "name": "Profit From Continuing Operations",
+//     "statement": "PROFIT_AND_LOSS",
+//     "unit": "crore",
+//     "documents": [
+//       "FINANCIAL_RESULT"
+//     ],
+//     "applicability": [
+//       "NON_FINANCIAL_CORPORATE"
+//     ]
+//   },
+//   "profit_from_discontinued_operations": {
+//     "name": "Profit From Discontinued Operations",
+//     "statement": "PROFIT_AND_LOSS",
+//     "unit": "crore",
+//     "documents": [
+//       "FINANCIAL_RESULT"
+//     ],
+//     "applicability": [
+//       "NON_FINANCIAL_CORPORATE"
+//     ]
+//   },
   "pat": {
     "name": "PAT",
     "statement": "PROFIT_AND_LOSS",
@@ -199,6 +272,39 @@
       "NON_FINANCIAL_CORPORATE"
     ]
   },
+//   "pat_attributable_to_nci": {
+//     "name": "PAT Attributable To NCI",
+//     "statement": "PROFIT_AND_LOSS",
+//     "unit": "crore",
+//     "documents": [
+//       "FINANCIAL_RESULT"
+//     ],
+//     "applicability": [
+//       "NON_FINANCIAL_CORPORATE"
+//     ]
+//   },
+//   "other_comprehensive_income": {
+//     "name": "Other Comprehensive Income",
+//     "statement": "PROFIT_AND_LOSS",
+//     "unit": "crore",
+//     "documents": [
+//       "FINANCIAL_RESULT"
+//     ],
+//     "applicability": [
+//       "NON_FINANCIAL_CORPORATE"
+//     ]
+//   },
+//   "total_comprehensive_income": {
+//     "name": "Total Comprehensive Income",
+//     "statement": "PROFIT_AND_LOSS",
+//     "unit": "crore",
+//     "documents": [
+//       "FINANCIAL_RESULT"
+//     ],
+//     "applicability": [
+//       "NON_FINANCIAL_CORPORATE"
+//     ]
+//   },
   "eps_basic": {
     "name": "EPS Basic",
     "statement": "PROFIT_AND_LOSS",
@@ -221,6 +327,50 @@
       "NON_FINANCIAL_CORPORATE"
     ]
   },
+//   "face_value_per_share": {
+//     "name": "Face Value Per Share",
+//     "statement": "PROFIT_AND_LOSS",
+//     "unit": "Rs",
+//     "documents": [
+//       "FINANCIAL_RESULT"
+//     ],
+//     "applicability": [
+//       "NON_FINANCIAL_CORPORATE"
+//     ]
+//   },
+//   "weighted_average_shares_basic": {
+//     "name": "Weighted Average Shares Basic",
+//     "statement": "EQUITY",
+//     "unit": "count",
+//     "documents": [
+//       "FINANCIAL_RESULT"
+//     ],
+//     "applicability": [
+//       "NON_FINANCIAL_CORPORATE"
+//     ]
+//   },
+//   "weighted_average_shares_diluted": {
+//     "name": "Weighted Average Shares Diluted",
+//     "statement": "EQUITY",
+//     "unit": "count",
+//     "documents": [
+//       "FINANCIAL_RESULT"
+//     ],
+//     "applicability": [
+//       "NON_FINANCIAL_CORPORATE"
+//     ]
+//   },
+//   "shares_outstanding": {
+//     "name": "Shares Outstanding",
+//     "statement": "EQUITY",
+//     "unit": "count",
+//     "documents": [
+//       "FINANCIAL_RESULT"
+//     ],
+//     "applicability": [
+//       "NON_FINANCIAL_CORPORATE"
+//     ]
+//   },
   "equity_share_capital": {
     "name": "Equity Share Capital",
     "statement": "EQUITY",
@@ -261,6 +411,72 @@
       "cwip"
     ]
   },
+//   "right_of_use_assets": {
+//     "name": "Right Of Use Assets",
+//     "statement": "BALANCE_SHEET",
+//     "unit": "crore",
+//     "documents": [
+//       "FINANCIAL_RESULT"
+//     ],
+//     "applicability": [
+//       "NON_FINANCIAL_CORPORATE"
+//     ]
+//   },
+//   "goodwill": {
+//     "name": "Goodwill",
+//     "statement": "BALANCE_SHEET",
+//     "unit": "crore",
+//     "documents": [
+//       "FINANCIAL_RESULT"
+//     ],
+//     "applicability": [
+//       "NON_FINANCIAL_CORPORATE"
+//     ]
+//   },
+//   "intangible_assets": {
+//     "name": "Intangible Assets",
+//     "statement": "BALANCE_SHEET",
+//     "unit": "crore",
+//     "documents": [
+//       "FINANCIAL_RESULT"
+//     ],
+//     "applicability": [
+//       "NON_FINANCIAL_CORPORATE"
+//     ]
+//   },
+//   "non_current_investments": {
+//     "name": "Non Current Investments",
+//     "statement": "BALANCE_SHEET",
+//     "unit": "crore",
+//     "documents": [
+//       "FINANCIAL_RESULT"
+//     ],
+//     "applicability": [
+//       "NON_FINANCIAL_CORPORATE"
+//     ]
+//   },
+//   "deferred_tax_assets": {
+//     "name": "Deferred Tax Assets",
+//     "statement": "BALANCE_SHEET",
+//     "unit": "crore",
+//     "documents": [
+//       "FINANCIAL_RESULT"
+//     ],
+//     "applicability": [
+//       "NON_FINANCIAL_CORPORATE"
+//     ]
+//   },
+//   "other_non_current_assets": {
+//     "name": "Other Non Current Assets",
+//     "statement": "BALANCE_SHEET",
+//     "unit": "crore",
+//     "documents": [
+//       "FINANCIAL_RESULT"
+//     ],
+//     "applicability": [
+//       "NON_FINANCIAL_CORPORATE"
+//     ]
+//   },
   "inventories": {
     "name": "Inventories",
     "statement": "BALANCE_SHEET",
@@ -317,6 +533,17 @@
     ],
     "notes": "Only treat as cash-like when demonstrably liquid."
   },
+//   "other_current_assets": {
+//     "name": "Other Current Assets",
+//     "statement": "BALANCE_SHEET",
+//     "unit": "crore",
+//     "documents": [
+//       "FINANCIAL_RESULT"
+//     ],
+//     "applicability": [
+//       "NON_FINANCIAL_CORPORATE"
+//     ]
+//   },
   "total_current_assets": {
     "name": "Total Current Assets",
     "statement": "BALANCE_SHEET",
@@ -328,6 +555,17 @@
       "NON_FINANCIAL_CORPORATE"
     ]
   },
+//   "total_non_current_assets": {
+//     "name": "Total Non Current Assets",
+//     "statement": "BALANCE_SHEET",
+//     "unit": "crore",
+//     "documents": [
+//       "FINANCIAL_RESULT"
+//     ],
+//     "applicability": [
+//       "NON_FINANCIAL_CORPORATE"
+//     ]
+//   },
   "total_assets": {
     "name": "Total Assets",
     "statement": "BALANCE_SHEET",
@@ -339,6 +577,43 @@
       "NON_FINANCIAL_CORPORATE"
     ]
   },
+//   "other_equity": {
+//     "name": "Other Equity",
+//     "statement": "BALANCE_SHEET",
+//     "unit": "crore",
+//     "documents": [
+//       "FINANCIAL_RESULT"
+//     ],
+//     "applicability": [
+//       "NON_FINANCIAL_CORPORATE"
+//     ]
+//   },
+//   "equity_attributable_to_parent": {
+//     "name": "Equity Attributable To Parent",
+//     "statement": "BALANCE_SHEET",
+//     "unit": "crore",
+//     "documents": [
+//       "FINANCIAL_RESULT"
+//     ],
+//     "applicability": [
+//       "NON_FINANCIAL_CORPORATE"
+//     ]
+//   },
+//   "non_controlling_interest": {
+//     "name": "Non Controlling Interest",
+//     "statement": "BALANCE_SHEET",
+//     "unit": "crore",
+//     "documents": [
+//       "FINANCIAL_RESULT"
+//     ],
+//     "applicability": [
+//       "NON_FINANCIAL_CORPORATE"
+//     ],
+//     "aliases": [
+//       "nci",
+//       "minority_interest"
+//     ]
+//   },
   "total_equity": {
     "name": "Total Equity",
     "statement": "BALANCE_SHEET",
@@ -372,6 +647,28 @@
       "NON_FINANCIAL_CORPORATE"
     ]
   },
+//   "non_current_lease_liabilities": {
+//     "name": "Non Current Lease Liabilities",
+//     "statement": "BALANCE_SHEET",
+//     "unit": "crore",
+//     "documents": [
+//       "FINANCIAL_RESULT"
+//     ],
+//     "applicability": [
+//       "NON_FINANCIAL_CORPORATE"
+//     ]
+//   },
+//   "current_lease_liabilities": {
+//     "name": "Current Lease Liabilities",
+//     "statement": "BALANCE_SHEET",
+//     "unit": "crore",
+//     "documents": [
+//       "FINANCIAL_RESULT"
+//     ],
+//     "applicability": [
+//       "NON_FINANCIAL_CORPORATE"
+//     ]
+//   },
   "trade_payables_msme": {
     "name": "Trade Payables MSME",
     "statement": "BALANCE_SHEET",
@@ -394,6 +691,109 @@
       "NON_FINANCIAL_CORPORATE"
     ]
   },
+//   "other_current_financial_liabilities": {
+//     "name": "Other Current Financial Liabilities",
+//     "statement": "BALANCE_SHEET",
+//     "unit": "crore",
+//     "documents": [
+//       "FINANCIAL_RESULT"
+//     ],
+//     "applicability": [
+//       "NON_FINANCIAL_CORPORATE"
+//     ]
+//   },
+//   "other_non_current_financial_liabilities": {
+//     "name": "Other Non Current Financial Liabilities",
+//     "statement": "BALANCE_SHEET",
+//     "unit": "crore",
+//     "documents": [
+//       "FINANCIAL_RESULT"
+//     ],
+//     "applicability": [
+//       "NON_FINANCIAL_CORPORATE"
+//     ]
+//   },
+//   "current_provisions": {
+//     "name": "Current Provisions",
+//     "statement": "BALANCE_SHEET",
+//     "unit": "crore",
+//     "documents": [
+//       "FINANCIAL_RESULT"
+//     ],
+//     "applicability": [
+//       "NON_FINANCIAL_CORPORATE"
+//     ]
+//   },
+//   "non_current_provisions": {
+//     "name": "Non Current Provisions",
+//     "statement": "BALANCE_SHEET",
+//     "unit": "crore",
+//     "documents": [
+//       "FINANCIAL_RESULT"
+//     ],
+//     "applicability": [
+//       "NON_FINANCIAL_CORPORATE"
+//     ]
+//   },
+//   "contract_liabilities": {
+//     "name": "Contract Liabilities",
+//     "statement": "BALANCE_SHEET",
+//     "unit": "crore",
+//     "documents": [
+//       "FINANCIAL_RESULT"
+//     ],
+//     "applicability": [
+//       "NON_FINANCIAL_CORPORATE"
+//     ],
+//     "aliases": [
+//       "deferred_revenue",
+//       "customer_advances"
+//     ]
+//   },
+//   "current_tax_liabilities": {
+//     "name": "Current Tax Liabilities",
+//     "statement": "BALANCE_SHEET",
+//     "unit": "crore",
+//     "documents": [
+//       "FINANCIAL_RESULT"
+//     ],
+//     "applicability": [
+//       "NON_FINANCIAL_CORPORATE"
+//     ]
+//   },
+//   "deferred_tax_liabilities": {
+//     "name": "Deferred Tax Liabilities",
+//     "statement": "BALANCE_SHEET",
+//     "unit": "crore",
+//     "documents": [
+//       "FINANCIAL_RESULT"
+//     ],
+//     "applicability": [
+//       "NON_FINANCIAL_CORPORATE"
+//     ]
+//   },
+//   "other_current_liabilities": {
+//     "name": "Other Current Liabilities",
+//     "statement": "BALANCE_SHEET",
+//     "unit": "crore",
+//     "documents": [
+//       "FINANCIAL_RESULT"
+//     ],
+//     "applicability": [
+//       "NON_FINANCIAL_CORPORATE"
+//     ]
+//   },
+//   "other_non_current_liabilities": {
+//     "name": "Other Non Current Liabilities",
+//     "statement": "BALANCE_SHEET",
+//     "unit": "crore",
+//     "documents": [
+//       "FINANCIAL_RESULT"
+//     ],
+//     "applicability": [
+//       "NON_FINANCIAL_CORPORATE"
+//     ]
+//   },
   "total_current_liabilities": {
     "name": "Total Current Liabilities",
     "statement": "BALANCE_SHEET",
@@ -405,6 +805,17 @@
       "NON_FINANCIAL_CORPORATE"
     ]
   },
+//   "total_non_current_liabilities": {
+//     "name": "Total Non Current Liabilities",
+//     "statement": "BALANCE_SHEET",
+//     "unit": "crore",
+//     "documents": [
+//       "FINANCIAL_RESULT"
+//     ],
+//     "applicability": [
+//       "NON_FINANCIAL_CORPORATE"
+//     ]
+//   },
   "total_liabilities": {
     "name": "Total Liabilities",
     "statement": "BALANCE_SHEET",
@@ -416,6 +827,17 @@
       "NON_FINANCIAL_CORPORATE"
     ]
   },
+//   "cash_profit_before_working_capital_changes": {
+//     "name": "Cash Profit Before Working Capital Changes",
+//     "statement": "CASH_FLOW",
+//     "unit": "crore",
+//     "documents": [
+//       "FINANCIAL_RESULT"
+//     ],
+//     "applicability": [
+//       "NON_FINANCIAL_CORPORATE"
+//     ]
+//   },
   "working_capital_change": {
     "name": "Working Capital Change",
     "statement": "CASH_FLOW",
@@ -470,6 +892,54 @@
     ],
     "normalization": "positive_outflow"
   },
+//   "proceeds_from_sale_of_ppe": {
+//     "name": "Proceeds From Sale Of PPE",
+//     "statement": "CASH_FLOW",
+//     "unit": "crore",
+//     "documents": [
+//       "FINANCIAL_RESULT"
+//     ],
+//     "applicability": [
+//       "NON_FINANCIAL_CORPORATE"
+//     ],
+//     "normalization": "positive_inflow"
+//   },
+//   "interest_received": {
+//     "name": "Interest Received",
+//     "statement": "CASH_FLOW",
+//     "unit": "crore",
+//     "documents": [
+//       "FINANCIAL_RESULT"
+//     ],
+//     "applicability": [
+//       "NON_FINANCIAL_CORPORATE"
+//     ],
+//     "normalization": "positive_inflow"
+//   },
+//   "dividends_received": {
+//     "name": "Dividends Received",
+//     "statement": "CASH_FLOW",
+//     "unit": "crore",
+//     "documents": [
+//       "FINANCIAL_RESULT"
+//     ],
+//     "applicability": [
+//       "NON_FINANCIAL_CORPORATE"
+//     ],
+//     "normalization": "positive_inflow"
+//   },
+//   "acquisition_and_investment_outflow": {
+//     "name": "Acquisition And Investment Outflow",
+//     "statement": "CASH_FLOW",
+//     "unit": "crore",
+//     "documents": [
+//       "FINANCIAL_RESULT"
+//     ],
+//     "applicability": [
+//       "NON_FINANCIAL_CORPORATE"
+//     ],
+//     "normalization": "positive_outflow"
+//   },
   "cfi": {
     "name": "CFI",
     "statement": "CASH_FLOW",
@@ -505,6 +975,30 @@
     ],
     "normalization": "positive_outflow"
   },
+//   "interest_paid": {
+//     "name": "Interest Paid",
+//     "statement": "CASH_FLOW",
+//     "unit": "crore",
+//     "documents": [
+//       "FINANCIAL_RESULT"
+//     ],
+//     "applicability": [
+//       "NON_FINANCIAL_CORPORATE"
+//     ],
+//     "normalization": "positive_outflow"
+//   },
+//   "lease_payments": {
+//     "name": "Lease Payments",
+//     "statement": "CASH_FLOW",
+//     "unit": "crore",
+//     "documents": [
+//       "FINANCIAL_RESULT"
+//     ],
+//     "applicability": [
+//       "NON_FINANCIAL_CORPORATE"
+//     ],
+//     "normalization": "positive_outflow"
+//   },
   "dividends_paid": {
     "name": "Dividends Paid",
     "statement": "CASH_FLOW",
@@ -590,6 +1084,34 @@
     ],
     "notes": "Retain the company's disclosed definition."
   },
+//   "segment_assets": {
+//     "name": "Segment Assets",
+//     "statement": "SEGMENT",
+//     "unit": "crore",
+//     "documents": [
+//       "FINANCIAL_RESULT"
+//     ],
+//     "applicability": [
+//       "NON_FINANCIAL_CORPORATE"
+//     ],
+//     "dimensions": [
+//       "segment"
+//     ]
+//   },
+//   "segment_liabilities": {
+//     "name": "Segment Liabilities",
+//     "statement": "SEGMENT",
+//     "unit": "crore",
+//     "documents": [
+//       "FINANCIAL_RESULT"
+//     ],
+//     "applicability": [
+//       "NON_FINANCIAL_CORPORATE"
+//     ],
+//     "dimensions": [
+//       "segment"
+//     ]
+//   },
   "audit_conclusion": {
     "name": "Auditor or Limited Review Conclusion",
     "statement": "AUDITOR_REVIEW",
