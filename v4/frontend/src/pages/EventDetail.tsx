@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowUpRight, ChevronDown, FileSearch, FileText, Loader2, Sparkles } from "lucide-react";
+import { ArrowUpRight, Check, ChevronDown, FileSearch, FileText, Loader2, Share2, Sparkles } from "lucide-react";
 import clsx from "clsx";
 import { api } from "@/api/client";
 import type {
@@ -110,6 +110,26 @@ function factGroupKey(fact: ExtractedValue): string {
 
 function factGroupLabel(fact: ExtractedValue): string {
   return fact.group || categoryGroupLabel(fact.category || fact.statement);
+}
+
+function filingBriefShareText(
+  summary: EventSummary,
+  companyName: string,
+  periodLabel: string | null | undefined,
+): string {
+  const context = [companyName, periodLabel].filter(Boolean).join(" · ");
+  return [
+    context,
+    summary.headline,
+    summary.summary,
+    "Key points",
+    ...summary.key_points.map((point) => `• ${point}`),
+    "Investor takeaway",
+    summary.investor_takeaway,
+    "AI-generated from the source filing. Review the filing before making decisions.",
+  ]
+    .filter(Boolean)
+    .join("\n\n");
 }
 
 function groupFactsByStatement(facts: ExtractedValue[]) {
@@ -1005,6 +1025,7 @@ function QuarterAtGlance({
 
 export function EventDetail() {
   const { ticker, eventId } = useParams<{ ticker: string; eventId: string }>();
+  const [shareStatus, setShareStatus] = useState<"idle" | "shared" | "copied" | "error">("idle");
 
   const eventQuery = useQuery({
     queryKey: ["event", eventId],
@@ -1062,6 +1083,35 @@ export function EventDetail() {
       )
     : allDocumentSections;
 
+  const shareFilingBrief = async () => {
+    if (!eventSummary) return;
+
+    const url = window.location.href;
+    const companyName = company?.name || companyEventTicker || "Company";
+    const title = `${companyName} AI filing brief`;
+    const text = filingBriefShareText(eventSummary, companyName, event.period_label);
+
+    try {
+      if (navigator.share) {
+        await navigator.share({ title, text, url });
+        setShareStatus("shared");
+      } else {
+        await navigator.clipboard.writeText(`${text}\n\n${url}`);
+        setShareStatus("copied");
+      }
+      window.setTimeout(() => setShareStatus("idle"), 2_500);
+    } catch (error) {
+      if (error instanceof DOMException && error.name === "AbortError") return;
+      try {
+        await navigator.clipboard.writeText(`${text}\n\n${url}`);
+        setShareStatus("copied");
+        window.setTimeout(() => setShareStatus("idle"), 2_500);
+      } catch {
+        setShareStatus("error");
+      }
+    }
+  };
+
   return (
     <div className="w-full min-w-0 max-w-4xl mx-auto space-y-6 overflow-hidden">
       <BackButton fallback={ticker ? `/company/${ticker}` : "/companies"} />
@@ -1116,7 +1166,28 @@ export function EventDetail() {
                   AI filing brief
                 </span>
               </div>
-              <span className="chip-neutral text-[10px]">Grounded in filing markdown</span>
+              <div className="flex flex-wrap items-center justify-end gap-2">
+                <span className="chip-neutral text-[10px]">Grounded in filing markdown</span>
+                <button
+                  type="button"
+                  className="btn-secondary px-2.5 py-1.5 text-xs"
+                  onClick={() => void shareFilingBrief()}
+                  aria-label="Share AI filing brief"
+                >
+                  {shareStatus === "shared" || shareStatus === "copied" ? (
+                    <Check size={14} />
+                  ) : (
+                    <Share2 size={14} />
+                  )}
+                  {shareStatus === "shared"
+                    ? "Shared"
+                    : shareStatus === "copied"
+                      ? "Copied"
+                      : shareStatus === "error"
+                        ? "Unable to share"
+                        : "Share"}
+                </button>
+              </div>
             </div>
             <h2 className="mt-3 text-lg font-semibold leading-snug text-ink md:text-xl">
               {eventSummary.headline}
@@ -1155,7 +1226,7 @@ export function EventDetail() {
             <div>
               <div className="text-sm font-semibold text-ink">Preparing the filing brief</div>
               <p className="mt-0.5 text-xs text-ink-mute">
-                Reading the filing markdown and identifying the most material developments.
+                Reading the filing and identifying the most material developments.
               </p>
             </div>
           </div>
