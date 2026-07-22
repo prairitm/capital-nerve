@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import {
+  ArrowLeft,
   ChevronLeft,
   ChevronRight,
   Download,
@@ -9,9 +11,9 @@ import {
   Minus,
   Plus,
 } from "lucide-react";
-import { BackButton } from "@/components/common/BackButton";
 
 type PdfViewerToolbarProps = {
+  backHref: string;
   title: string;
   companyName?: string | null;
   currentPage: number;
@@ -31,6 +33,7 @@ function clampPage(page: number, numPages: number): number {
 }
 
 export function PdfViewerToolbar({
+  backHref,
   title,
   companyName,
   currentPage,
@@ -58,7 +61,14 @@ export function PdfViewerToolbar({
   return (
     <header className="relative z-20 flex min-h-16 flex-wrap items-center gap-2 border-b border-line/80 bg-surface/95 px-2 py-2.5 backdrop-blur md:flex-nowrap md:gap-3 md:px-4">
       <div className="flex min-w-0 flex-1 items-center gap-2.5">
-        <BackButton fallback="/companies" />
+        <Link
+          to={backHref}
+          className="btn-ghost -ml-2 text-sm"
+          aria-label="Back to event"
+          title="Back to event"
+        >
+          <ArrowLeft size={16} /> Back
+        </Link>
         <div className="hidden h-7 w-px bg-line/80 sm:block" />
         <div className="min-w-0">
           <h1 className="truncate text-sm font-semibold text-ink" title={title}>

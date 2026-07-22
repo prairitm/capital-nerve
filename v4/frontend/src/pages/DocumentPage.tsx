@@ -302,10 +302,17 @@ export function DocumentPage() {
   const showSidePanel = selectedFacts.length > 0;
   const hasEvidence = Boolean(highlightText?.trim() && targetPage != null);
   const pageWidth = Math.max(240, Math.round(fitPageWidth * zoom));
+  const eventHref =
+    company?.ticker && event?.id
+      ? `/company/${encodeURIComponent(company.ticker)}/event/${encodeURIComponent(event.id)}`
+      : company?.ticker
+        ? `/company/${encodeURIComponent(company.ticker)}/events`
+        : "/companies";
 
   return (
     <div className="mx-auto flex h-[calc(100dvh-9rem)] min-h-[30rem] max-w-[1500px] flex-col overflow-hidden rounded-2xl border border-line bg-surface shadow-card lg:h-[calc(100dvh-3.5rem)] lg:min-h-[34rem]">
       <PdfViewerToolbar
+        backHref={eventHref}
         title={title}
         companyName={company?.name}
         currentPage={currentPage}

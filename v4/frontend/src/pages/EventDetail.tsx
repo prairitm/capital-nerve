@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowUpRight, Check, ChevronDown, FileSearch, FileText, Loader2, Share2, Sparkles } from "lucide-react";
+import { ArrowUpRight, Check, ChevronDown, FileText, Loader2, Share2, Sparkles } from "lucide-react";
 import clsx from "clsx";
 import { api } from "@/api/client";
 import type {
@@ -448,8 +448,6 @@ function cleanDimensionName(value: string | null | undefined) {
 }
 
 function EarningsCallAnalysis({ section }: { section: QuarterDocumentSection }) {
-  const [supportingOpen, setSupportingOpen] = useState(false);
-  const documentId = section.document?.id ?? section.event?.document_id ?? null;
   const config = section.display ?? {};
   const metrics = selectMetrics(section.metrics, config.metric_priority, 3);
   const signals = rankDisplaySignals(section.signals, config);
@@ -459,11 +457,6 @@ function EarningsCallAnalysis({ section }: { section: QuarterDocumentSection }) 
       <DisplayMetricGrid metrics={metrics} title="Forward indicators" />
       <DisplayFactGroups section={section} groups={config.fact_groups ?? []} title="Management read-through" maxItems={8} />
       {signals.length > 0 && <EventSignalList signals={signals} title="Signals" />}
-
-      <section className="card overflow-hidden">
-        <button type="button" onClick={() => setSupportingOpen((open) => !open)} aria-expanded={supportingOpen} className="focus-ring flex w-full items-center justify-between gap-4 rounded-2xl px-5 py-4 text-left hover:bg-surface-2/35"><span className="flex min-w-0 items-center gap-3"><FileSearch size={17} className="shrink-0 text-ink-soft" /><span><span className="block text-base font-semibold text-ink">Supporting transcript data</span><span className="mt-0.5 block text-xs text-ink-mute">Extracted claims and direct source references</span></span></span><ChevronDown size={16} className={clsx("shrink-0 text-ink-soft transition-transform", supportingOpen && "rotate-180")} /></button>
-        {supportingOpen && <div className="border-t border-line/60 bg-bg/25 p-3 md:p-4"><FactsPanel facts={section.facts} factPeriods={section.fact_periods} activeFactPeriodEnd={section.selected_fact_period_end} fallbackDocumentId={documentId} /></div>}
-      </section>
     </section>
   );
 }
@@ -842,7 +835,6 @@ function FactsPanel({
 }
 
 function QuarterDocumentSectionPanel({ section, snapshot = [] }: { section: QuarterDocumentSection; snapshot?: SnapshotRow[] }) {
-  const [supportingOpen, setSupportingOpen] = useState(false);
   const documentId = section.document?.id ?? section.event?.document_id ?? null;
   const sourceHref = documentId ? `/documents/${documentId}` : null;
   const eventDate = section.event?.event_date ?? section.document?.ingested_at ?? null;
@@ -856,18 +848,7 @@ function QuarterDocumentSectionPanel({ section, snapshot = [] }: { section: Quar
   }
 
   if (section.document_type === "INVESTOR_PRESENTATION") {
-    return (
-      <section className="space-y-4">
-        <PresentationHighlights section={section} />
-        <section className="card overflow-hidden">
-          <button type="button" onClick={() => setSupportingOpen((open) => !open)} aria-expanded={supportingOpen} className="focus-ring flex w-full items-center justify-between gap-4 rounded-2xl px-5 py-4 text-left hover:bg-surface-2/35">
-            <span className="flex min-w-0 items-center gap-3"><FileSearch size={17} className="shrink-0 text-ink-soft" /><span><span className="block text-base font-semibold text-ink">Supporting presentation data</span><span className="mt-0.5 block text-xs text-ink-mute">Extracted operating facts and direct source references</span></span></span>
-            <ChevronDown size={16} className={clsx("shrink-0 text-ink-soft transition-transform", supportingOpen && "rotate-180")} />
-          </button>
-          {supportingOpen && <div className="border-t border-line/60 bg-bg/25 p-3 md:p-4"><FactsPanel facts={section.facts} factPeriods={section.fact_periods} activeFactPeriodEnd={section.selected_fact_period_end} fallbackDocumentId={documentId} /></div>}
-        </section>
-      </section>
-    );
+    return <PresentationHighlights section={section} />;
   }
 
   return (
@@ -1158,7 +1139,6 @@ export function EventDetail() {
                 </span>
               </div>
               <div className="flex flex-wrap items-center justify-end gap-2">
-                <span className="chip-neutral text-[10px]">Grounded in filing markdown</span>
                 <button
                   type="button"
                   className="btn-secondary px-2.5 py-1.5 text-xs"
