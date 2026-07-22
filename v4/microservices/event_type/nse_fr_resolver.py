@@ -738,7 +738,7 @@ def classify_pdf_url(
     return classification
 
 
-def _resolved_rank(resolved: dict[str, Any]) -> tuple[datetime, float, float]:
+def _resolved_rank(resolved: dict[str, Any]) -> tuple[int, float, datetime, float]:
     cls = resolved.get("classification") or {}
     item = resolved.get("announcement") or {}
     try:
@@ -748,9 +748,10 @@ def _resolved_rank(resolved: dict[str, Any]) -> tuple[datetime, float, float]:
     except ValueError:
         published_at = datetime.min
     return (
+        published_at.date().toordinal(),
+        float(resolved.get("metadata_score") or 0),
         published_at,
         float(cls.get("confidence") or 0),
-        float(resolved.get("metadata_score") or 0),
     )
 
 

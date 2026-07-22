@@ -164,6 +164,44 @@ class SelectionRegressionTests(unittest.TestCase):
         self.assertIsNotNone(resolved)
         self.assertEqual(resolved["url"], newer["attchmntFile"])
 
+    @patch("nse_fr_resolver._fetch_and_classify")
+    def test_explicit_result_wins_over_later_same_day_press_release(
+        self, fetch_and_classify
+    ) -> None:
+        press_release = self._result(
+            "https://example.test/press-release.pdf",
+            "2024-07-16 12:53:12",
+            text="Press release on unaudited financial results for the quarter ended June 30, 2024",
+        )
+        press_release["desc"] = "Press Release"
+        explicit_result = self._result(
+            "https://example.test/result.pdf",
+            "2024-07-16 12:46:22",
+            text=(
+                "Submitted to the Exchange, the financial results for the period "
+                "ended June 30, 2024"
+            ),
+        )
+        explicit_result["desc"] = "Financial Result Updates"
+        fetch_and_classify.return_value = (
+            "result-hash",
+            {
+                "is_financial_report": True,
+                "confidence": 0.9,
+                "document_kind": "FINANCIAL_RESULT",
+            },
+            b"%PDF-result",
+        )
+
+        resolved = resolve_canonical_financial_report(
+            [press_release, explicit_result],
+            [press_release, explicit_result],
+            session=object(),
+        )
+
+        self.assertIsNotNone(resolved)
+        self.assertEqual(resolved["url"], explicit_result["attchmntFile"])
+
     def test_period_markers_support_ordinals_and_ignore_upload_dates(self) -> None:
         markers = infer_period_markers(
             [
