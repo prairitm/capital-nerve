@@ -294,6 +294,19 @@ export interface EventDetail {
   related_events: CompanyEvent[];
   document_sections?: QuarterDocumentSection[];
   quarter_display?: QuarterDisplayConfig | null;
+  event_summary: EventSummary | null;
+}
+
+export interface EventSummary {
+  event_id: string;
+  document_id: string;
+  model: string;
+  headline: string;
+  summary: string;
+  key_points: string[];
+  investor_takeaway: string;
+  generated_at: string;
+  cached: boolean;
 }
 
 export interface DisplayFactGroup {
@@ -403,6 +416,10 @@ export interface DocumentDetail {
     metric_values: number;
     signals: number;
   };
+  filing_summary: {
+    available_fact_count: number;
+    highlights: ExtractedValue[];
+  } | null;
 }
 
 export interface SourceLocateResult {

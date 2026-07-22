@@ -5,27 +5,38 @@ import { pdfjs } from "react-pdf";
 import pdfjsWorker from "pdfjs-dist/build/pdf.worker.min.mjs?url";
 import "react-pdf/dist/Page/TextLayer.css";
 import "react-pdf/dist/Page/AnnotationLayer.css";
-import { FileSearch } from "lucide-react";
 import { api, apiBlob } from "@/api/client";
-import type { DocumentDetail, SourceLocateResult } from "@/api/types";
+import type { DocumentDetail, ExtractedValue, SourceLocateResult } from "@/api/types";
+import { FactSourceLink } from "@/components/common/FactSourceLink";
 import { PageLoader, Spinner } from "@/components/common/Spinner";
 import {
   ContinuousPdfViewer,
   type ContinuousPdfViewerHandle,
 } from "@/components/pdf/ContinuousPdfViewer";
 import { PdfViewerToolbar } from "@/components/pdf/PdfViewerToolbar";
-import { documentDisplayTitle } from "@/lib/format";
-import {
-  buildEvidenceHighlights,
-  highlightMatchInText,
-  parseSourceBbox,
-} from "@/lib/pdfHighlight";
+import { documentDisplayTitle, formatMetricValue } from "@/lib/format";
+import { parseSourceBbox } from "@/lib/pdfHighlight";
 
 pdfjs.GlobalWorkerOptions.workerSrc = pdfjsWorker;
 
 function parsePageParam(raw: string | null): number | null {
   const value = Number(raw);
   return Number.isFinite(value) && value > 0 ? Math.round(value) : null;
+}
+
+function summaryFactValue(fact: ExtractedValue): string {
+  if (
+    fact.value_lower != null &&
+    fact.value_upper != null &&
+    fact.value_lower !== fact.value_upper
+  ) {
+    return `${formatMetricValue(fact.value_lower, fact.unit)} – ${formatMetricValue(
+      fact.value_upper,
+      fact.unit,
+    )}`;
+  }
+  if (fact.value_numeric != null) return formatMetricValue(fact.value_numeric, fact.unit);
+  return fact.value_text?.trim() || "—";
 }
 
 export function DocumentPage() {
@@ -44,8 +55,6 @@ export function DocumentPage() {
   const [pdfError, setPdfError] = useState<string | null>(null);
   const [fitPageWidth, setFitPageWidth] = useState(760);
   const [zoom, setZoom] = useState(1);
-  const [pdfHighlightMatched, setPdfHighlightMatched] = useState(false);
-  const [highlightChecked, setHighlightChecked] = useState(false);
 
   const locateQuery = useMemo(() => {
     const query: Record<string, string> = { text: highlightText! };
@@ -73,13 +82,6 @@ export function DocumentPage() {
 
   const targetPage = pageFromUrl ?? locate?.page ?? null;
   const sourceBbox = useMemo(() => parseSourceBbox(locate?.bbox), [locate?.bbox]);
-  const highlights = useMemo(
-    () =>
-      highlightText
-        ? buildEvidenceHighlights([highlightText], highlightValue)
-        : { patterns: [], quoteTexts: [], targetValues: [] },
-    [highlightText, highlightValue],
-  );
   const highlightKey = useMemo(
     () =>
       highlightText?.trim()
@@ -91,11 +93,6 @@ export function DocumentPage() {
   useEffect(() => {
     if (targetPage != null) setCurrentPage(targetPage);
   }, [targetPage]);
-
-  useEffect(() => {
-    setPdfHighlightMatched(false);
-    setHighlightChecked(false);
-  }, [highlightKey, locate?.bbox]);
 
   useEffect(() => {
     const element = viewerWidthElement;
@@ -158,19 +155,15 @@ export function DocumentPage() {
     setZoom(nextZoom);
     requestAnimationFrame(() => viewerHandleRef.current?.scrollToPage(currentPage, "auto"));
   }, [currentPage]);
+  const ignoreHighlightStatus = useCallback(() => {}, []);
 
   if (isLoading || (highlightText?.trim() && locating)) return <PageLoader />;
   if (!data) return <div className="text-ink-mute">Document not found.</div>;
 
   const { document: documentInfo, company, event } = data;
   const title = documentDisplayTitle(documentInfo, event);
-  const showMarkdownFallback = Boolean(
-    highlightText?.trim() &&
-      locate?.reference_text &&
-      highlightChecked &&
-      !pdfHighlightMatched &&
-      sourceBbox == null,
-  );
+  const showFilingSummary = Boolean(data.filing_summary?.highlights.length);
+  const showSidePanel = showFilingSummary;
   const hasEvidence = Boolean(highlightText?.trim() && targetPage != null);
   const pageWidth = Math.max(240, Math.round(fitPageWidth * zoom));
 
@@ -192,8 +185,8 @@ export function DocumentPage() {
 
       <div
         className={`grid min-h-0 flex-1 ${
-          showMarkdownFallback
-            ? "grid-rows-[minmax(0,1fr)_minmax(9rem,38%)] lg:grid-cols-[minmax(0,1fr)_20rem] lg:grid-rows-1"
+          showSidePanel
+            ? "grid-rows-[minmax(0,1fr)_minmax(10rem,40%)] lg:grid-cols-[minmax(0,1fr)_22rem] lg:grid-rows-1"
             : "grid-cols-1"
         }`}
       >
@@ -222,31 +215,46 @@ export function DocumentPage() {
                 setCurrentPage((page) => Math.min(Math.max(page, 1), loadedPages));
               }}
               onCurrentPageChange={setCurrentPage}
-              onHighlightStatus={(matched) => {
-                setPdfHighlightMatched(matched);
-                setHighlightChecked(true);
-              }}
+              onHighlightStatus={ignoreHighlightStatus}
             />
           ) : null}
         </div>
 
-        {showMarkdownFallback && locate?.reference_text && (
+        {showSidePanel && (
           <aside className="min-h-0 overflow-y-auto border-t border-line bg-bg-soft/95 p-4 lg:border-l lg:border-t-0">
-            <div className="mb-3 flex items-center gap-2 text-positive">
-              <FileSearch size={15} />
-              <h2 className="text-xs font-semibold uppercase tracking-[0.12em]">
-                Parsed evidence
-              </h2>
-            </div>
-            <p className="mb-3 text-[11px] leading-relaxed text-ink-soft">
-              The PDF text layer could not be matched reliably. This is the parsed filing excerpt used by the extraction pipeline.
-            </p>
-            <div
-              className="whitespace-pre-wrap font-mono text-[11px] leading-relaxed text-ink"
-              dangerouslySetInnerHTML={{
-                __html: highlightMatchInText(locate.reference_text, highlights.patterns),
-              }}
-            />
+            {showFilingSummary && data.filing_summary && (
+              <section>
+                <div className="mb-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-ink-soft">
+                  Filing summary
+                </div>
+                <p className="mb-3 text-[11px] leading-relaxed text-ink-soft">
+                  Key facts selected from {data.filing_summary.available_fact_count} extracted
+                  {data.filing_summary.available_fact_count === 1 ? " fact" : " facts"}. The full
+                  fact set remains available on the event page.
+                </p>
+                <ul className="space-y-2.5">
+                  {data.filing_summary.highlights.map((fact) => (
+                    <li
+                      key={`${fact.value_code}-${fact.segment ?? fact.scope_name ?? "company"}`}
+                      className="rounded-xl border border-line/70 bg-surface-2/55 p-3"
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <div className="text-[11px] text-ink-mute">{fact.value_name}</div>
+                          <div className="mt-0.5 break-words text-sm font-medium leading-snug text-ink">
+                            {summaryFactValue(fact)}
+                          </div>
+                        </div>
+                        <FactSourceLink documentId={documentId ?? null} fact={fact} />
+                      </div>
+                      {fact.source_page != null && (
+                        <div className="mt-2 text-[10px] text-ink-soft">Source: p.{fact.source_page}</div>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            )}
           </aside>
         )}
       </div>

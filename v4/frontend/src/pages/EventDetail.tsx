@@ -7,6 +7,7 @@ import { api } from "@/api/client";
 import type {
   DisplayFactGroup,
   EventDetail as EventDetailT,
+  EventSummary,
   ExtractedValue,
   MetricValue,
   QuarterDocumentSection,
@@ -1013,11 +1014,22 @@ export function EventDetail() {
       query.state.data?.intelligence_status?.state === "processing" ? 15_000 : false,
   });
   const { data, isLoading } = eventQuery;
+  const generatedSummaryQuery = useQuery({
+    queryKey: ["event-summary", eventId],
+    queryFn: () =>
+      api<EventSummary>(`/events/${eventId}/summary`, {
+        method: "POST",
+      }),
+    enabled: Boolean(eventId && data && !data.event_summary),
+    retry: 1,
+    staleTime: Infinity,
+  });
 
   if (isLoading) return <PageLoader />;
   if (!data) return <div className="text-ink-mute">Event not found.</div>;
 
   const { event, company, facts, metrics, signals } = data;
+  const eventSummary = data.event_summary ?? generatedSummaryQuery.data ?? null;
   const companyEventTicker = ticker ?? company?.ticker ?? "";
   const relatedDocumentEvents = (data.related_events ?? []).filter((item) => item.document_id);
   const factPeriods = data.fact_periods ?? [];
@@ -1093,6 +1105,71 @@ export function EventDetail() {
         ) : null}
         </div>
       </header>
+
+      {eventSummary ? (
+        <section className="card overflow-hidden border-brand/20" aria-label="AI filing brief">
+          <div className="border-b border-line/60 bg-brand/5 px-5 py-4 md:px-6">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="flex items-center gap-2 text-brand-soft">
+                <Sparkles size={16} />
+                <span className="text-[11px] font-semibold uppercase tracking-[0.12em]">
+                  AI filing brief
+                </span>
+              </div>
+              <span className="chip-neutral text-[10px]">Grounded in filing markdown</span>
+            </div>
+            <h2 className="mt-3 text-lg font-semibold leading-snug text-ink md:text-xl">
+              {eventSummary.headline}
+            </h2>
+            <p className="mt-2 text-sm leading-6 text-ink-mute">{eventSummary.summary}</p>
+          </div>
+
+          <div className="space-y-4 p-5 md:p-6">
+            <ul className="grid gap-3 md:grid-cols-3">
+              {eventSummary.key_points.map((point, index) => (
+                <li key={`${index}-${point}`} className="rounded-xl border border-line/70 bg-surface-2/45 p-3.5">
+                  <div className="mb-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-ink-soft">
+                    Key point {index + 1}
+                  </div>
+                  <p className="text-sm leading-6 text-ink">{point}</p>
+                </li>
+              ))}
+            </ul>
+            <div className="rounded-xl border border-brand/20 bg-brand/5 px-4 py-3.5">
+              <div className="text-[10px] font-semibold uppercase tracking-[0.12em] text-brand-soft">
+                Investor takeaway
+              </div>
+              <p className="mt-1.5 text-sm font-medium leading-6 text-ink">
+                {eventSummary.investor_takeaway}
+              </p>
+            </div>
+            <p className="text-[10px] leading-relaxed text-ink-soft">
+              AI-generated from the parsed source filing. Review the linked filing before making decisions.
+            </p>
+          </div>
+        </section>
+      ) : generatedSummaryQuery.isLoading ? (
+        <section className="card px-5 py-4" role="status">
+          <div className="flex items-center gap-3">
+            <Loader2 className="shrink-0 animate-spin text-brand" size={17} />
+            <div>
+              <div className="text-sm font-semibold text-ink">Preparing the filing brief</div>
+              <p className="mt-0.5 text-xs text-ink-mute">
+                Reading the filing markdown and identifying the most material developments.
+              </p>
+            </div>
+          </div>
+        </section>
+      ) : generatedSummaryQuery.isError ? (
+        <section className="rounded-2xl border border-line bg-surface px-5 py-4">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <p className="text-sm text-ink-mute">The AI filing brief is temporarily unavailable.</p>
+            <button type="button" className="btn-secondary text-xs" onClick={() => generatedSummaryQuery.refetch()}>
+              Try again
+            </button>
+          </div>
+        </section>
+      ) : null}
 
       {data.intelligence_status?.state === "processing" && (
         <section className="rounded-2xl border border-brand/25 bg-brand/5 px-5 py-4" role="status">
