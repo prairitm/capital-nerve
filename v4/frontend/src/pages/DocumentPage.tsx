@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
+import { ChevronDown } from "lucide-react";
 import { pdfjs } from "react-pdf";
 import pdfjsWorker from "pdfjs-dist/build/pdf.worker.min.mjs?url";
 import "react-pdf/dist/Page/TextLayer.css";
@@ -37,6 +38,141 @@ function summaryFactValue(fact: ExtractedValue): string {
   }
   if (fact.value_numeric != null) return formatMetricValue(fact.value_numeric, fact.unit);
   return fact.value_text?.trim() || "—";
+}
+
+function factGroupLabel(fact: ExtractedValue): string {
+  const value = fact.group || fact.category || fact.statement || "Other";
+  return value.replace(/_/g, " ").replace(/\b\w/g, (character) => character.toUpperCase());
+}
+
+function groupSelectedFacts(facts: ExtractedValue[]) {
+  const groups = new Map<string, { label: string; facts: ExtractedValue[] }>();
+  for (const fact of facts) {
+    const label = factGroupLabel(fact);
+    const key = label.toLowerCase();
+    const group = groups.get(key) ?? { label, facts: [] };
+    group.facts.push(fact);
+    groups.set(key, group);
+  }
+  return [...groups.values()];
+}
+
+function SelectedFactSet({
+  facts,
+  highlights,
+  documentId,
+}: {
+  facts: ExtractedValue[];
+  highlights: ExtractedValue[];
+  documentId: string | undefined;
+}) {
+  const [showLineItems, setShowLineItems] = useState(false);
+  const groups = useMemo(() => groupSelectedFacts(facts), [facts]);
+
+  return (
+    <section>
+      <div className="flex items-center justify-between gap-3">
+        <div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-ink-soft">
+          Selected fact set
+        </div>
+        <span className="chip-neutral text-[10px]">{facts.length} facts</span>
+      </div>
+      <p className="mt-1 text-[11px] leading-relaxed text-ink-soft">
+        Resolved facts selected from this filing, with direct links to their source pages.
+      </p>
+
+      {highlights.length > 0 && (
+        <div className="mt-4">
+          <div className="mb-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-brand-soft">
+            Key facts
+          </div>
+          <ul className="space-y-2.5">
+            {highlights.map((fact) => (
+              <li
+                key={`${fact.value_code}-${fact.segment ?? fact.scope_name ?? "company"}`}
+                className="rounded-xl border border-line/70 bg-surface-2/55 p-3"
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <div className="text-[11px] text-ink-mute">{fact.value_name}</div>
+                    <div className="mt-0.5 break-words text-sm font-medium leading-snug text-ink">
+                      {summaryFactValue(fact)}
+                    </div>
+                  </div>
+                  <FactSourceLink documentId={documentId ?? null} fact={fact} />
+                </div>
+                {fact.source_page != null && (
+                  <div className="mt-2 text-[10px] text-ink-soft">Source: p.{fact.source_page}</div>
+                )}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      <div className="mt-4 border-t border-line/60 pt-3">
+        <button
+          type="button"
+          className="focus-ring flex w-full items-center justify-between gap-3 rounded-lg px-1 py-2 text-left"
+          onClick={() => setShowLineItems((visible) => !visible)}
+          aria-expanded={showLineItems}
+        >
+          <span>
+            <span className="block text-sm font-semibold text-ink">Statement line items</span>
+            <span className="mt-0.5 block text-[11px] text-ink-mute">
+              Complete selected set, grouped by statement
+            </span>
+          </span>
+          <ChevronDown
+            size={16}
+            className={`shrink-0 text-ink-soft transition-transform ${showLineItems ? "rotate-180" : ""}`}
+          />
+        </button>
+
+        {showLineItems && (
+          <div className="mt-2 space-y-4">
+            {groups.map((group) => (
+              <section key={group.label}>
+                <div className="mb-1.5 flex items-center justify-between gap-2 px-1">
+                  <h3 className="text-[10px] font-semibold uppercase tracking-[0.1em] text-ink-soft">
+                    {group.label}
+                  </h3>
+                  <span className="text-[10px] text-ink-soft">{group.facts.length}</span>
+                </div>
+                <ul className="divide-y divide-line/50 overflow-hidden rounded-xl border border-line/70 bg-surface-2/40">
+                  {group.facts.map((fact) => (
+                    <li
+                      key={`${fact.observation_id ?? fact.resolved_fact_id ?? fact.value_code}-${fact.period_end ?? ""}`}
+                      className="p-3"
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <div className="text-[11px] leading-snug text-ink-mute">{fact.value_name}</div>
+                          <div className="mt-1 break-words text-sm font-medium leading-snug text-ink">
+                            {summaryFactValue(fact)}
+                          </div>
+                        </div>
+                        <FactSourceLink documentId={documentId ?? null} fact={fact} />
+                      </div>
+                      {(fact.period_end || fact.basis || fact.segment || fact.scope_name) && (
+                        <div className="mt-2 flex flex-wrap gap-1.5">
+                          {fact.period_end && <span className="chip-neutral text-[9px]">{fact.period_end}</span>}
+                          {fact.basis && <span className="chip-neutral text-[9px]">{fact.basis}</span>}
+                          {(fact.segment || fact.scope_name) && (
+                            <span className="chip-neutral text-[9px]">{fact.segment || fact.scope_name}</span>
+                          )}
+                        </div>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            ))}
+          </div>
+        )}
+      </div>
+    </section>
+  );
 }
 
 export function DocumentPage() {
@@ -162,8 +298,8 @@ export function DocumentPage() {
 
   const { document: documentInfo, company, event } = data;
   const title = documentDisplayTitle(documentInfo, event);
-  const showFilingSummary = Boolean(data.filing_summary?.highlights.length);
-  const showSidePanel = showFilingSummary;
+  const selectedFacts = data.selected_facts ?? [];
+  const showSidePanel = selectedFacts.length > 0;
   const hasEvidence = Boolean(highlightText?.trim() && targetPage != null);
   const pageWidth = Math.max(240, Math.round(fitPageWidth * zoom));
 
@@ -186,7 +322,7 @@ export function DocumentPage() {
       <div
         className={`grid min-h-0 flex-1 ${
           showSidePanel
-            ? "grid-rows-[minmax(0,1fr)_minmax(10rem,40%)] lg:grid-cols-[minmax(0,1fr)_22rem] lg:grid-rows-1"
+            ? "grid-rows-[minmax(0,1fr)_minmax(10rem,40%)] lg:grid-cols-[minmax(0,1fr)_24rem] lg:grid-rows-1"
             : "grid-cols-1"
         }`}
       >
@@ -222,39 +358,11 @@ export function DocumentPage() {
 
         {showSidePanel && (
           <aside className="min-h-0 overflow-y-auto border-t border-line bg-bg-soft/95 p-4 lg:border-l lg:border-t-0">
-            {showFilingSummary && data.filing_summary && (
-              <section>
-                <div className="mb-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-ink-soft">
-                  Filing summary
-                </div>
-                <p className="mb-3 text-[11px] leading-relaxed text-ink-soft">
-                  Key facts selected from {data.filing_summary.available_fact_count} extracted
-                  {data.filing_summary.available_fact_count === 1 ? " fact" : " facts"}. The full
-                  fact set remains available on the event page.
-                </p>
-                <ul className="space-y-2.5">
-                  {data.filing_summary.highlights.map((fact) => (
-                    <li
-                      key={`${fact.value_code}-${fact.segment ?? fact.scope_name ?? "company"}`}
-                      className="rounded-xl border border-line/70 bg-surface-2/55 p-3"
-                    >
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="min-w-0">
-                          <div className="text-[11px] text-ink-mute">{fact.value_name}</div>
-                          <div className="mt-0.5 break-words text-sm font-medium leading-snug text-ink">
-                            {summaryFactValue(fact)}
-                          </div>
-                        </div>
-                        <FactSourceLink documentId={documentId ?? null} fact={fact} />
-                      </div>
-                      {fact.source_page != null && (
-                        <div className="mt-2 text-[10px] text-ink-soft">Source: p.{fact.source_page}</div>
-                      )}
-                    </li>
-                  ))}
-                </ul>
-              </section>
-            )}
+            <SelectedFactSet
+              facts={selectedFacts}
+              highlights={data.filing_summary?.highlights ?? []}
+              documentId={documentId}
+            />
           </aside>
         )}
       </div>

@@ -420,6 +420,7 @@ export interface DocumentDetail {
     available_fact_count: number;
     highlights: ExtractedValue[];
   } | null;
+  selected_facts: ExtractedValue[];
 }
 
 export interface SourceLocateResult {

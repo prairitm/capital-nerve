@@ -469,7 +469,6 @@ function EarningsCallAnalysis({ section }: { section: QuarterDocumentSection }) 
 }
 
 function QuarterlyResultAnalysis({ section, snapshot }: { section: QuarterDocumentSection; snapshot: SnapshotRow[] }) {
-  const [supportingOpen, setSupportingOpen] = useState(false);
   const documentId = section.document?.id ?? section.event?.document_id ?? null;
   const config = section.display ?? {};
   const allowedFacts = new Set(config.headline_facts ?? []);
@@ -498,13 +497,23 @@ function QuarterlyResultAnalysis({ section, snapshot }: { section: QuarterDocume
 
       {signals.length > 0 && <EventSignalList signals={signals} title="What matters" />}
 
-      <section className="card overflow-hidden">
-        <button type="button" onClick={() => setSupportingOpen((open) => !open)} aria-expanded={supportingOpen} className="focus-ring flex w-full items-center justify-between gap-4 rounded-2xl px-5 py-4 text-left hover:bg-surface-2/35">
-          <span className="flex min-w-0 items-center gap-3"><FileSearch size={17} className="shrink-0 text-ink-soft" /><span><span className="block text-base font-semibold text-ink">Supporting financial data</span><span className="mt-0.5 block text-xs text-ink-mute">Statement line items and direct source references</span></span></span>
-          <ChevronDown size={16} className={clsx("shrink-0 text-ink-soft transition-transform", supportingOpen && "rotate-180")} />
-        </button>
-        {supportingOpen && <div className="border-t border-line/60 bg-bg/25 p-3 md:p-4"><FactsPanel facts={section.facts} factPeriods={section.fact_periods} activeFactPeriodEnd={section.selected_fact_period_end} fallbackDocumentId={documentId} /></div>}
-      </section>
+      {documentId && (
+        <Link
+          to={`/documents/${documentId}`}
+          className="focus-ring card flex items-center justify-between gap-4 px-5 py-4 transition-colors hover:bg-surface-2/35"
+        >
+          <span className="flex min-w-0 items-center gap-3">
+            <FileSearch size={17} className="shrink-0 text-ink-soft" />
+            <span>
+              <span className="block text-sm font-semibold text-ink">Review selected facts</span>
+              <span className="mt-0.5 block text-xs text-ink-mute">
+                Statement line items and source references are available in the filing.
+              </span>
+            </span>
+          </span>
+          <ArrowUpRight size={16} className="shrink-0 text-ink-soft" />
+        </Link>
+      )}
     </section>
   );
 }
@@ -1247,7 +1256,7 @@ export function EventDetail() {
           <div className="flex items-start gap-3">
             <Loader2 className="mt-0.5 shrink-0 animate-spin text-brand" size={18} />
             <div>
-              <h2 className="text-sm font-semibold text-ink">Intelligence processing</h2>
+              <h2 className="text-sm font-semibold text-ink">Signals processing</h2>
               <p className="mt-1 text-sm leading-6 text-ink-mute">
                 Some extracted facts are being verified. Current signals use verified facts and
                 will refresh automatically when verification finishes. You can return to

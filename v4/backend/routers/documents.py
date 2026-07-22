@@ -153,6 +153,7 @@ def document_detail(document_id: str):
             "event": event_dict(event) if event else None,
             "counts": _counts(conn, event["id"] if event else None),
             "filing_summary": build_filing_summary(facts),
+            "selected_facts": facts,
         }
 
 
