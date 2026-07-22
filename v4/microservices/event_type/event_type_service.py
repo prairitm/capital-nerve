@@ -349,7 +349,12 @@ def classify_announcement(item: dict[str, Any]) -> str:
     if has("transcript of the discussion", "earnings call transcript", "concall transcript"):
         return "Earnings Call Transcript"
 
-    if desc == "Investor Presentation" or has("investor presentation"):
+    if desc == "Investor Presentation" or has(
+        "investor presentation",
+        "presentation made by company",
+        "presentation_with_ppt",
+        "presentationwithppt",
+    ):
         return "Investor Presentation"
 
     intimation = has(

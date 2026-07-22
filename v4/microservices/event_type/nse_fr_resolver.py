@@ -132,6 +132,8 @@ _URL_EXCLUDED_MARKERS = (
     "priorintimation",
     "changeindirector",
     "investorpresentation",
+    "presentation_with_ppt",
+    "presentationwithppt",
     "transcript",
     "concall",
     "shlsigned",
@@ -504,7 +506,11 @@ def _is_excluded_candidate(item: dict[str, Any]) -> bool:
     if any(marker in url_lower for marker in _URL_EXCLUDED_MARKERS):
         return True
     text = build_text_blob(item)
-    if "monitoring agency" in text or "certificate under regulation 74" in text:
+    if (
+        "monitoring agency" in text
+        or "certificate under regulation 74" in text
+        or "presentation made by company" in text
+    ):
         return True
     return False
 
@@ -756,6 +762,11 @@ def resolve_canonical_financial_report(
     for item in financial_results:
         url = (item.get("attchmntFile") or "").strip()
         if not url:
+            continue
+        # Presentations often reproduce complete financial statements and can
+        # therefore score 1.0 in the content classifier.  They are supporting
+        # investor material, not the canonical exchange results filing.
+        if _is_excluded_candidate(item):
             continue
         tried.add(url)
         try:
