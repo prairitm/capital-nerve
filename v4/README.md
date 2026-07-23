@@ -99,10 +99,10 @@ The installer prompts for the initial administrator credentials, OpenAI API key,
 and a Cloudflare Tunnel token. It then installs the OS, Python, Node.js, Caddy,
 Tailscale, and Cloudflare Tunnel dependencies; builds the frontend; creates
 boot-persistent systemd services; and publishes the application at
-`https://capitalnerve.com`. No public IP address or router port forwarding is
+`https://www.capitalnerve.com`. No public IP address or router port forwarding is
 required. Tailscale remains available for private administration of the Pi.
 
-Before running the installer, add `capitalnerve.com` to Cloudflare, create a
+Before running the installer, add `www.capitalnerve.com` to Cloudflare, create a
 remotely managed Tunnel, and add a public hostname whose service is
 `http://localhost:8188`. Copy the tunnel token from the connector installation
 command and either paste it when prompted or run:
@@ -152,7 +152,7 @@ default database is `v4/data/capital_nerve_app.db` and is ignored by git.
 | `V4_NSE_REFRESH_HOURS` | `24` | Maximum age of the cached NSE directory |
 | `V4_NSE_REQUEST_TIMEOUT_SECONDS` | `30` | Timeout for directory downloads and company registration |
 | `V4_NSE_REFRESH_ON_STARTUP` | `true` | Refresh the directory at backend startup when it is stale |
-| `V4_PUBLIC_APP_URL` | `https://capital-nerve.taildeaa7c.ts.net` | Public origin used in notification links |
+| `V4_PUBLIC_APP_URL` | `https://www.capitalnerve.com` | Public origin used in notification links |
 | `V4_SMTP_HOST` | `smtp.gmail.com` | SMTP server for watchlist email |
 | `V4_SMTP_PORT` | `587` | STARTTLS SMTP port |
 | `V4_SMTP_USERNAME` | `capitalnerve@gmail.com` | Gmail SMTP account |
