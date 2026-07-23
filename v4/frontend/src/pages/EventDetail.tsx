@@ -1086,7 +1086,7 @@ export function EventDetail() {
 
   return (
     <div className="w-full min-w-0 max-w-4xl mx-auto space-y-6 overflow-hidden">
-      <BackButton fallback={ticker ? `/company/${ticker}` : "/companies"} />
+      <BackButton fallback={ticker ? `/company/${ticker}/events` : "/companies"} />
 
       <header className="card p-5 md:p-6 space-y-3">
         <div className="flex items-center justify-between gap-3">

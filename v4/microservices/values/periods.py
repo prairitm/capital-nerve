@@ -8,6 +8,7 @@ as the formatted range string.
 from __future__ import annotations
 
 import re
+from collections import Counter
 from dataclasses import asdict, dataclass, field
 from datetime import date, timedelta
 from typing import Any
@@ -53,6 +54,10 @@ _FILENAME_PERIOD_RE = re.compile(
     re.IGNORECASE,
 )
 _SHORT_FY_RE = re.compile(r"Q([1-4])\s*FY(\d{2})\b", re.IGNORECASE)
+_SEARCHABLE_FY_RE = re.compile(
+    r"\bQ([1-4])\s*FY\s*(\d{2,4})(?:\s*[-/]\s*(\d{2,4}))?\b",
+    re.IGNORECASE,
+)
 
 
 def format_fy_label(fy_start_year: int) -> str:
@@ -200,68 +205,155 @@ def detect_period_from_filename(title: str) -> ReportingPeriod | None:
     )
 
 
-def detect_period_from_markdown(markdown: str) -> ReportingPeriod | None:
-    head = markdown[:12000]
-
-    m = re.search(
-        r"(?:QUARTER|quarter).{0,60}?ENDED(?:\s+on)?\s+(\d{1,2})\s*(?:ST|ND|RD|TH)?\s+([A-Za-z]+)\s*,?\s*(\d{4})",
-        head,
-        re.I | re.S,
-    )
-    if m:
-        month = _month_from_name(m.group(2))
-        if month:
-            d = date(int(m.group(3)), month, int(m.group(1)))
-            return reporting_period_from_date(d, "heading")
-
-    m = re.search(
-        r"(?:QUARTER|quarter).{0,60}?ENDED\s+([A-Za-z]+)\s+(\d{1,2})\s*,?\s*(\d{4})",
-        head,
-        re.I | re.S,
-    )
-    if m:
-        month = _month_from_name(m.group(1))
-        if month:
-            d = date(int(m.group(3)), month, int(m.group(2)))
-            return reporting_period_from_date(d, "heading")
-
-    for pattern, source in (
+def _period_candidates(text: str) -> list[ReportingPeriod]:
+    candidates: list[ReportingPeriod] = []
+    seen: set[tuple[int, str]] = set()
+    patterns = (
+        (
+            r"(?:QUARTER|quarter).{0,60}?ENDED(?:\s+on)?\s+(\d{1,2})\s*(?:ST|ND|RD|TH)?\s+([A-Za-z]+)\s*,?\s*(\d{4})",
+            "heading",
+            "day_first",
+        ),
+        (
+            r"(?:QUARTER|quarter).{0,60}?ENDED\s+([A-Za-z]+)\s+(\d{1,2})\s*,?\s*(\d{4})",
+            "heading",
+            "month_first",
+        ),
         (
             r"FOR\s+THE\s+QUARTER(?:\s*&\s*YEAR)?\s+ENDED\s+([A-Za-z]+)\s+(\d{1,2})\s*,?\s*(\d{4})",
             "heading",
+            "month_first",
         ),
         (
             r"FOR\s+THE\s+QUARTER(?:\s*&\s*YEAR)?\s+ENDED\s+(\d{2})\.(\d{2})\.(\d{4})",
             "table_header",
+            "numeric",
         ),
-        (r"FOR\s+THE\s+QUARTER\s+ENDED\s+(\d{2})\.(\d{2})\.(\d{4})", "table_header"),
-        (r"(?<![A-Za-z])Quarter\s+Ended\s+(\d{2})\.(\d{2})\.(\d{4})", "table_header"),
-    ):
-        m = re.search(pattern, head, re.I)
-        if not m:
-            continue
-        if m.lastindex == 3 and m.group(1).isalpha():
-            month = _month_from_name(m.group(1))
-            if month:
-                d = date(int(m.group(3)), month, int(m.group(2)))
-                return reporting_period_from_date(d, source)
-        elif m.lastindex == 3:
-            d = date(int(m.group(3)), int(m.group(2)), int(m.group(1)))
-            return reporting_period_from_date(d, source)
-    return None
+        (
+            r"FOR\s+THE\s+QUARTER\s+ENDED\s+(\d{2})\.(\d{2})\.(\d{4})",
+            "table_header",
+            "numeric",
+        ),
+        (
+            r"(?<![A-Za-z])Quarter\s+Ended\s+(\d{2})\.(\d{2})\.(\d{4})",
+            "table_header",
+            "numeric",
+        ),
+    )
+    for pattern, source, order in patterns:
+        for match in re.finditer(pattern, text, re.I | re.S):
+            try:
+                if order == "day_first":
+                    month = _month_from_name(match.group(2))
+                    if not month:
+                        continue
+                    period_date = date(int(match.group(3)), month, int(match.group(1)))
+                elif order == "month_first":
+                    month = _month_from_name(match.group(1))
+                    if not month:
+                        continue
+                    period_date = date(int(match.group(3)), month, int(match.group(2)))
+                else:
+                    period_date = date(
+                        int(match.group(3)), int(match.group(2)), int(match.group(1))
+                    )
+            except ValueError:
+                continue
+            dedupe_key = (match.start(), period_date.isoformat())
+            if dedupe_key not in seen:
+                seen.add(dedupe_key)
+                candidates.append(reporting_period_from_date(period_date, source))
+
+    for match in _SEARCHABLE_FY_RE.finditer(text):
+        quarter = int(match.group(1))
+        year_text = match.group(2)
+        if len(year_text) == 4:
+            fy_start = int(year_text)
+        elif match.group(3):
+            fy_start = 2000 + int(year_text)
+        else:
+            fy_start = legacy_fy_end_to_start(int(year_text))
+        end = quarter_end_date(quarter, fy_start)
+        dedupe_key = (match.start(), end.isoformat())
+        if dedupe_key not in seen:
+            seen.add(dedupe_key)
+            candidates.append(
+                ReportingPeriod(
+                    quarter=quarter,
+                    fy_start_year=fy_start,
+                    quarter_end=end.isoformat(),
+                    source="quarter_label",
+                )
+            )
+    return candidates
+
+
+def _best_period_candidate(candidates: list[ReportingPeriod]) -> ReportingPeriod | None:
+    if not candidates:
+        return None
+    counts = Counter(
+        (candidate.quarter, candidate.fy_start_year, candidate.quarter_end)
+        for candidate in candidates
+    )
+    best_key = max(
+        counts,
+        key=lambda key: (
+            counts[key],
+            key[2]
+            == quarter_end_date(key[0], key[1]).isoformat(),
+            key[2],
+        ),
+    )
+    selected = next(
+        candidate
+        for candidate in candidates
+        if (candidate.quarter, candidate.fy_start_year, candidate.quarter_end) == best_key
+    )
+    if counts[best_key] > 1:
+        selected.source = f"{selected.source}_consensus"
+    return selected
+
+
+def detect_period_from_markdown(markdown: str) -> ReportingPeriod | None:
+    return _best_period_candidate(_period_candidates(markdown[:12000]))
+
+
+def detect_period_from_title(title: str) -> ReportingPeriod | None:
+    explicit = _best_period_candidate(_period_candidates(title))
+    if explicit:
+        explicit.source = "title"
+        return explicit
+    match = re.search(
+        r"\bperiod\s+ended\s+(?:(\d{1,2})\s+([A-Za-z]+)|([A-Za-z]+)\s+(\d{1,2}))\s*,?\s*(\d{4})",
+        title,
+        re.I,
+    )
+    if match:
+        day = int(match.group(1) or match.group(4))
+        month = _month_from_name(match.group(2) or match.group(3))
+        if month:
+            try:
+                return reporting_period_from_date(
+                    date(int(match.group(5)), month, day), "title"
+                )
+            except ValueError:
+                pass
+    from_filename = detect_period_from_filename(title)
+    if from_filename:
+        from_filename.source = "title"
+    return from_filename
 
 
 def detect_reporting_period(markdown: str, title: str = "") -> ReportingPeriod | None:
     from_markdown = detect_period_from_markdown(markdown)
-    from_filename = detect_period_from_filename(title) if title else None
-    if from_markdown and from_filename:
-        from_markdown.source = (
-            "heading+filename"
-            if from_markdown.label == from_filename.label
-            else from_markdown.source
-        )
-        return from_markdown
-    return from_markdown or from_filename
+    from_title = detect_period_from_title(title) if title else None
+    if from_markdown and from_title:
+        if from_markdown.label == from_title.label:
+            from_title.source = "title+document"
+        return from_title
+    if from_title:
+        return from_title
+    return from_markdown
 
 
 def prior_year_period(target: ReportingPeriod) -> ReportingPeriod:

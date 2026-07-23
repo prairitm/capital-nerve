@@ -95,16 +95,30 @@ chmod +x v4/deploy_pi.sh
 ./v4/deploy_pi.sh
 ```
 
-The installer prompts for the initial administrator credentials and OpenAI API
-key. It then installs the OS, Python, Node.js, Caddy, and Tailscale dependencies;
-builds the frontend; creates boot-persistent systemd services; and publishes the
-application over HTTPS using a free, stable Tailscale Funnel `*.ts.net` address.
-No purchased domain, public IP address, or router port forwarding is required.
+The installer prompts for the initial administrator credentials, OpenAI API key,
+and a Cloudflare Tunnel token. It then installs the OS, Python, Node.js, Caddy,
+Tailscale, and Cloudflare Tunnel dependencies; builds the frontend; creates
+boot-persistent systemd services; and publishes the application at
+`https://capitalnerve.com`. No public IP address or router port forwarding is
+required. Tailscale remains available for private administration of the Pi.
+
+Before running the installer, add `capitalnerve.com` to Cloudflare, create a
+remotely managed Tunnel, and add a public hostname whose service is
+`http://localhost:8188`. Copy the tunnel token from the connector installation
+command and either paste it when prompted or run:
+
+```bash
+CLOUDFLARE_TUNNEL_TOKEN='eyJ...' ./v4/deploy_pi.sh
+```
+
+To deploy under a different HTTPS hostname, set
+`CAPITAL_NERVE_PUBLIC_ORIGIN=https://app.example.com`. The origin must not have
+a trailing slash.
 
 Run the installer as the normal Pi user, not as root. It uses `sudo` for system
-configuration. The services and Caddy bind only to `127.0.0.1`; only the Funnel
-URL is public. The administrator bootstrap password is removed from the service
-environment after the account is created.
+configuration. The services and Caddy bind only to `127.0.0.1`; only Cloudflare
+Tunnel is public. The administrator bootstrap password is removed from the
+service environment after the account is created.
 
 ## Authentication and roles
 

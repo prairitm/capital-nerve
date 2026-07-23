@@ -15,9 +15,7 @@ from typing import Any, Callable
 
 from periods import (
     detect_reporting_period,
-    fy_start_year_from_date,
-    quarter_end_date,
-    quarter_from_date,
+    prior_quarter_period,
     reporting_period_from_date,
 )
 from pdf_parse import parse_pdf_to_markdown
@@ -333,9 +331,10 @@ def detect_period(markdown: str, *, title: str, event_row: dict[str, Any]):
     if not raw_date:
         raise RuntimeError("Could not detect reporting period and event_date is missing")
     ann = date.fromisoformat(raw_date[:10])
-    fy = fy_start_year_from_date(ann)
-    quarter = quarter_from_date(ann)
-    return reporting_period_from_date(quarter_end_date(quarter, fy), "announcement_fallback")
+    announcement_period = reporting_period_from_date(ann, "announcement_date")
+    reporting_period = prior_quarter_period(announcement_period)
+    reporting_period.source = "previous_completed_quarter_fallback"
+    return reporting_period
 
 
 def load_facts_catalog() -> dict[str, Any]:

@@ -13,6 +13,7 @@ SYSTEMD_TEMPLATE="/etc/systemd/system/capital-nerve@.service"
 SYSTEMD_TARGET="/etc/systemd/system/capital-nerve.target"
 CADDYFILE="/etc/caddy/Caddyfile"
 CADDY_PORT="${CAPITAL_NERVE_CADDY_PORT:-8188}"
+PUBLIC_ORIGIN="${CAPITAL_NERVE_PUBLIC_ORIGIN:-https://capitalnerve.com}"
 SERVICES=(backend company event event_type values metrics signals alerts monitor)
 PORTS=(8010 8020 8021 8022 8023 8024 8025 8026 8027)
 
@@ -87,6 +88,33 @@ install_tailscale() {
   curl -fsSL https://tailscale.com/install.sh -o "${install_script}"
   sh "${install_script}"
   rm -f "${install_script}"
+}
+
+install_cloudflared() {
+  if command -v cloudflared >/dev/null 2>&1; then
+    info "cloudflared is already installed"
+    return
+  fi
+
+  info "Installing cloudflared"
+  local package
+  package="$(mktemp --suffix=.deb)"
+  curl -fsSL \
+    "https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-$(dpkg --print-architecture).deb" \
+    -o "${package}"
+  sudo apt-get install -y "${package}"
+  rm -f "${package}"
+}
+
+configure_cloudflare_tunnel() {
+  local tunnel_token="$1"
+
+  install_cloudflared
+  if sudo systemctl list-unit-files cloudflared.service >/dev/null 2>&1; then
+    sudo cloudflared service uninstall >/dev/null 2>&1 || true
+  fi
+  sudo cloudflared service install "${tunnel_token}"
+  sudo systemctl enable --now cloudflared
 }
 
 select_caddy_port() {
@@ -283,6 +311,8 @@ main() {
   local admin_password_confirm
   local openai_key
   local smtp_password="${V4_SMTP_PASSWORD:-}"
+  local cloudflare_tunnel_token="${CLOUDFLARE_TUNNEL_TOKEN:-}"
+  [[ "${PUBLIC_ORIGIN}" =~ ^https://[^/]+$ ]] || die "CAPITAL_NERVE_PUBLIC_ORIGIN must look like https://example.com (without a trailing slash)."
   read -r -p "Initial administrator email: " admin_email
   [[ "${admin_email}" == *@*.* ]] || die "Enter a valid administrator email address."
   prompt_secret "Initial administrator password (minimum 12 characters)" admin_password
@@ -295,6 +325,9 @@ main() {
     prompt_secret "Gmail App Password for capitalnerve@gmail.com" smtp_password
   fi
   [[ "${smtp_password}" != *$'\n'* && "${smtp_password}" != *$'\r'* ]] || die "The Gmail App Password cannot contain a newline."
+  if [[ -z "${cloudflare_tunnel_token}" ]]; then
+    prompt_secret "Cloudflare Tunnel token for ${PUBLIC_ORIGIN}" cloudflare_tunnel_token
+  fi
 
   info "Installing operating-system packages"
   sudo apt-get update
@@ -313,11 +346,7 @@ main() {
   else
     sudo tailscale up --hostname=capital-nerve
   fi
-  local public_host
-  public_host="$(sudo tailscale status --json | jq -r '.Self.DNSName // empty' | sed 's/\.$//')"
-  [[ -n "${public_host}" ]] || die "Tailscale did not provide a DNS hostname. Ensure MagicDNS is enabled."
-  local public_origin="https://${public_host}"
-  echo "Public origin will be ${public_origin}"
+  echo "Public origin will be ${PUBLIC_ORIGIN}"
 
   info "Installing Python dependencies"
   if [[ ! -x "${REPO_DIR}/.venv/bin/python" ]]; then
@@ -338,7 +367,7 @@ main() {
   sudo find "${WEB_ROOT}" -type f -exec chmod 644 {} +
 
   info "Writing protected production configuration"
-  write_configuration "${admin_email}" "${admin_password}" "${openai_key}" "${public_origin}" "${smtp_password}"
+  write_configuration "${admin_email}" "${admin_password}" "${openai_key}" "${PUBLIC_ORIGIN}" "${smtp_password}"
   chmod +x "${V4_DIR}/deploy/run_service.sh"
   install_systemd_units
   install_caddy_config
@@ -348,15 +377,16 @@ main() {
   wait_for_services
   curl -fsS "http://127.0.0.1:${CADDY_PORT}/api/health" >/dev/null || die "Caddy API proxy health check failed."
 
-  info "Publishing the site through Tailscale Funnel"
-  sudo tailscale funnel --bg "${CADDY_PORT}"
+  info "Publishing the site through Cloudflare Tunnel"
+  configure_cloudflare_tunnel "${cloudflare_tunnel_token}"
+  sudo tailscale funnel reset >/dev/null 2>&1 || true
   remove_bootstrap_secret
 
   info "Deployment complete"
-  echo "CapitalNerve: ${public_origin}"
+  echo "CapitalNerve: ${PUBLIC_ORIGIN}"
   echo "Application status: sudo systemctl status capital-nerve.target"
   echo "Service logs: sudo journalctl -u 'capital-nerve@*.service' -f"
-  echo "Funnel status: tailscale funnel status"
+  echo "Cloudflare Tunnel status: sudo systemctl status cloudflared"
   echo
   echo "The bootstrap administrator password has been removed from ${APP_ENV}."
 }
