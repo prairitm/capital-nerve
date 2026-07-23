@@ -60,7 +60,7 @@ class Settings:
             "V4_NSE_REFRESH_ON_STARTUP", "true"
         ).lower() in {"1", "true", "yes", "on"}
         self.public_app_url = os.getenv(
-            "V4_PUBLIC_APP_URL", "https://capital-nerve.taildeaa7c.ts.net"
+            "V4_PUBLIC_APP_URL", "https://www.capitalnerve.com"
         ).rstrip("/")
 
 

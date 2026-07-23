@@ -28,7 +28,7 @@ class NotificationTemplateTest(unittest.TestCase):
         conn.close()
         self.settings = SimpleNamespace(
             analytics_db_path=self.db_path,
-            public_app_url="https://capital-nerve.taildeaa7c.ts.net",
+            public_app_url="https://www.capitalnerve.com",
             smtp_host="smtp.gmail.com",
             smtp_port=587,
             smtp_username="capitalnerve@gmail.com",

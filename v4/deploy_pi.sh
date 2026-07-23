@@ -13,7 +13,7 @@ SYSTEMD_TEMPLATE="/etc/systemd/system/capital-nerve@.service"
 SYSTEMD_TARGET="/etc/systemd/system/capital-nerve.target"
 CADDYFILE="/etc/caddy/Caddyfile"
 CADDY_PORT="${CAPITAL_NERVE_CADDY_PORT:-8188}"
-PUBLIC_ORIGIN="${CAPITAL_NERVE_PUBLIC_ORIGIN:-https://capitalnerve.com}"
+PUBLIC_ORIGIN="${CAPITAL_NERVE_PUBLIC_ORIGIN:-https://www.capitalnerve.com}"
 SERVICES=(backend company event event_type values metrics signals alerts monitor)
 PORTS=(8010 8020 8021 8022 8023 8024 8025 8026 8027)
 

@@ -30,7 +30,7 @@ class Settings:
         self.email_from_address = os.getenv("V4_EMAIL_FROM_ADDRESS", "capitalnerve@gmail.com")
         self.email_from_name = os.getenv("V4_EMAIL_FROM_NAME", "CapitalNerve")
         self.public_app_url = os.getenv(
-            "V4_PUBLIC_APP_URL", "https://capital-nerve.taildeaa7c.ts.net"
+            "V4_PUBLIC_APP_URL", "https://www.capitalnerve.com"
         ).rstrip("/")
         self.email_max_attempts = int(os.getenv("V4_EMAIL_MAX_ATTEMPTS", "5"))
         self.email_lease_seconds = int(os.getenv("V4_EMAIL_LEASE_SECONDS", "120"))
